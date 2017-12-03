@@ -28,17 +28,17 @@ def parse(x):
 #        print datetime.strptime(x, '%Y/%m/%d %H:%M').month
         return datetime.strptime(x, '%Y/%m/%d %H:%M')
 
-dataset = read_csv(fileName + '.txt', index_col = 0, date_parser = parse)
+dataset = read_csv(fileName + '.txt')
+#dataset = read_csv(fileName + '.txt', index_col = 0, date_parser = parse)
 
 
 # Drop unwanted columns (bike station ID, bike station name...)
-dataset.drop(dataset.columns[[1, 2, 4]], axis = 1, inplace = True)
-dataset.columns    = ['weekday', 'free_bikes']
-dataset.index.name = 'date'
-dataset.index      = dataset.index.month
+dataset.drop(dataset.columns[[0,2,5,6,7]], axis = 1, inplace = True)
 
-print type(dataset)
-print dataset.head()
+dataset.columns    = ['month','hour', 'weekday', 'free_bikes']
+#dataset.index.name = 'month'   
+
+print_smth("Read dataset", dataset.head())
 
 dataset.to_csv(fileName + '_parsed.txt')
 
@@ -71,15 +71,15 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 	return agg
 
 
-dataset = read_csv(fileName + '_parsed.txt', header=0)
+dataset = read_csv(fileName + '_parsed.txt', header=0, index_col = 0)
 values  = dataset.values
 
 print_smth("Imported dataset", dataset.head())
 
 
 encoder     = LabelEncoder()                     # Encode columns that are not numbers
-values[:,0] = encoder.fit_transform(values[:,0]) # Encode MONTH
-values[:,1] = encoder.fit_transform(values[:,1]) # Encode WEEKDAY
+values[:,2] = encoder.fit_transform(values[:,2]) # Encode WEEKDAY
+values[:,1] = encoder.fit_transform(values[:,1]) # Encode HOUR
 values      = values.astype('float32')           # Convert al values to floats
 
 scaler   = MinMaxScaler(feature_range=(0,1))
@@ -89,7 +89,7 @@ reframed = series_to_supervised(scaled,1,1)
 # Drop columns that I don't want to predict
 # (0) Month(t-1) | (1) Weekday(t-1) | (2) Free Bikes (t-1) 
 # (3) Month(t)   | (4) Weekday(t)   | (5) Free Bikes(t)
-reframed.drop(reframed.columns[[3,4]], axis = 1, inplace = True)
+reframed.drop(reframed.columns[[4, 5, 6]], axis = 1, inplace = True)
 
 print_smth("reframed dataset", reframed.head())
 
@@ -103,20 +103,6 @@ train = values[0:train_size,:]
 test  = values[train_size:len(values), :]
 
 print_smth("Train array", train)
-
-# convert array of values into a dataset matrix
-# dataset -> NumPy array -> dataset
-# look_back -> n. previous time steps to use as input variables to predict next time period (1)
-def create_dataset(dataset, look_back = 1):
-    dataX, dataY = [],[]
-    for i in range(len(dataset) - look_back - 1):
-        a = dataset[i:(i+look_back),0]
-        dataX.append(a)
-        dataY.append(dataset[i + look_back, 0])
-    return array(dataX), array(dataY)
-
-
-look_back = 1
 
 train_x, train_y = train[:, :-1], train[:, -1]
 test_x, test_y = test[:, :-1], test[:, -1]
@@ -173,3 +159,10 @@ print('Test RMSE: %.3f' % rmse)
 
 pyplot.title("RMSE " +  str(rmse) + " batch size " + str(batch_size) + " epochs " + str(epochs) + " LSTM N " + str(lstm_neurons))
 pyplot.savefig("loss.png")
+
+# Make predictions
+###############################
+
+
+
+#prediction = model.predict(

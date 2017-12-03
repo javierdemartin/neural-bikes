@@ -9,18 +9,15 @@ First test as a multivariate neural network providing as inputs
 * Free bikes (what I want to predict)
 * Weekday
 * Month  (tried giving as input the date but the results weren't good)
+* Hour
 
 ## Results
 
 |  Set  	| Training Set 	| Test Set 	| Epochs 	| Batch Size 	| RMSE         |
 |:-----:	|:------------:	|:--------:	|:------:	|:----------:	| :----------: |
-| 18033 	|      67%     	|    33%   	|   20   	|     80     	| 0.111        |
+| 18033 	|      67%     	|    33%   	|   20   	|     80     	| 0.097        |
 
 ## Loss
 
 ![Loss Graph](loss.png)
-
-## Next Steps
-
-* Instead of giving as input `date`/`month` try `month` + `hour` to add more info and see if the predictions improve at all
 
