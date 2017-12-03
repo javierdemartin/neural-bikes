@@ -107,7 +107,6 @@ print_smth("Train array", train)
 train_x, train_y = train[:, :-1], train[:, -1]
 test_x, test_y = test[:, :-1], test[:, -1]
 
-print_smth("train_x", train_x)
 
 # reshape input to be [samples, time_steps, features]
 train_x = train_x.reshape((train_x.shape[0], 1, train_x.shape[1]))
@@ -115,11 +114,7 @@ test_x  = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))
 
 print train_x.shape, train_y.shape, test_x.shape, test_y.shape
 
-lstm_neurons = 100
-
-print "$$$$$$$$$$$$$$$$$$$$"
-print train_x.shape[1]
-print train_x.shape[2]
+lstm_neurons = 30
 
 model = Sequential()
 model.add(LSTM(lstm_neurons, input_shape = (train_x.shape[1], train_x.shape[2])))
@@ -128,8 +123,8 @@ model.add(Dense(train_x.shape[1]))
 model.compile(loss = 'mae', optimizer = 'adam', metrics = ['accuracy'])
 
 
-batch_size = 80
-epochs     = 20
+batch_size = 90
+epochs     = 30
 
 history = model.fit(train_x, train_y, epochs = epochs, batch_size = batch_size, validation_data = (test_x, test_y), verbose = 2, shuffle = False)
 model.save('test_1.h5')
@@ -163,6 +158,3 @@ pyplot.savefig("loss.png")
 # Make predictions
 ###############################
 
-
-
-#prediction = model.predict(
