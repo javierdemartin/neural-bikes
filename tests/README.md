@@ -7,6 +7,7 @@
 
 Analyzing data for just one station (Zunzunegi in Bilbao) from 2017/09/29 to 2017/12/01 feeding the neural net the following data:
 
-	* Free bikes
-	* Weekday
-	* Month
+* Free bikes
+* Weekday
+* Month
+* Hour
