@@ -17,6 +17,12 @@ First test as a multivariate neural network providing as inputs
 |:-----:	|:------------:	|:--------:	|:------:	|:----------:	| :----------: |
 | 18033 	|      67%     	|    33%   	|   20   	|     80     	| 0.097        |
 
+## Accuracy
+
+![Accuracy Graph](acc.png)
+
+> This doesn't look good at all 🙃
+
 ## Loss
 
 ![Loss Graph](loss.png)
