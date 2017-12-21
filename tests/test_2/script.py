@@ -80,15 +80,29 @@ encoded_weekday = to_categorical(aux)
 values = numpy.append(values, encoded_weekday, axis = 1)
 values = values.astype('float32') # Convert al values to floats
 
-values[:,2]      = values[:,2].astype(int)           # Convert bikes to int
+bikes_categorical = to_categorical(values[:,2])           # Convert bikes to int
+values            = numpy.append(values, bikes_categorical, axis = 1)
+values            = numpy.delete(values,2,1)           # Remove FREE_BIKES column
+
+# create a new arrey w all the daata
+
+#numpy.set_printoptions(threshold='nan')
+print_smth("HEHE", values[0])
+print values.shape
+
 scaler      = MinMaxScaler(feature_range=(0,1))  # Normalize values
 scaled      = scaler.fit_transform(values)
-
 reframed    = series_to_supervised(scaled,1,1)
 
-# Drop columns that I don't want to predict
-reframed.drop(reframed.columns[[10,11,13,14,15,16,17,18,19]], axis = 1, inplace = True)
+print reframed.shape
 
+# Drop columns that I don't want to predict
+reframed.drop(reframed.columns[[30,31,32,33,34,35,36,37,38]], axis = 1, inplace = True)
+
+
+print reframed.shape
+
+#numpy.set_printoptions(threshold='nan')
 print_smth("reframed dataset", reframed.head())
 
 values     = reframed.values
@@ -106,6 +120,7 @@ test_x, test_y   = test[:, :-1], test[:, -1]
 train_x = train_x.reshape((train_x.shape[0], 1, train_x.shape[1]))
 test_x  = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))
 
+print "Shapes\n-----------------------"
 print train_x.shape, train_y.shape, test_x.shape, test_y.shape
 
 # Neural Net parameter definitions and training
@@ -118,10 +133,13 @@ epochs       = 5
 # NN model definition
 model = Sequential()
 model.add(LSTM(lstm_neurons, input_shape = (train_x.shape[1], train_x.shape[2])))
-model.add(Dense(train_x.shape[1]))
-model.compile(loss = 'mae', optimizer = 'adam', metrics = ['accuracy'])
+model.add(Dense(train_x.shape[1], activation = 'softmax'))
+#model.compile(loss = 'mae', optimizer = 'adam', metrics = ['accuracy'])
+
+model.compile(loss = 'binary_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
 
 history = model.fit(train_x, train_y, epochs = epochs, batch_size = batch_size, validation_data = (test_x, test_y), verbose = 2, shuffle = False)
+
 model.save('test_2.h5')
 
 min_y = min(history.history['loss'])
@@ -186,7 +204,6 @@ for y in numpy.linspace(min_y, max_y, 9):
     plt.plot(range(0, epochs), [y] * len(range(0, epochs)), "--", lw=0.5, color="black", alpha=0.3) 
 
 plt.savefig("loss.png", bbox_inches="tight")
-
 
 plt.close()
 
