@@ -25,4 +25,4 @@ Prediction has been rounded to `int` to approximate the values to real use cases
 
 ![Loss Plot](loss.png)
 
-> Loss Plot
+> Loss Plot using as loss = 'mean\_squared\_error' when compiling the model
