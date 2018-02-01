@@ -6,7 +6,7 @@
 
 
 ################################################################################
-# Libraries
+# Libraries and Imports
 ################################################################################
 
 from math import sqrt
@@ -20,27 +20,32 @@ from keras.models import Sequential
 from keras.layers import Dense, LSTM, Activation
 from keras.utils import to_categorical
 
+# File to read from the data, in this case only one station is being analyzed
 fileName = 'Zunzunegi'
 
+# Colorful prints in the terminal
 class col:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
+    HEADER    = '\033[95m'
+    blue      = '\033[94m'
+    green     = '\033[92m'
+    yellow    = '\033[93m'
+    FAIL      = '\033[91m'
+    ENDC      = '\033[0m'
+    BOLD      = '\033[1m'
     UNDERLINE = '\033[4m'
 
+# Formatted output
 def print_smth(description, x):
-    print "", col.WARNING
+    print "", col.yellow
     print description
     print "----------------------------------------------------------------------------", col.ENDC
     print x
-    print col.WARNING, "----------------------------------------------------------------------------", col.ENDC
+    print col.yellow, "----------------------------------------------------------------------------", col.ENDC
 
 
-# convert series to supervised learning
+# Convert series to supervised learning
+# Arguments
+#  * [Columns]> Array of strings to name the supervised transformation
 def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 
         """
@@ -55,7 +60,6 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 	"""
 
         n_vars = 1 if type(data) is list else data.shape[1]
-        print ">>>>>>>>>>", n_vars
 	df = DataFrame(data)
 	cols, names = list(), list()
 	# input sequence (t-n, ... t-1)
@@ -90,9 +94,12 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 
 dataset = read_csv(fileName + '.txt')
 
+print_smth("Read dataset without dropping columns", dataset.head())
+
 # Drop unwanted columns (bike station ID, bike station name...)
 dataset.drop(dataset.columns[[0,2,5,6,7]], axis = 1, inplace = True)
 dataset.columns = ['month','hour', 'weekday', 'free_bikes']
+# Save the dataset to a new file without the unwanted columns
 dataset.to_csv(fileName + '_parsed.txt')
 
 #--------------------------------------------------------------------------------
@@ -102,11 +109,8 @@ dataset.to_csv(fileName + '_parsed.txt')
 dataset = read_csv(fileName + '_parsed.txt', header=0, index_col = 0)
 values  = dataset.values
 
-print_smth("VALUES", values)
-
-print_smth("Imported dataset from the file", dataset.head())
-
-print col.WARNING, "> ", values.shape, col.ENDC
+# 4 columns (month, hour, weekday, free_bikes)
+print_smth("Dataset with unwanted columns removed", dataset.head())
 
 #--------------------------------------------------------------------------------
 # Data encoding
@@ -117,54 +121,49 @@ values[:,2] = encoder.fit_transform(values[:,2]) # Encode WEEKDAY as an integer 
 values[:,1] = encoder.fit_transform(values[:,1]) # Encode HOUR as int
 values      = values.astype('float32')           # Convert al values to floats
 
-print_smth("VALUES", values)
-
 scaler = MinMaxScaler(feature_range=(0,1))  # Normalize values
 scaled = scaler.fit_transform(values)
 
 
-#
+#--------------------------------------------------------------------------------
 # Generate the columns list for the supervised transformation
-#
+#--------------------------------------------------------------------------------
 
+# Columns names for the transformation from time series to supervised learning
 columns = ['month', 'hour', 'weekday', 'free bikes']
 
-############################################################
+# outputs 8 columns
+# month(t-1) | hour(t-1) | weekday (t-1) | free_bikes(t-1) | month(t) | ...
+reframed = series_to_supervised(columns, scaled,1,1)
 
-reframed    = series_to_supervised(columns, scaled,1,1) # 60 columns
-
-# Drop columns that I don't want to predict
+# Drop columns that I don't want to predict, every (t) column except free_bikes(t)
+# month(t-1) | hour(t-1) | weekday (t-1) | free_bikes(t-1) | free_bikes(t) |
+#--------------------------------------------------------------------------
 reframed.drop(reframed.columns[[4,5,6]], axis=1, inplace=True)
 
 values = reframed.values
 
-print_smth("reframed dataset", reframed.head())
+print_smth("Reframed dataset without columns that are not going to be predicted", reframed.head())
 
 train_size = int(len(values) * 0.67) # Train on 67% test on 33%
 
-print_smth("Training set size (samples)", train_size)
-
+# Divide between train and test sets
 train = values[0:train_size,:]
 test  = values[train_size:len(values), :]
 
-# IMPORTANTE
-# Quedate con todo excepto la ultima columna que es la que se predice
-
+# train_x: gets  the first four columns month(t-1) | hour(t-1) | weekday (t-1) | free_bikes(t-1)
+# train_y: gets the last column free_bikes(t)
 train_x, train_y = train[:, :-1], train[:, -1]
-
-print_smth("HEHEHEEH", train_x)
-
 test_x, test_y   = test[:, :-1], test[:, -1]
 
-
-print_smth("Train X", train_x.shape)
-print_smth("Train Y", train_y.shape)
-print_smth("Test X", test_x.shape)
-print_smth("Test X", test_y.shape)
+print_smth("Train X", train_x.shape) # (..., 4)
+print_smth("Train Y", train_y.shape) # (..., )
+print_smth("Test X", test_x.shape)   # (..., 4)
+print_smth("Test X", test_y.shape)   # (..., 4)
 
 # reshape input to be [samples, time_steps, features]
-train_x = train_x.reshape((train_x.shape[0], 1, train_x.shape[1]))
-test_x  = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))
+train_x = train_x.reshape((train_x.shape[0], 1, train_x.shape[1])) # (...,1,4)
+test_x  = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))    # (...,1,4)
 
 print train_x.shape, train_y.shape, test_x.shape, test_y.shape
 
@@ -177,24 +176,19 @@ print train_x.shape, train_y.shape, test_x.shape, test_y.shape
 #--------------------------------------------------------------------------------
 lstm_neurons = 50
 batch_size   = 90
-epochs       = 50
+epochs       = 20
 
-# Training
+# Network definition
 #--------------------------------------------------------------------------------
 model = Sequential()
 model.add(LSTM(lstm_neurons, input_shape = (train_x.shape[1], train_x.shape[2])))
-print(train_x.shape[1], train_x.shape[2])
 model.add(Dense(train_x.shape[1]))
-
-model.compile(loss = 'mae', optimizer = 'adam', metrics = ['accuracy'])
-#model.compile(loss = 'binary_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
-
-print model.summary()
+model.compile(loss = 'mean_squared_error', optimizer = 'adam', metrics = ['accuracy'])
 
 history = model.fit(train_x, train_y, epochs = epochs, batch_size = batch_size, validation_data = (test_x, test_y), verbose = 2, shuffle = False)
 model.save('test_1.h5')
 
-print model.summary()
+print_smth("Model summary", model.summary())
 
 #--------------------------------------------------------------------------------
 # Make a prediction
@@ -203,36 +197,23 @@ print model.summary()
 min_y = min(history.history['loss'])
 max_y = max(history.history['loss'])
 
-# make a prediction
-yhat = model.predict(test_x)
+yhat   = model.predict(test_x)
 test_x = test_x.reshape((test_x.shape[0], test_x.shape[2]))
 # invert scaling for forecast
 inv_yhat = concatenate((test_x[:, :-1], yhat), axis=1)
-
-print_smth("inv_yhat concatenated", inv_yhat)
-
 inv_yhat = scaler.inverse_transform(inv_yhat)
-
-
-
-inv_yhat = inv_yhat[:,3].astype(int)
-print_smth("inv_yhat", inv_yhat)
-
-
+inv_yhat = inv_yhat[:,3].astype(int) # Cast as int, bikes are integer numbers...
+                                     # Only get the last column (predicted bikes)
 
 # invert scaling for actual
 test_y = test_y.reshape((len(test_y), 1))
 
-print_smth("test_y", test_y)
-print_smth("test_x", test_x[:, 1:])
-
+# Real values
 inv_y = concatenate((test_x[:, :-1], test_y), axis=1)
 inv_y = scaler.inverse_transform(inv_y)
+inv_y = inv_y[:,3].astype(int) # Cast as int, bikes are integer numbers...
+                               # Only get the last column (real bikes)
 
-
-
-inv_y = inv_y[:,3].astype(int)
-print_smth("inv_y", inv_y)
 # calculate RMSE
 rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
 print('Test RMSE: %.3f' % rmse)
@@ -241,25 +222,31 @@ print('Test RMSE: %.3f' % rmse)
 # Plot styling
 ################################################################################
 
-ax = plt.subplot(111)
+def prepare_plot(xlabel, ylabel, min_y, max_y):
 
-def prepare_plot():
     plt.figure(figsize=(12, 9))
+    ax = plt.subplot(111)
     ax = plt.axes(frameon=False)
 
     ax.spines["top"].set_visible(False)
     ax.spines["bottom"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_visible(False)
-
     ax.get_xaxis().tick_bottom()
     ax.get_yaxis().tick_left()
 
+
+    plt.xlabel(xlabel, color = 'silver')
+    plt.ylabel(ylabel, color = 'silver')
+
+    for y in numpy.linspace(min_y, max_y, 9):
+        plt.plot(range(0, epochs), [y] * len(range(0, epochs)), "--", lw=0.5, color="black", alpha=0.3)
+
 #--------------------------------------------------------------------------------
-# Loss
+# Loss Plot
 #--------------------------------------------------------------------------------
 
-prepare_plot()
+prepare_plot('epochs', 'loss', min_y, max_y)
 
 lines  = plt.plot(history.history['loss'], label = 'train', color = 'blue')
 lines += plt.plot(history.history['val_loss'], label = 'test', color = 'teal')
@@ -277,30 +264,26 @@ plt.text((len(history.history['val_loss']) - 1) * 1.005,
 texto = "RMSE " +  str('%.3f' % (rmse))  + " | Batch size " + str(batch_size) + " | Epochs " + str(epochs) + " | LSTM N " + str(lstm_neurons)
 plt.title(texto)
 
-x = history.history['loss']
 
-plt.xticks(numpy.arange(min(x), len(x), 1.0))
+
 plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
-
-for y in numpy.linspace(min_y, max_y, 9):
-    plt.plot(range(0, epochs), [y] * len(range(0, epochs)), "--", lw=0.5, color="black", alpha=0.3)
 
 plt.savefig("loss.png", bbox_inches="tight")
 plt.close()
 
-
 #--------------------------------------------------------------------------------
-# Accuracy
+# Accuracy Plot
 #--------------------------------------------------------------------------------
 
-prepare_plot()
+min_y = min(inv_y)
+max_y = max(inv_y)
+
+prepare_plot('samples', 'bikes', min_y, max_y)
+
 plt.title(texto)
-plt.setp(lines, linewidth=2)
+plt.setp(lines, linewidth=4)
 plt.plot(inv_yhat, color = 'teal')
 plt.plot(inv_y, label = 'inv_y', color = 'orange')
-#plt.plot(list(inv_yhat[:,3]))#, label = 'inv_yhat', color = 'aqua')
 plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
-
-
 
 plt.savefig("acc.png", bbox_inches="tight")
