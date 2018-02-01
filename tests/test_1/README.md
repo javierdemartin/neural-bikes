@@ -5,6 +5,7 @@
 Input for the nn:
 
 | month | hour | weekday | free\_bikes |
+|:-----:|:----:|:-------:|:-----------:|
 
 The only value that is predicted is `free_bikes` and only for one station (Zunzunegi in Bilbao), in further tests all the stations will be added.
 
@@ -25,5 +26,3 @@ Prediction has been rounded to `int` to approximate the values to real use cases
 ![Loss Plot](loss.png)
 
 > Loss Plot
-
-
