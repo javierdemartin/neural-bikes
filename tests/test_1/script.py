@@ -11,6 +11,7 @@
 
 from math import sqrt
 import numpy
+import pandas
 import matplotlib.pyplot as plt
 from numpy import concatenate
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OneHotEncoder
@@ -18,10 +19,17 @@ from sklearn.metrics import mean_squared_error
 from pandas import concat,DataFrame, read_csv
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, Activation
+from datetime import datetime
 from keras.utils import to_categorical
 
 # File to read from the data, in this case only one station is being analyzed
 fileName = 'Zunzunegi'
+
+stationToRead = 'ZUNZUNEGI'
+
+################################################################################
+# Classes and Functions
+################################################################################
 
 # Colorful prints in the terminal
 class col:
@@ -84,6 +92,27 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 	return agg
 
 
+def prepare_plot(xlabel, ylabel, min_y, max_y):
+
+    plt.figure(figsize=(12, 9))
+    ax = plt.subplot(111)
+    ax = plt.axes(frameon=False)
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+
+    plt.xlabel(xlabel, color = 'silver')
+    plt.ylabel(ylabel, color = 'silver')
+
+    for y in numpy.linspace(min_y, max_y, 9):
+        plt.plot(range(0, epochs), [y] * len(range(0, epochs)), "--", lw=0.5, color="black", alpha=0.3)
+
+
 ################################################################################
 # Data preparation
 ################################################################################
@@ -92,12 +121,49 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 # File reading, drop non-relevant columns and save it to a new file
 #--------------------------------------------------------------------------------
 
+df = pandas.DataFrame(columns = ['month', 'hour', 'weekday', 'id', 'station', 'free_bikes', 'free_docks'])
+
+i = 0
+
+with open('Bilbao.txt') as f:
+    for num, line in enumerate (f,1):
+        if stationToRead in line:
+
+            l = line.split(',')
+            d = datetime.strptime(l[0], "%Y/%m/%d %H:%M")
+            h = str(d.hour) + ":"
+
+            if d.minute < 10:
+                h +=  "0" + str(d.minute)
+            else:
+                h += str(d.minute)
+
+
+            df.loc[i] = [d.month,
+                        h,
+                        l[1],
+                        l[2],
+                        l[3],
+                        l[4],
+                        l[5].rstrip()]
+            # line = line.split(',' + stationToRead)[0] + line.split(',' + stationToRead)[1]
+            # print str(num) + " "+ line
+            i += 1
+
+print df
+
 dataset = read_csv(fileName + '.txt')
+
+print type(dataset)
+
+dataset = df
 
 print_smth("Read dataset without dropping columns", dataset.head())
 
 # Drop unwanted columns (bike station ID, bike station name...)
-dataset.drop(dataset.columns[[0,2,5,6,7]], axis = 1, inplace = True)
+#dataset.drop(dataset.columns[[0,2,5,6,7]], axis = 1, inplace = True)
+dataset.drop(dataset.columns[[2,3,5]], axis = 1, inplace = True)
+print_smth("Read ", dataset.head())
 dataset.columns = ['month','hour', 'weekday', 'free_bikes']
 # Save the dataset to a new file without the unwanted columns
 dataset.to_csv(fileName + '_parsed.txt')
@@ -178,6 +244,7 @@ lstm_neurons = 50
 batch_size   = 90
 epochs       = 20
 
+#--------------------------------------------------------------------------------
 # Network definition
 #--------------------------------------------------------------------------------
 model = Sequential()
@@ -189,6 +256,9 @@ history = model.fit(train_x, train_y, epochs = epochs, batch_size = batch_size, 
 model.save('test_1.h5')
 
 print_smth("Model summary", model.summary())
+
+from keras.utils import plot_model
+plot_model(model, to_file='model.png')
 
 #--------------------------------------------------------------------------------
 # Make a prediction
@@ -221,26 +291,6 @@ print('Test RMSE: %.3f' % rmse)
 ################################################################################
 # Plot styling
 ################################################################################
-
-def prepare_plot(xlabel, ylabel, min_y, max_y):
-
-    plt.figure(figsize=(12, 9))
-    ax = plt.subplot(111)
-    ax = plt.axes(frameon=False)
-
-    ax.spines["top"].set_visible(False)
-    ax.spines["bottom"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_visible(False)
-    ax.get_xaxis().tick_bottom()
-    ax.get_yaxis().tick_left()
-
-
-    plt.xlabel(xlabel, color = 'silver')
-    plt.ylabel(ylabel, color = 'silver')
-
-    for y in numpy.linspace(min_y, max_y, 9):
-        plt.plot(range(0, epochs), [y] * len(range(0, epochs)), "--", lw=0.5, color="black", alpha=0.3)
 
 #--------------------------------------------------------------------------------
 # Loss Plot
