@@ -128,10 +128,6 @@ dataset = dataset[dataset['station'].isin(["ZUNZUNEGI"])]
 dataset.drop(dataset.columns[[0,2,5,6,8]], axis = 1, inplace = True)
 dataset = dataset.reset_index(drop = True)
 
-print dataset
-
-
-
 #--------------------------------------------------------------------------------
 # Data reading
 #--------------------------------------------------------------------------------
@@ -204,7 +200,7 @@ print train_x.shape, train_y.shape, test_x.shape, test_y.shape
 # Parameters
 #--------------------------------------------------------------------------------
 lstm_neurons = 100
-batch_size   = 20
+batch_size   = 1000
 epochs       = 20
 
 #--------------------------------------------------------------------------------
@@ -267,14 +263,14 @@ lines += plt.plot(history.history['val_loss'], label = 'test', color = 'teal')
 plt.setp(lines, linewidth=2)
 
 plt.text((len(history.history['loss']) - 1) * 1.005,
-         history.history['loss'][len(history.history['loss']) - 1],
+         history.history['loss'][len(history.history['loss']) - 1] + 0.01,
          "Training Loss", color = 'blue')
 
 plt.text((len(history.history['val_loss']) - 1) * 1.005,
          history.history['val_loss'][len(history.history['val_loss']) - 1],
          "Validation Loss", color = 'teal')
 
-texto = "RMSE " +  str('%.3f' % (rmse))  + " | Batch size " + str(batch_size) + " | Epochs " + str(epochs) + " | LSTM N " + str(lstm_neurons)
+texto = "RMSE " +  str('%.3f' % (rmse))  + " | Batch size " + str(batch_size) + " | Epochs " + str(epochs) + " |  " + str(lstm_neurons) + " LSTM neurons"
 plt.title(texto)
 
 
