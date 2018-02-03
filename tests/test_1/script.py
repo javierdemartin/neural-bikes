@@ -68,16 +68,16 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 	"""
 
         n_vars = 1 if type(data) is list else data.shape[1]
-	df = DataFrame(data)
+	dataset = DataFrame(data)
 	cols, names = list(), list()
 	# input sequence (t-n, ... t-1)
 	for i in range(n_in, 0, -1):
-		cols.append(df.shift(i))
+		cols.append(dataset.shift(i))
         names += [(columns[j] + '(t-%d)' % (i)) for j in range(n_vars)]
 
 	# forecast sequence (t, t+1, ... t+n)
 	for i in range(0, n_out):
-		cols.append(df.shift(-i))
+		cols.append(dataset.shift(-i))
 		if i == 0:
 		    #names += [('var%d(t)' % (j+1)) for j in range(n_vars)]
                     names += [(columns[j] + '(t)') for j in range(n_vars)]
@@ -121,58 +121,21 @@ def prepare_plot(xlabel, ylabel, min_y, max_y):
 # File reading, drop non-relevant columns and save it to a new file
 #--------------------------------------------------------------------------------
 
-df = pandas.DataFrame(columns = ['month', 'hour', 'weekday', 'id', 'station', 'free_bikes', 'free_docks'])
+dataset = pandas.read_csv('Bilbao.txt')
+dataset.columns = ['year', 'month', 'day', 'hour', 'weekday', 'id', 'station', 'free_bikes', 'free_docks']
+# Only maintain rows for the analyzed station
+dataset = dataset[dataset['station'].isin(["ZUNZUNEGI"])]
+dataset.drop(dataset.columns[[0,2,5,6,8]], axis = 1, inplace = True)
+dataset = dataset.reset_index(drop = True)
 
-i = 0
-
-with open('Bilbao.txt') as f:
-    for num, line in enumerate (f,1):
-        if stationToRead in line:
-
-            l = line.split(',')
-            d = datetime.strptime(l[0], "%Y/%m/%d %H:%M")
-            h = str(d.hour) + ":"
-
-            if d.minute < 10:
-                h +=  "0" + str(d.minute)
-            else:
-                h += str(d.minute)
+print dataset
 
 
-            df.loc[i] = [d.month,
-                        h,
-                        l[1],
-                        l[2],
-                        l[3],
-                        l[4],
-                        l[5].rstrip()]
-            # line = line.split(',' + stationToRead)[0] + line.split(',' + stationToRead)[1]
-            # print str(num) + " "+ line
-            i += 1
-
-print df
-
-dataset = read_csv(fileName + '.txt')
-
-print type(dataset)
-
-dataset = df
-
-print_smth("Read dataset without dropping columns", dataset.head())
-
-# Drop unwanted columns (bike station ID, bike station name...)
-#dataset.drop(dataset.columns[[0,2,5,6,7]], axis = 1, inplace = True)
-dataset.drop(dataset.columns[[2,3,5]], axis = 1, inplace = True)
-print_smth("Read ", dataset.head())
-dataset.columns = ['month','hour', 'weekday', 'free_bikes']
-# Save the dataset to a new file without the unwanted columns
-dataset.to_csv(fileName + '_parsed.txt')
 
 #--------------------------------------------------------------------------------
 # Data reading
 #--------------------------------------------------------------------------------
 
-dataset = read_csv(fileName + '_parsed.txt', header=0, index_col = 0)
 values  = dataset.values
 
 # 4 columns (month, hour, weekday, free_bikes)
@@ -211,7 +174,7 @@ values = reframed.values
 
 print_smth("Reframed dataset without columns that are not going to be predicted", reframed.head())
 
-train_size = int(len(values) * 0.67) # Train on 67% test on 33%
+train_size = int(len(values) * 0.8) # Divide the set into training and test sets
 
 # Divide between train and test sets
 train = values[0:train_size,:]
@@ -240,8 +203,8 @@ print train_x.shape, train_y.shape, test_x.shape, test_y.shape
 #--------------------------------------------------------------------------------
 # Parameters
 #--------------------------------------------------------------------------------
-lstm_neurons = 50
-batch_size   = 90
+lstm_neurons = 100
+batch_size   = 20
 epochs       = 20
 
 #--------------------------------------------------------------------------------
@@ -305,11 +268,11 @@ plt.setp(lines, linewidth=2)
 
 plt.text((len(history.history['loss']) - 1) * 1.005,
          history.history['loss'][len(history.history['loss']) - 1],
-         "loss", color = 'blue')
+         "Training Loss", color = 'blue')
 
 plt.text((len(history.history['val_loss']) - 1) * 1.005,
          history.history['val_loss'][len(history.history['val_loss']) - 1],
-         "val_loss", color = 'teal')
+         "Validation Loss", color = 'teal')
 
 texto = "RMSE " +  str('%.3f' % (rmse))  + " | Batch size " + str(batch_size) + " | Epochs " + str(epochs) + " | LSTM N " + str(lstm_neurons)
 plt.title(texto)
