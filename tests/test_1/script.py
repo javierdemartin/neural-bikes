@@ -22,10 +22,7 @@ from keras.layers import Dense, LSTM, Activation
 from datetime import datetime
 from keras.utils import to_categorical
 
-# File to read from the data, in this case only one station is being analyzed
-fileName = 'Zunzunegi'
-
-stationToRead = 'ZUNZUNEGI'
+stationToRead = 'AYUNTAMIENTO'
 
 ################################################################################
 # Classes and Functions
@@ -109,8 +106,8 @@ def prepare_plot(xlabel, ylabel, min_y, max_y):
     plt.xlabel(xlabel, color = 'silver')
     plt.ylabel(ylabel, color = 'silver')
 
-    for y in numpy.linspace(min_y, max_y, 9):
-        plt.plot(range(0, epochs), [y] * len(range(0, epochs)), "--", lw=0.5, color="black", alpha=0.3)
+    # for y in numpy.linspace(min_y, max_y, 9):
+    #     plt.plot(range(0, epochs), [y] * len(range(0, epochs)), "--", lw=0.5, color="black", alpha=0.3)
 
 
 ################################################################################
@@ -122,9 +119,13 @@ def prepare_plot(xlabel, ylabel, min_y, max_y):
 #--------------------------------------------------------------------------------
 
 dataset = pandas.read_csv('Bilbao.txt')
+print dataset.head()
 dataset.columns = ['year', 'month', 'day', 'hour', 'weekday', 'id', 'station', 'free_bikes', 'free_docks']
 # Only maintain rows for the analyzed station
-dataset = dataset[dataset['station'].isin(["ZUNZUNEGI"])]
+dataset = dataset[dataset['station'].isin([stationToRead])]
+
+print dataset.head()
+
 dataset.drop(dataset.columns[[0,2,5,6,8]], axis = 1, inplace = True)
 dataset = dataset.reset_index(drop = True)
 
@@ -170,27 +171,34 @@ values = reframed.values
 
 print_smth("Reframed dataset without columns that are not going to be predicted", reframed.head())
 
-train_size = int(len(values) * 0.8) # Divide the set into training and test sets
+train_size      = int(len(values) * 0.70) # Divide the set into training and test sets
+evaluation_size = int(len(values) * 0.1)
+test_size       = int(len(values) * 0.20)
 
 # Divide between train and test sets
-train = values[0:train_size,:]
-test  = values[train_size:len(values), :]
+train      = values[0:train_size,:]
+test       = values[train_size:train_size + test_size, :]
+evaluation = values[train_size + test_size:len(values), :]
 
 # train_x: gets  the first four columns month(t-1) | hour(t-1) | weekday (t-1) | free_bikes(t-1)
 # train_y: gets the last column free_bikes(t)
 train_x, train_y = train[:, :-1], train[:, -1]
 test_x, test_y   = test[:, :-1], test[:, -1]
+evaluation_x, evaluation_y = evaluation[:, :-1], evaluation[:, -1]
 
 print_smth("Train X", train_x.shape) # (..., 4)
 print_smth("Train Y", train_y.shape) # (..., )
 print_smth("Test X", test_x.shape)   # (..., 4)
 print_smth("Test X", test_y.shape)   # (..., 4)
+print_smth("Evaluation X", evaluation_x.shape)   # (..., 4)
+print_smth("Evaluation X", evaluation_y.shape)   # (..., 4)
 
 # reshape input to be [samples, time_steps, features]
 train_x = train_x.reshape((train_x.shape[0], 1, train_x.shape[1])) # (...,1,4)
 test_x  = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))    # (...,1,4)
+evaluation_x  = evaluation_x.reshape((evaluation_x.shape[0], 1, evaluation_x.shape[1]))    # (...,1,4)
 
-print train_x.shape, train_y.shape, test_x.shape, test_y.shape
+print train_x.shape, train_y.shape, test_x.shape, test_y.shape, evaluation_x.shape, evaluation_y.shape
 
 ################################################################################
 # Neural Network
@@ -199,9 +207,9 @@ print train_x.shape, train_y.shape, test_x.shape, test_y.shape
 #--------------------------------------------------------------------------------
 # Parameters
 #--------------------------------------------------------------------------------
-lstm_neurons = 100
-batch_size   = 1000
-epochs       = 20
+lstm_neurons = 200
+batch_size   = 800
+epochs       = 15
 
 #--------------------------------------------------------------------------------
 # Network definition
@@ -227,6 +235,9 @@ min_y = min(history.history['loss'])
 max_y = max(history.history['loss'])
 
 yhat   = model.predict(test_x)
+
+print_smth("test_x", test_x)
+
 test_x = test_x.reshape((test_x.shape[0], test_x.shape[2]))
 # invert scaling for forecast
 inv_yhat = concatenate((test_x[:, :-1], yhat), axis=1)
@@ -248,6 +259,17 @@ rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
 print('Test RMSE: %.3f' % rmse)
 
 ################################################################################
+# Network Evaluation
+################################################################################
+
+# Evaluate the network once is trained, do so with new data (evaluation set)
+
+loss, accuracy = model.evaluate(evaluation_x, evaluation_y)
+
+print loss, accuracy
+
+
+################################################################################
 # Plot styling
 ################################################################################
 
@@ -257,31 +279,56 @@ print('Test RMSE: %.3f' % rmse)
 
 prepare_plot('epochs', 'loss', min_y, max_y)
 
-lines  = plt.plot(history.history['loss'], label = 'train', color = 'blue')
-lines += plt.plot(history.history['val_loss'], label = 'test', color = 'teal')
+lines  = plt.plot(history.history['loss'], label = 'train', color = '#458DE1')
+lines += plt.plot(history.history['val_loss'], label = 'test', color = '#80C797')
 
 plt.setp(lines, linewidth=2)
 
 plt.text((len(history.history['loss']) - 1) * 1.005,
          history.history['loss'][len(history.history['loss']) - 1] + 0.01,
-         "Training Loss", color = 'blue')
+         "Training Loss", color = '#458DE1')
 
 plt.text((len(history.history['val_loss']) - 1) * 1.005,
          history.history['val_loss'][len(history.history['val_loss']) - 1],
-         "Validation Loss", color = 'teal')
+         "Validation Loss", color = '#80C797')
 
 texto = "RMSE " +  str('%.3f' % (rmse))  + " | Batch size " + str(batch_size) + " | Epochs " + str(epochs) + " |  " + str(lstm_neurons) + " LSTM neurons"
-plt.title(texto)
-
-
-
+plt.title(texto,color="black", alpha=0.3)
 plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
 
-plt.savefig("loss.png", bbox_inches="tight")
+plt.savefig("plots/loss.png", bbox_inches="tight")
 plt.close()
 
 #--------------------------------------------------------------------------------
 # Accuracy Plot
+#--------------------------------------------------------------------------------
+
+
+
+prepare_plot('epoc', 'accuracy', min_y, max_y)
+
+plt.title(texto,color="black", alpha=0.3)
+
+lines = plt.plot(history.history['acc'], color = '#458DE1')
+lines += plt.plot(history.history['val_acc'], color = '#80C797')
+
+plt.setp(lines, linewidth=3)
+
+
+plt.text((len(history.history['acc']) - 1) * 1.005,
+         history.history['acc'][len(history.history['loss']) - 1],
+         "Training Accuracy", color = '#458DE1')
+
+plt.text((len(history.history['val_acc']) - 1) * 1.005,
+         history.history['val_acc'][len(history.history['val_loss']) - 1],
+         "Validation Accuracy", color = '#80C797')
+
+plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
+plt.savefig("plots/acc.png", bbox_inches="tight")
+plt.close()
+
+#--------------------------------------------------------------------------------
+# Training Plot
 #--------------------------------------------------------------------------------
 
 min_y = min(inv_y)
@@ -289,10 +336,21 @@ max_y = max(inv_y)
 
 prepare_plot('samples', 'bikes', min_y, max_y)
 
-plt.title(texto)
-plt.setp(lines, linewidth=4)
-plt.plot(inv_yhat, color = 'teal')
-plt.plot(inv_y, label = 'inv_y', color = 'orange')
+plt.title(texto,color="black", alpha=0.3)
+
+lines = plt.plot(inv_yhat, color = '#458DE1')
+lines += plt.plot(inv_y, label = 'inv_y', color = '#80C797')
+plt.setp(lines, linewidth=2)
+
+
+plt.text((len(inv_yhat) - 1) * 1.005,
+         inv_yhat[len(inv_yhat) - 1],
+         "Training set", color = '#458DE1')
+
+plt.text((len(inv_y) - 1) * 1.005,
+         inv_y[len(inv_y) - 1],
+         "Predicted set", color = '#80C797')
+
 plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
 
-plt.savefig("acc.png", bbox_inches="tight")
+plt.savefig("plots/train.png", bbox_inches="tight")
