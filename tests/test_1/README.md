@@ -17,12 +17,16 @@ The only value that is predicted is `free_bikes` and only for one station (Zunzu
 
 ## Plots & Results
 
-![Accuracy Plot](acc.png)
+![Accuracy Plot](plots/acc.png)
 
 > Accuracy Plot
 
 Prediction has been rounded to `int` to approximate the values to real use cases, bikes are integers not floats. If the value is not rounded and left as a `float` the RMSE increases a bit but it's not a great improvement.
 
-![Loss Plot](loss.png)
+![Loss Plot](plots/loss.png)
 
 > Loss Plot using as loss = 'mean\_squared\_error' when compiling the model
+
+![Prediction](plots/train.png)
+
+> Predicted and real values
