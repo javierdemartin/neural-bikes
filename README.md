@@ -10,11 +10,7 @@ _Data hoarding_ bike availability for some cities, in hopes of trainign a ML mod
 
 * [Link](https://github.com/javierdemartin/neural-bikes/tree/master/tests/test_1)
 
-### Test 2
-
-In progres
-
-### Test 2
+Plain vanilla neural net with minimal data used to predict availability.
 
 In progress
 
