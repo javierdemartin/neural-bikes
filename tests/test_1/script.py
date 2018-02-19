@@ -22,7 +22,7 @@ from keras import optimizers
 from keras.layers import Dense, LSTM, Activation
 from datetime import datetime
 
-stationToRead = 'ZUNZUNEGI'
+stationToRead = 'IRALA'
 is_in_debug = False
 
 ################################################################################
@@ -238,8 +238,8 @@ print col.HEADER + "Neural Network definition" + col.ENDC
 # Parameters
 #--------------------------------------------------------------------------------
 lstm_neurons = 100
-batch_size   = 100
-epochs       = 10
+batch_size   = 200
+epochs       = 20
 
 #--------------------------------------------------------------------------------
 # Network definition
@@ -397,8 +397,8 @@ print col.HEADER + "> Training plot saved" + col.ENDC
 ################################################################################
 
 # Initial input parameters
-date       =  datetime.strptime("2018/02/14 08:20", '%Y/%m/%d %H:%M')
-free_bikes = 14
+date       =  datetime.strptime("2018/02/19 09:50", '%Y/%m/%d %H:%M')
+free_bikes = 16
 weekday    = date.strftime('%A').upper()
 
 values = numpy.array([date, weekday, free_bikes])
@@ -413,9 +413,6 @@ values[0][0] = values[0][0].timetuple().tm_yday
 
 
 def inverseMovidas(valos):
-    print ">>>>>", valos
-
-    # dataset['datetime'] = [datetime.strptime(x, '%Y/%m/%d %H:%M').timetuple().tm_yday for x in values[:,0]]
 
     valos[1] = hour_encoder.inverse_transform(valos[1])
     valos[2] = weekday_encoder.inverse_transform(valos[2]) # Encode HOUR as int
@@ -428,12 +425,9 @@ def inverseMovidas(valos):
 def predict_given(values):
 
     if isinstance(values, list) == True:
-        print("HEHEH CAMBIA")
         values = numpy.asarray(values)
 
     print ">>>>>>>>>>>>>>>", values
-
-    print type(values[0])
 
     values[:,1] = hour_encoder.transform(values[:,1]) # Encode HOUR as an integer value
     values[:,2] = weekday_encoder.transform(values[:,2]) # Encode HOUR as int
@@ -441,7 +435,6 @@ def predict_given(values):
 
     scaled = scaler.transform(values)
     scaled = scaled.reshape((scaled.shape[0], 1, scaled.shape[1]))    # (...,1,4)
-
 
     bikes = model.predict(scaled)
     bikes = bikes.reshape((len(bikes), 1))
@@ -451,22 +444,25 @@ def predict_given(values):
     values = concatenate((scaled[:,:-1], bikes), axis=1)
     values = scaler.inverse_transform(values)
 
+    values[0][1] += 1 # increase a time interval (5 minutes)
 
     values = map(int, values[0]) # Cast as int all the values
 
-    values[1] += 1 # increase a time interval (5 minutes)
+    print values[1]
 
     return [values]
 
 
+for i in range(0,10): 
 
-aaaa = predict_given(values)
+    aaaa = predict_given(values)
+
+    values = inverseMovidas(aaaa[0])
+
+    aaaa = []
+
+# aaaa = predict_given(valos)
 
 
-valos = inverseMovidas(aaaa[0])
-
-aaaa = predict_given(valos)
-
-
-valos = inverseMovidas(aaaa[0])
+# valos = inverseMovidas(aaaa[0])
 
