@@ -14,5 +14,5 @@
 
 ![Loss Plot](plots/loss.png)
 
-![Predicted Set](plots(plots/train.png)
+![Predicted Set](plots/train.png)
 
