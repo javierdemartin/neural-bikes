@@ -2,7 +2,8 @@
 #
 # Summary
 #-------------------------------------------------------------------------------
-# Import the data and witouth doing any transformation predict
+# Import data and categorize the bikes, change LSTM layers' settings
+# Doesn't predict well, it learns the values and repeats the previous interval
 
 ################################################################################
 # Libraries and Imports
@@ -163,13 +164,12 @@ values  = dataset.values
 
 print_smth("Dataset with unwanted columns removed", dataset.head())
 
-print_smth("AHSAHSAH", values)
-
 #--------------------------------------------------------------------------------
 #-- Data encoding ---------------------------------------------------------------
 #
 # Integer encode day of the year and hour and normalize the columns
 #--------------------------------------------------------------------------------
+
 
 hour_encoder     = LabelEncoder()                     # Encode columns that are not numbers
 weekday_encoder     = LabelEncoder()                     # Encode columns that are not numbers
@@ -181,26 +181,19 @@ max_bikes = max(values[:,3])
 
 values      = values.astype('float32')           # Convert al values to floats
 
-print_smth("PRESCALED", values)
+print_smth("Prescaled values", values)
 print values.shape
-
 
 oneHot = to_categorical(values[:,3])
 
 values = values[:,:-1]
-
-print_smth("DEDEDEDE", values)
 
 scaler = MinMaxScaler(feature_range=(0,1))  # Normalize values
 scaled = scaler.fit_transform(values)
 
 print_smth("Deleted column", scaled)
 
-print oneHot
-print oneHot.shape
-
 scaled = numpy.append(scaled, oneHot, axis = 1)
-
 
 print_smth("Dataset with normalized values", scaled)
 
@@ -208,9 +201,11 @@ print_smth("Dataset with normalized values", scaled)
 # Generate the columns list for the supervised transformation
 #--------------------------------------------------------------------------------
 
+
 # Columns names for the transformation from time series to supervised learning
 columns = ['doy', 'time', 'weekday']
 
+# Generate same number of columns for the categorization problem as bikes are in this station
 for i in range(0, max_bikes + 1):
     columns.append(str(i) + '_free_bikes')
 
@@ -226,15 +221,11 @@ values = reframed.values
 
 print_smth("Reframed dataset without columns that are not going to be predicted", reframed.head())
 
-train_size, test_size, prediction_size = int(len(values) * 0.75) , int(len(values) * 0.2), int(len(values) * 0.05)
+train_size, test_size, prediction_size = int(len(values) * 0.60) , int(len(values) * 0.35), int(len(values) * 0.05)
 
 # Divide between train and test sets
 train, test, prediction = values[0:train_size,:], values[train_size:train_size + test_size, :], values[train_size + test_size:train_size + test_size + prediction_size, :]
 
-# train_x: gets  the first four columns month(t-1) | hour(t-1) | weekday (t-1) | free_bikes(t-1)
-# train_y: gets the last column free_bikes(t)
-
-#TODO: Arreglar esto
 train_x, train_y           = train[:,range(0,21+3)], train[:,range(24,24+21)]
 test_x, test_y             = test[:,range(0,21+3)], test[:,range(24,24+21)]
 prediction_x, prediction_y = prediction[:,range(0,21+3)], prediction[:,range(24,24+21)]
@@ -247,6 +238,8 @@ print_smth("TRAIN_X ", train_x)
 print_smth("TRAIN_Y ", train_y)
 print_smth("TEST_X ", test_x)
 print_smth("TEST_Y ", test_y)
+print_smth("PREDICTION_X ", prediction_x)
+print_smth("PREDICTION_Y ", prediction_y)
 
 # reshape input to be [samples, time_steps, features]
 train_x = train_x.reshape((train_x.shape[0], 1, train_x.shape[1])) # (...,1,4)
@@ -264,18 +257,19 @@ print col.HEADER + "Neural Network definition" + col.ENDC
 #--------------------------------------------------------------------------------
 # Parameters
 #--------------------------------------------------------------------------------
-lstm_neurons = 50
-batch_size   = 100
+lstm_neurons = 100
+batch_size   = 400
 epochs       = 10
 
 #--------------------------------------------------------------------------------
 # Network definition
 #--------------------------------------------------------------------------------
 model = Sequential()
+# model.add(LSTM(lstm_neurons, input_shape = (train_x.shape[1], train_x.shape[2]), stateful = True))
 model.add(LSTM(lstm_neurons, input_shape = (train_x.shape[1], train_x.shape[2])))
 model.add(Dense(21, activation='softmax'))
 # model.add(Activation('softmax'))
-model.compile(loss = 'binary_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
+model.compile(loss = 'categorical_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
 
 # model.compile(loss = 'mean_squared_error', optimizer = 'adam', metrics = ['accuracy'])
 
@@ -431,6 +425,7 @@ plt.text((len(inv_y) - 1) * 1.005,
 plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
 
 plt.savefig("plots/train.png", bbox_inches="tight")
+plt.show()
 plt.close()
 print col.HEADER + "> Training plot saved" + col.ENDC
 
@@ -462,14 +457,10 @@ prediction_x = [map(int, i) for i in prediction_x]
 prediction_x = concatenate((prediction_x, real_bikes), axis = 1)
 
 
-
-# Look for the day
-# for days in prediction_x:
-#     print days
-
-datos_reales = []
+datos_reales = [] # Data for a whole day of availability
 bicis_reales = []
 
+# Find the day we're trying to predict inside the prediction_x set
 for element in prediction_x:
 
     if element[0] == date:
@@ -480,53 +471,43 @@ for element in prediction_x:
 # Predict values 
 #--------------------------------------------------------------------------------
 
-bikes_to_predict = datos_reales[0][3] # Only the first value is going to be real
+already_set = False
 
-to_plot = []
+to_plot = [] # Number of predicted bikes through the day 
 
 for time in datos_reales:
 
-    aux = [time[:-1]] # Remove the last column (free_bikes) and append the previously predicted value
+    if already_set == False:
+        bikes_to_predict = time[3]
+        already_set = True
+        print "Seet"
 
-    print col.yellow, time, col.ENDC
+    rr = time[3]
 
-    print ">>>>>", aux, bikes_to_predict
+    aux = scaler.transform([time[:-1]]) # Remove the last column (free_bikes) and append the previously predicted value
 
     bikes_to_predict = to_categorical(bikes_to_predict, max_bikes + 1)
-    bikes_to_predict = [bikes_to_predict]
-    bikes_to_predict = numpy.asarray(bikes_to_predict)
+    bikes_to_predict = numpy.asarray([bikes_to_predict])
 
-    aux = scaler.transform(aux)
-
-    # print aux, bikes_to_predict
-
-    aux = aux.reshape((aux.shape[0], 1, aux.shape[1]))    # (...,1,4)
+    aux              = aux.reshape((aux.shape[0], 1, aux.shape[1]))    # (...,1,4)
     bikes_to_predict = bikes_to_predict.reshape((bikes_to_predict.shape[0], 1, bikes_to_predict.shape[1]))    # (...,1,4)
-
-    # print aux, bikes_to_predict
-    # print aux.shape, bikes_to_predict.shape
 
     aux = [[numpy.append(aux, bikes_to_predict)]]
     aux = numpy.asarray(aux)
 
-    # time = time.reshape((time.shape[0], 1, time.shape[1]))    # (...,1,4)
-    
-    # print aux
+    bikes_to_predict = model.predict(aux)
+    bikes_to_predict = argmax(bikes_to_predict)
 
-    predicted_result = model.predict(aux)
+    aux = aux[0][:,[0,1,2]]
+    aux = scaler.inverse_transform(aux)[0]
+    aux = aux.astype('int')    
 
-    bikes_to_predict = argmax(predicted_result)
+    hour    =  hour_encoder.inverse_transform(aux[1]) # Encode HOUR as an integer value
+    weekday = weekday_encoder.inverse_transform(aux[2]) # Encode HOUR as int
 
-    print col.FAIL, predicted_result, col.ENDC
-
-    print col.green, "[og] ", aux, col.ENDC, bikes_to_predict
-
-    # bikes_to_predict = time[:,range(3 + max_bikes + 3)]
-    # bikes_to_predict = argmax(bikes_to_predict)
+    # print col.blue, hour, bikes_to_predict, col.yellow, rr, col.ENDC
 
     to_plot.append(bikes_to_predict)
-
-    # set bikes_to_predict
 
 print to_plot
 
@@ -537,19 +518,17 @@ print to_plot
 prepare_plot('time', 'bikes', min(bicis_reales), max(bicis_reales))
 plt.title(texto,color="black", alpha=0.3)
 lines = plt.plot(bicis_reales, color = '#458DE1')
-lines += plt.plot(to_plot, color = '#D905A1')
+lines += plt.plot(to_plot, color = '#80C797')
 
 plt.text((len(bicis_reales) - 1) * 1.005,
          bicis_reales[len(bicis_reales) - 1],
          "Real Availability", color = '#458DE1')
 
+plt.text((len(to_plot) - 1) * 1.005,
+         to_plot[len(to_plot) - 1],
+         "Predicted Availability", color = '#80C797')
+
 plt.setp(lines, linewidth=2)
 plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
 plt.savefig("plots/predicted.png", bbox_inches="tight")
 plt.close()
-
-
-
-
-
-
