@@ -1,19 +1,20 @@
-![Neural Bikes](resources/neural-bikes_logo.png)
+<p align="center">
+  <img width="250" height="" src="resources/neural-bikes_logo.png">
+</p>
 
 # ML predictions for Bike sharing services
 
-_Data hoarding_ bike availability for some cities, in hopes of trainign a ML model to predict availability for each station.
+Trainign a ML model to predict availability for each station.
 
 ## Tests
 
-### Test 1
+Until the neural network is fully functional, I am working adding new tests I am performing on the [`tests`](https://github.com/javierdemartin/neural-bikes/tree/master/tests) folder.
 
-* [Link](https://github.com/javierdemartin/neural-bikes/tree/master/tests/test_1)
+## Where does the data come from?
 
-Plain vanilla neural net with minimal data used to predict availability.
+Most cities have Open Data portals like the one in [Bilbao](https://www.bilbao.eus/opendata/es/inicio). You can get a lot of information from there but unluckily what you need to train a neural network is a historic of data not real time data. I kind of solved this by gathering the data by myself.
 
-In progress
 
-## Uses
+### What is this for?
 
-An iOS app (mine) currently uses the data, [Bicis](https://itunes.apple.com/es/app/bicis-bilbon-bizi/id1275889928?mt=8).
+I am an iOS developer of [Bicis](https://itunes.apple.com/es/app/bicis-bilbon-bizi/id1275889928?mt=8). It makes predictions of the bike availability for each day of the week, they are not as precise as they could be. My plan is to make those predictions using `neural-bikes` so they improve.
