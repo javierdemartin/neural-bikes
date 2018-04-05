@@ -25,8 +25,13 @@ from datetime import datetime
 import datetime
 from numpy import argmax
 
+################################################################################
+# Global Variables
+################################################################################
+
 stationToRead = 'ZUNZUNEGI'
 is_in_debug = True
+weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
 ################################################################################
 # Classes and Functions
@@ -140,6 +145,7 @@ print "\__/\___/____/\__/   /____/  ", col.ENDC
 ################################################################################
 # Data preparation
 ################################################################################
+
 print col.HEADER + "Data reading and preparation" + col.ENDC
 
 #--------------------------------------------------------------------------------
@@ -223,7 +229,7 @@ for i in range(0, max_bikes + 1):
 print columns
 print len(columns)
 
-n_in = 20
+n_in = 15
 n_out = 1
 
 reframed = series_to_supervised(columns, scaled, n_in, n_out)
@@ -278,9 +284,9 @@ print col.HEADER + "Neural Network definition" + col.ENDC
 #--------------------------------------------------------------------------------
 # Parameters
 #--------------------------------------------------------------------------------
-lstm_neurons = 50
+lstm_neurons = 100
 batch_size   = 500
-epochs       = 100
+epochs       = 30
 
 #--------------------------------------------------------------------------------
 # Network definition
@@ -613,13 +619,14 @@ print col.HEADER + "> Training plot saved" + col.ENDC
 # Predictron
 ################################################################################
 
-# Makes future predictions by doing iterations, it depends on the timesteps
+# Makes future predictions by doing iterations, takes some real initial samples
+# makes a prediction and then uses the prediction to predict
 
 print col.BOLD, "\n\n------------------------------------------------------------------------"
 print "Predicting a whole day of availability"
 print "------------------------------------------------------------------------\n\n", col.ENDC
 
-weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+
 
 today   = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday = weekdays[datetime.datetime.today().weekday()]
@@ -664,18 +671,27 @@ print data2, data2.shape
 
 data2 = data2.reshape((data2.shape[0], n_in, max_cases +3)) # (...,1,4)
 
-print data2, data2.shape
+# print data2, data2.shape
 
 data_predicted = []
 
 
-for i in range(0,200):
+for i in range(0,280):
 
-    print col.BOLD, ">>> Prediction n." + str(i), col.ENDC
+    print col.FAIL, ">>> Prediction n." + str(i), col.ENDC
+
+    aux = data2[0][:,range(0, 3)][0]
+
+    # print_smth("data2", aux) # Get the first sample of the input
+
+    aux2 = scaler.inverse_transform([aux])
+    hora = hour_encoder.inverse_transform(aux2[:,1].astype(int))[0] # Encode HOUR as an integer value
+    print "-----------"
 
     pred =  model.predict(data2)
 
-    print "$$ Predicted", pred, argmax(pred)
+    print "Predichas ", argmax(pred), " bicis a las ", hora
+
 
     data_predicted.append(argmax(pred))
 
@@ -692,7 +708,7 @@ for i in range(0,200):
     data2 = numpy.append(data2, [data_in], axis = 1)
     data2 = data2.reshape((data2.shape[0], n_in, max_cases +3)) # (...,1,4)
 
-    print ">>>>> ", data2, data2.shape
+    # print ">>>>> ", data2, data2.shape
 
 
 
