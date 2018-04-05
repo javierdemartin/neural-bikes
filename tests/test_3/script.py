@@ -33,6 +33,10 @@ stationToRead = 'ZUNZUNEGI'
 is_in_debug = True
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
+lstm_neurons = 100
+batch_size   = 20
+epochs       = 10
+
 ################################################################################
 # Classes and Functions
 ################################################################################
@@ -229,7 +233,7 @@ for i in range(0, max_bikes + 1):
 print columns
 print len(columns)
 
-n_in = 15
+n_in = 100
 n_out = 1
 
 reframed = series_to_supervised(columns, scaled, n_in, n_out)
@@ -246,7 +250,13 @@ print_smth("Reframed dataset without columns that are not going to be predicted"
 
 print reframed.columns
 
+
 train_size, test_size, prediction_size = int(len(values) * 0.65) , int(len(values) * 0.3), int(len(values) * 0.05)
+
+train_size = int(int(train_size / batch_size) * batch_size) 
+test_size = int(int(test_size / batch_size) * batch_size) 
+prediction_size = int(int(prediction_size / batch_size) * batch_size) 
+
 
 # Divide between train and test sets
 train, test, prediction = values[0:train_size,:], values[train_size:train_size + test_size, :], values[train_size + test_size:train_size + test_size + prediction_size, :]
@@ -255,6 +265,31 @@ train, test, prediction = values[0:train_size,:], values[train_size:train_size +
 output_vals = range(n_in * (max_cases + 3),n_in * (max_cases + 3) + n_out * max_cases)
 
 print(output_vals)
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+
+# data_size = int(len(values))
+# train_size_initial = int(data_size * train_size)
+# x_samples = values[-data_size:, :]
+
+# if train_size_initial < batch_size_div:
+#     batch_size = 1
+# else:
+#     batch_size = int(train_size_initial / batch_size_div)
+# train_size = int(int(train_size_initial / batch_size) * batch_size)  # provide even division of training / batches
+# val_size = int(int((data_size - train_size) / batch_size) * batch_size)  # provide even division of val / batches
+# print('Data Size: {}  Train Size: {}   Batch Size: {}'.format(data_size, train_size, batch_size))
+
+# train, val = x_samples[0:train_size, 0:-1], x_samples[train_size:train_size + val_size, 0:-1]
+
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+
+
 
 train_x, train_y           = train[:,range(0,(max_cases+3) * n_in)], train[:,output_vals]
 test_x, test_y             = test[:,range(0,(max_cases+3) * n_in)], test[:,output_vals]
@@ -273,6 +308,13 @@ train_x = train_x.reshape((train_x.shape[0], n_in, max_cases +3)) # (...,1,4)
 test_x  = test_x.reshape((test_x.shape[0], n_in, max_cases +3))    # (...,1,4)
 prediction_x  = prediction_x.reshape((prediction_x.shape[0], n_in, max_cases +3))    # (...,1,4)
 
+print_array("TRAIN_X 2 ", train_x)
+print_array("TRAIN_Y 2 ", train_y)
+print_array("TEST_X 2 ", test_x)
+print_array("TEST_Y 2 ", test_y)
+print_array("PREDICTION_X 2 ", prediction_x)
+print_array("PREDICTION_Y 2 ", prediction_y)
+
 print col.blue, "[Dimensions]> ", "Train X ", train_x.shape, "Train Y ", train_y.shape, "Test X ", test_x.shape, "Test Y ", test_y.shape, "Prediction X", prediction_x.shape, "Prediction Y", prediction_y.shape, col.ENDC
 
 ################################################################################
@@ -284,20 +326,23 @@ print col.HEADER + "Neural Network definition" + col.ENDC
 #--------------------------------------------------------------------------------
 # Parameters
 #--------------------------------------------------------------------------------
-lstm_neurons = 100
-batch_size   = 500
-epochs       = 30
+# lstm_neurons = 100
+# batch_size   = 50
+# epochs       = 10
+
 
 #--------------------------------------------------------------------------------
 # Network definition
 #--------------------------------------------------------------------------------
 model = Sequential()
-model.add(LSTM(lstm_neurons, input_shape = (train_x.shape[1], train_x.shape[2])))
+# model.add(LSTM(lstm_neurons, input_shape = (train_x.shape[1], train_x.shape[2]), return_sequences = False, stateful = False))
+model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), return_sequences=False, stateful=True))
 model.add(Dense(max_cases * n_out, activation='softmax'))
 model.compile(loss = 'categorical_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
 
+
 history = model.fit(train_x, train_y, epochs = epochs, batch_size = batch_size, 
-    validation_data = (test_x, test_y), verbose = 2, shuffle = False)
+    validation_data = (test_x, test_y), verbose = 2, shuffle = True)
 
 model.save('test_3.h5')
 
@@ -311,7 +356,7 @@ print col.HEADER + "> Saved model shape to an image" + col.ENDC
 min_y = min(history.history['loss'])
 max_y = max(history.history['loss'])
 
-yhat   = model.predict(test_x)
+yhat   = model.predict(test_x, batch_size = batch_size)
 
 #-----------------------------------
 
@@ -480,7 +525,7 @@ print col.HEADER + "> Training plot saved" + col.ENDC
 
 print_array("Prediction IN", prediction_x)
 
-yhat   = model.predict(prediction_x)
+yhat   = model.predict(prediction_x, batch_size = batch_size)
 
 print_array("Prediction OUT", yhat)
 
@@ -627,6 +672,11 @@ print "Predicting a whole day of availability"
 print "------------------------------------------------------------------------\n\n", col.ENDC
 
 
+print_smth("test_x", test_x)
+
+print_smth("test_x[0]", test_x[0])
+
+print_smth("test_x[0][0]", test_x[0][0])
 
 today   = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday = weekdays[datetime.datetime.today().weekday()]
@@ -665,18 +715,30 @@ if n_in > 1:
         data2 = numpy.append(data2, [data_in], axis = 1)
 
 
-print data2, data2.shape
-
-
-
 data2 = data2.reshape((data2.shape[0], n_in, max_cases +3)) # (...,1,4)
+
+print_array("Data2",  data2)
+
+auxxx = data2
+
+
+for i in range(batch_size - 1):
+    # print i
+    data2 = numpy.append(data2, auxxx, axis = 1)    
+
+    print_array("Data2 " + str(i),  data2)
+
+
+
+data2 = data2.reshape((batch_size, n_in, max_cases +3)) # (...,1,4)
+print_array("Data2",  data2)
 
 # print data2, data2.shape
 
 data_predicted = []
 
 
-for i in range(0,280):
+for i in range(0,240):
 
     print col.FAIL, ">>> Prediction n." + str(i), col.ENDC
 
@@ -688,8 +750,14 @@ for i in range(0,280):
     hora = hour_encoder.inverse_transform(aux2[:,1].astype(int))[0] # Encode HOUR as an integer value
     print "-----------"
 
-    pred =  model.predict(data2)
+    data2 = data2.reshape((-1, n_in, max_cases +3)) # (...,1,4)
 
+    print_array("DATA2 PRE PREDICT", data2)
+
+    pred =  model.predict(data2, batch_size = batch_size)
+
+    pred = pred[0]
+    # print_array("PRED", pred[0])
     print "Predichas ", argmax(pred), " bicis a las ", hora
 
 
@@ -698,8 +766,17 @@ for i in range(0,280):
     three_main[1] += 1 # increase hour interval
     data_in = scaler.transform([three_main])
 
+    print_array("data_in", data_in)
+
+
+    data2 = data2[0]
+
+    print_array("DADADATA2", data2)
+
     data2 = data2.reshape((1, n_in * (max_cases +3))) # (...,1,4)
     data2 = data2[:,range(max_cases+3, n_in*(max_cases+3))]
+
+    print_array("DADADATA2", data2)
 
     # print "Deleted ", data2, data2.shape
 
@@ -707,6 +784,13 @@ for i in range(0,280):
     data_in = numpy.append(data_in, bikes)
     data2 = numpy.append(data2, [data_in], axis = 1)
     data2 = data2.reshape((data2.shape[0], n_in, max_cases +3)) # (...,1,4)
+
+    for i in range(batch_size - 1):
+        # print i
+        data2 = numpy.append(data2, auxxx, axis = 1)    
+
+    
+    print_array("Data2 " + str(i),  data2)
 
     # print ">>>>> ", data2, data2.shape
 
