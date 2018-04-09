@@ -14,16 +14,19 @@ import numpy
 import pandas
 import matplotlib.pyplot as plt
 from numpy import concatenate
-from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from sklearn.metrics import mean_squared_error
-from pandas import concat,DataFrame, read_csv
+from pandas import concat,DataFrame
 from keras.models import Sequential
 from keras.utils import plot_model, to_categorical
-from keras import optimizers
-from keras.layers import Dense, LSTM, Activation, Dropout
+from keras.layers import Dense, LSTM, Dropout
 from datetime import datetime
+import sys
+from keras.models import model_from_json
 import datetime
 from numpy import argmax
+import pandas.core.frame
+from sklearn.externals import joblib
 
 ################################################################################
 # Global Variables
@@ -33,11 +36,11 @@ stationToRead = 'ZUNZUNEGI'
 is_in_debug = True
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
-lstm_neurons = 100
+lstm_neurons = 40
 batch_size   = 100
 epochs       = 5
-n_in = 1
-n_out = 1
+n_in         = 12 * 3
+n_out        = 1
 
 ################################################################################
 # Classes and Functions
@@ -74,11 +77,10 @@ def print_array(description, x):
         print x
         print col.yellow, "----------------------------------------------------------------------------", col.ENDC
 
-
 def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
 
     min_y = min(plot_1)
-    max_y = max(plot_2)
+    max_y = max(plot_1)
 
     plt.figure(figsize=(12, 9))
     ax = plt.subplot(111)
@@ -95,7 +97,9 @@ def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
     plt.ylabel(ylabel, color = 'silver')
 
     lines  = plt.plot(plot_1, label = 'train', color = '#458DE1')
-    lines += plt.plot(plot_2, label = 'test', color = '#80C797')
+
+    if len(plot_2) > 0:
+        lines += plt.plot(plot_2, label = 'test', color = '#80C797')
 
     plt.setp(lines, linewidth=2)
 
@@ -103,7 +107,8 @@ def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
          plot_1[len(plot_1) - 1] + 0.01,
          "Training Loss", color = '#458DE1')
 
-    plt.text((len(plot_2) - 1) * 1.005,
+    if len(plot_2) > 0:
+        plt.text((len(plot_2) - 1) * 1.005,
          plot_2[len(plot_2) - 1],
          "Validation Loss", color = '#80C797')
 
@@ -145,12 +150,7 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 
     print_array("Reframed dataset after converting series to supervised", agg.head())
 
-    print agg.columns
-
     return agg
-
-
-
 
 # Calculates the number of incorrect samples
 def calculate_no_errors(predicted, real):
@@ -235,6 +235,9 @@ weekday_encoder = LabelEncoder() # Encode columns that are not numbers
 values[:,1] = hour_encoder.fit_transform(values[:,1])    # Encode HOUR as an integer value
 values[:,2] = weekday_encoder.fit_transform(values[:,2]) # Encode HOUR as int
 
+numpy.save('hour_encoder.npy', hour_encoder.classes_)
+numpy.save('weekday_encoder.npy', weekday_encoder.classes_)
+
 max_bikes = max(values[:,3]) # Maximum number of bikes a station holds
 max_cases = max_bikes + 1
 
@@ -248,6 +251,9 @@ values = values[:,:-1]
 
 scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
 scaled = scaler.fit_transform(values)
+
+scaler_filename = "scaler.save"
+joblib.dump(scaler, scaler_filename) 
 
 print_array("Deleted column", scaled)
 
@@ -276,7 +282,7 @@ print_array("Reframed dataset without columns that are not going to be predicted
 
 print reframed.columns
 
-train_size, test_size, prediction_size = int(len(values) * 0.65) , int(len(values) * 0.3), int(len(values) * 0.05)
+train_size, test_size, prediction_size = int(len(values) * 0.65) , int(len(values) * 0.3), int(len(values) * 0.005)
 
 train_size      = int(int(train_size / batch_size) * batch_size) 
 test_size       = int(int(test_size / batch_size) * batch_size) 
@@ -325,16 +331,40 @@ print col.HEADER + "Neural Network definition" + col.ENDC
 # Network definition
 #--------------------------------------------------------------------------------
 
+# print_array("Pre entrenamiento", test_x)
+# print_array("Pre entrenamiento", test_x[0])
+
+# sys.exit("HEHEHE")
+
 model = Sequential()
 model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=True))
-model.add(Dropout(0.2))
+model.add(Dropout(0.5))
 model.add(Dense(max_cases * n_out, activation='sigmoid'))
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy'])
-history = model.fit(train_x, train_y, epochs = epochs, batch_size = batch_size, validation_data = (test_x, test_y), verbose = 1, shuffle = False)
-model.save('test_3.h5')
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy', 'mse', 'mae', 'mape'])
+# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy'])
+
+history = model.fit(train_x, train_y, 
+    epochs = epochs, 
+    batch_size = batch_size, 
+    validation_data = (test_x, test_y), 
+    verbose = 1, 
+    shuffle = False)
+
+
+# test_XXXXX = test_x
+
+# for epoc in range(epochs):
+#         model.fit(train_x, train_y, epochs=1, batch_size=batch_size, verbose=1, shuffle=False)
+#         model.reset_states()
+
+model_json = model.to_json()
+with open("model.json", "w") as json_file:
+    json_file.write(model_json)
+# serialize weights to HDF5
+model.save_weights("model.h5")
+print("Saved model to disk")
 
 plot_model(model, to_file='plots/model.png', show_shapes = True)
-print col.HEADER + "> Saved model shape to an image" + col.ENDC
 
 #--------------------------------------------------------------------------------
 # Predicted data (yhat)
@@ -343,13 +373,16 @@ print col.HEADER + "> Saved model shape to an image" + col.ENDC
 min_y = min(history.history['loss'])
 max_y = max(history.history['loss'])
 
+
+
 print("Starting model prediction")
 
-yhat   = model.predict(test_x, batch_size = batch_size)
 
-#-----------------------------------
 
-# invert to_categorical
+
+yhat = model.predict(test_x, batch_size = batch_size)
+
+# revert to_categorical
 yhat = argmax(yhat, axis = 1)
 yhat = yhat.reshape(len(yhat),1)
 
@@ -396,35 +429,10 @@ calculate_no_errors(inv_y, inv_yhat)
 # Plot styling
 ################################################################################
 
-#--------------------------------------------------------------------------------
-# Loss Plot
-#--------------------------------------------------------------------------------
-
-
-
-#--------------------------------------------------------------------------------  
-
 prepare_plot('epochs', 'loss', history.history['loss'], history.history['val_loss'], 'loss')
-
-#--------------------------------------------------------------------------------
-# Accuracy Plot
-#--------------------------------------------------------------------------------
-
 prepare_plot('epoch', 'accuracy', history.history['acc'], history.history['val_acc'], 'acc')
-
-#--------------------------------------------------------------------------------
-# Training Plot
-#--------------------------------------------------------------------------------
-
 prepare_plot('samples', 'bikes', inv_yhat, inv_y, 'train')
-
-#--------------------------------------------------------------------------------
-# Zoomed
-#--------------------------------------------------------------------------------
-
-init = 5100
-
-prepare_plot('samples', 'bikes', inv_y[range(init,init + 500)], inv_yhat[range(init,init + 500)], 'train_zoomed')
+prepare_plot('samples', 'bikes', inv_y[range(3100,3100 + 500)], inv_yhat[range(3100,3100 + 500)], 'train_zoomed')
 
 ################################################################################
 # Value predictions
@@ -443,7 +451,6 @@ yhat = yhat.reshape(len(yhat),1)
 prediction_x = prediction_x.reshape((prediction_x.shape[0], prediction_x.shape[2] * n_in))
 prediction_x = prediction_x[:,[0,1,2]]
 
-
 inv_yhat = scaler.inverse_transform(prediction_x)
 
 inv_yhat = concatenate((inv_yhat, yhat), axis=1)
@@ -453,8 +460,6 @@ print_smth("inv_yhat before cast", inv_yhat)
 #--------------------------------------------------------------------------------
 # Real data (inv_yhat)
 #--------------------------------------------------------------------------------
-
-print_smth("HEYEYE AYFSADFA", prediction_y)
 
 yhat = argmax(prediction_y, axis = 1)
 yhat = yhat.reshape(len(yhat),1)
@@ -478,10 +483,108 @@ print col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC
 
 calculate_no_errors(inv_y, inv_yhat)
 
+prepare_plot('asa', 'ylabel', inv_y, inv_yhat, 'name')
 
 ################################################################################
 # Predictron
 ################################################################################
+
+
+json_file = open('model.json', 'r')
+loaded_model_json = json_file.read()
+json_file.close()
+model = model_from_json(loaded_model_json)
+# load weights into new model
+model.load_weights("model.h5")
+print("Loaded model from disk")
+
+hour_encoder    = LabelEncoder() # Encode columns that are not numbers
+weekday_encoder = LabelEncoder() # Encode columns that are not numbers
+
+hour_encoder.classes_ = numpy.load('hour_encoder.npy')
+weekday_encoder.classes_ = numpy.load('weekday_encoder.npy')
+
+scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
+scaler = joblib.load("scaler.save") 
+
+weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+
+max_cases = 21
+
+class col:
+    HEADER    = '\033[95m'
+    blue      = '\033[94m'
+    green     = '\033[92m'
+    yellow    = '\033[93m'
+    FAIL      = '\033[91m'
+    ENDC      = '\033[0m'
+    BOLD      = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+# Formatted output
+def print_smth(description, x):
+    
+    if is_in_debug == True:
+        print "", col.yellow
+        print description
+        print "----------------------------------------------------------------------------", col.ENDC
+        print x
+        print col.yellow, "----------------------------------------------------------------------------", col.ENDC
+
+# Formatted output
+def print_array(description, x):
+    
+    if is_in_debug == True:
+        print "", col.yellow
+        print description, " ", x.shape
+        print "----------------------------------------------------------------------------", col.ENDC
+        print x
+        print col.yellow, "----------------------------------------------------------------------------", col.ENDC
+
+def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
+
+    min_y = min(plot_1)
+    max_y = max(plot_1)
+
+    plt.figure(figsize=(12, 9))
+    ax = plt.subplot(111)
+    ax = plt.axes(frameon=False)
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+    plt.xlabel(xlabel, color = 'silver')
+    plt.ylabel(ylabel, color = 'silver')
+
+    lines  = plt.plot(plot_1, label = 'train', color = '#458DE1')
+
+    if len(plot_2) > 0:
+        lines += plt.plot(plot_2, label = 'test', color = '#80C797')
+
+    plt.setp(lines, linewidth=2)
+
+    plt.text((len(plot_1) - 1) * 1.005,
+         plot_1[len(plot_1) - 1] + 0.01,
+         "Training Loss", color = '#458DE1')
+
+    if len(plot_2) > 0:
+        plt.text((len(plot_2) - 1) * 1.005,
+         plot_2[len(plot_2) - 1],
+         "Validation Loss", color = '#80C797')
+
+    # texto = "RMSE " +  str('%.3f' % (rmse))  + " | Batch size " + str(batch_size) + " | Epochs " + str(epochs) + " |  " + str(lstm_neurons) + " LSTM neurons"
+    # plt.title(texto,color="black", alpha=0.3)
+    plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
+
+    plt.savefig("plots/" + name + ".png", bbox_inches="tight")
+    plt.close()
+    print col.HEADER + ">  Plot saved" + col.ENDC
+
+
 
 # Makes future predictions by doing iterations, takes some real initial samples
 # makes a prediction and then uses the prediction to predict
@@ -490,17 +593,16 @@ print col.BOLD, "\n\n-----------------------------------------------------------
 print "Predicting a whole day of availability"
 print "------------------------------------------------------------------------\n\n", col.ENDC
 
-
-print_smth("test_x", test_x)
-
-print_smth("test_x[0]", test_x[0])
-
-print_smth("test_x[0][0]", test_x[0][0])
-
+inital_bikes = 15
 today   = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday = weekdays[datetime.datetime.today().weekday()]
-hour    = "15:00"
-inital_bikes = 10
+hour    = "00:00"
+
+
+data_predicted = []
+
+data_predicted.append(inital_bikes)
+
 
 hour = hour_encoder.transform([hour])[0]
 weekday = weekday_encoder.transform([weekday])[0]
@@ -540,23 +642,19 @@ print_array("data_to_feed",  data_to_feed)
 
 auxxx = data_to_feed
 
-
 for i in range(batch_size - 1):
     # print i
     data_to_feed = numpy.append(data_to_feed, auxxx, axis = 1)    
-
-    # print_array("data_to_feed " + str(i),  data_to_feed)
-
-
 
 data_to_feed = data_to_feed.reshape((batch_size, n_in, max_cases +3)) # (...,1,4)
 # print_array("data_to_feed",  data_to_feed)
 
 print data_to_feed, data_to_feed.shape
 
-data_predicted = []
 
-for i in range(0,100):
+# Generate predictions for 24 hours, as every interval is 5' a whole day it's 288 predictions
+
+for i in range(0,50):
 
     print col.FAIL, ">>> Prediction n." + str(i), col.ENDC
 
@@ -574,6 +672,11 @@ for i in range(0,100):
 
     print_array("data_to_feed PRE PREDICT", data_to_feed)
 
+    print_array("Pre entrenamiento", data_to_feed)
+    print_array("Pre entrenamiento", data_to_feed[0])
+
+
+
     predicted_bikes =  model.predict(data_to_feed, batch_size = batch_size)
 
     predicted_bikes = predicted_bikes[0]
@@ -584,9 +687,6 @@ for i in range(0,100):
 
     data_rescaled[0][1] += 1 # increase hour interval (+5')
     data_in = scaler.transform(data_rescaled)
-
-    # print_array("data_in", data_in)
-
 
     data_to_feed = data_to_feed[0]
 
@@ -618,5 +718,8 @@ for i in range(0,100):
 
 
 print data_predicted
+
+prepare_plot('Time', 'Bikes', data_predicted, [], 'predictron')
+
 
 
