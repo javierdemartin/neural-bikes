@@ -1,6 +1,4 @@
-<p align="center">
-  <img width="250" height="" src="resources/neural-bikes_logo.png">
-</p>
+<img src="resources/neural-bikes_logo.png" width=25% align="right" />
 
 # ML predictions for Bike sharing services
 
