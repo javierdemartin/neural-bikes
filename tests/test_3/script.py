@@ -11,7 +11,7 @@
 
 from math import sqrt
 import numpy
-import pandas
+# import pandas
 import matplotlib.pyplot as plt
 from numpy import concatenate
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
@@ -21,13 +21,11 @@ from keras.models import Sequential
 from keras.utils import plot_model, to_categorical
 from keras.layers import Dense, LSTM, Dropout
 from datetime import datetime
-import sys
-from keras.models import model_from_json
 import datetime
 from numpy import argmax
 import pandas.core.frame
 from sklearn.externals import joblib
-import os.path
+import os
 
 ################################################################################
 # Global Variables
@@ -37,9 +35,9 @@ stationToRead = 'ZUNZUNEGI'
 is_in_debug = True
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
-lstm_neurons = 200
+lstm_neurons = 10
 batch_size   = 1
-epochs       = 4
+epochs       = 200
 n_in         = 10
 n_out        = 1
 
@@ -62,21 +60,21 @@ class col:
 def print_smth(description, x):
     
     if is_in_debug == True:
-        print "", col.yellow
-        print description
-        print "----------------------------------------------------------------------------", col.ENDC
-        print x
-        print col.yellow, "----------------------------------------------------------------------------", col.ENDC
+        print("", col.yellow)
+        print(description)
+        print("----------------------------------------------------------------------------", col.ENDC)
+        print(x)
+        print(col.yellow, "----------------------------------------------------------------------------", col.ENDC)
 
 # Formatted output
 def print_array(description, x):
     
     if is_in_debug == True:
-        print "", col.yellow
-        print description, " ", x.shape
-        print "----------------------------------------------------------------------------", col.ENDC
-        print x
-        print col.yellow, "----------------------------------------------------------------------------", col.ENDC
+        print("", col.yellow)
+        print(description, " ", x.shape)
+        print("----------------------------------------------------------------------------", col.ENDC)
+        print(x)
+        print(col.yellow, "----------------------------------------------------------------------------", col.ENDC)
 
 def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
 
@@ -120,7 +118,7 @@ def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
 
     plt.savefig("plots/" + name + ".png", bbox_inches="tight")
     plt.close()
-    print col.HEADER + "> Loss plot saved" + col.ENDC
+    print(col.HEADER + "> Loss plot saved" + col.ENDC)
 
 # Convert series to supervised learning
 # Arguments
@@ -157,8 +155,6 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 # Calculates the number of incorrect samples
 def calculate_no_errors(predicted, real):
 
-    print predicted
-    print real
 
     wrong_val = 0
 
@@ -166,7 +162,7 @@ def calculate_no_errors(predicted, real):
         if predicted[i] != real[i]:
             wrong_val += 1
 
-    print wrong_val, "/", len(predicted)
+    print(wrong_val, "/", len(predicted))
 
 # Generate same number of columns for the categorization problem as bikes are in this station
 def generate_column_array(columns, max_cases) :
@@ -179,18 +175,21 @@ def generate_column_array(columns, max_cases) :
     return columns
 
 
-print col.HEADER
-print "   __            __     _____"
-print "  / /____  _____/ /_   |__  /"
-print " / __/ _ \/ ___/ __/    /_ < "
-print "/ /_/  __(__  ) /_    ___/ / "
-print "\__/\___/____/\__/   /____/  ", col.ENDC                           
+print(col.HEADER)
+print("   __            __     _____")
+print("  / /____  _____/ /_   |__  /")
+print(" / __/ _ \/ ___/ __/    /_ < ")
+print("/ /_/  __(__  ) /_    ___/ / ")
+print("\__/\___/____/\__/   /____/  ", col.ENDC)
+
+if os.path.isdir("plots") == False:
+    os.system("mkdir plots")
 
 ################################################################################
 # Data preparation
 ################################################################################
 
-print col.HEADER + "Data reading and preparation" + col.ENDC
+print(col.HEADER + "Data reading and preparation" + col.ENDC)
 
 #--------------------------------------------------------------------------------
 # File reading, drop non-relevant columns like station id, station name...
@@ -200,7 +199,7 @@ dataset         = pandas.read_csv('Bilbao.txt')
 dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_bikes', 'free_docks'] 
 dataset         = dataset[dataset['station'].isin([stationToRead])]
 
-print col.HEADER, "> Data from " + dataset['datetime'].iloc[0], " to ", dataset['datetime'].iloc[len(dataset) - 1], col.ENDC
+print(col.HEADER, "> Data from " + dataset['datetime'].iloc[0], " to ", dataset['datetime'].iloc[len(dataset) - 1], col.ENDC)
 
 print_array("Read dataset", dataset.head())
 
@@ -282,8 +281,6 @@ values = reframed.values
 
 print_array("Reframed dataset without columns that are not going to be predicted", reframed.head())
 
-print reframed.columns
-
 train_size, test_size, prediction_size = int(len(values) * 0.65) , int(len(values) * 0.3), int(len(values) * 0.005)
 
 train_size      = int(int(train_size / batch_size) * batch_size) 
@@ -321,24 +318,29 @@ print_array("TEST_Y 2 ", test_y)
 print_array("PREDICTION_X 2 ", prediction_x)
 print_array("PREDICTION_Y 2 ", prediction_y)
 
-print col.blue, "[Dimensions]> ", "Train X ", train_x.shape, "Train Y ", train_y.shape, "Test X ", test_x.shape, "Test Y ", test_y.shape, "Prediction X", prediction_x.shape, "Prediction Y", prediction_y.shape, col.ENDC
+print(col.blue, "[Dimensions]> ", "Train X ", train_x.shape, "Train Y ", train_y.shape, "Test X ", test_x.shape, "Test Y ", test_y.shape, "Prediction X", prediction_x.shape, "Prediction Y", prediction_y.shape, col.ENDC)
 
 ################################################################################
 # Neural Network
 ################################################################################
 
-print col.HEADER + "Neural Network definition" + col.ENDC
+print(col.HEADER + "Neural Network definition" + col.ENDC)
 
 #--------------------------------------------------------------------------------
 # Network definition
 #--------------------------------------------------------------------------------
 
+lstm_neurons = max_cases * n_out + int(max_cases/2)
+
 model = Sequential()
+model.add(Dropout(0.3, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2])))
+# model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=True, return_sequences=True))
 model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=True))
-model.add(Dropout(0.1))
+
 # model.add(LSTM(lstm_neurons))
+model.add(Dense(max_cases * n_out + int(max_cases/2), activation='relu'))
 model.add(Dense(max_cases * n_out, activation='sigmoid'))
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy', 'mse', 'mae', 'mape'])
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy', 'mse', 'mae'])
 # model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy'])
 
 # history = model.fit(train_x, train_y, 
@@ -349,8 +351,11 @@ model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['acc
 #     shuffle = False)
 
 
+# If the model is already trained don't do it again
 if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/test_3/model.h5") == False:
     for i in range(epochs):
+
+        print("Epoch " + str(i+1) + "/" + str(epochs))
         history = model.fit(train_x, train_y, epochs=1, batch_size=batch_size, verbose=1, shuffle=False)
         model.reset_states()
 
@@ -360,7 +365,6 @@ if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/tes
     model_json = model.to_json()
     with open("model.json", "w") as json_file:
         json_file.write(model_json)
-    # serialize weights to HDF5
     model.save_weights("model.h5")
     print("Saved model to disk")
 
@@ -372,18 +376,11 @@ if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/tes
 
     for i in range(0, len(test_x)):
 
-
-
-    	# print train_y[i]
-    	auxx = test_x[i].reshape((1, test_x[i].shape[0], test_x[i].shape[1])) # (...,n_in,4)
-
-    	print i, "/", len(train_x)
+    	auxx = test_x[i].reshape((batch_size, test_x[i].shape[0], test_x[i].shape[1])) # (...,n_in,4)
 
     	yhat = model.predict(auxx, batch_size = batch_size)
 
-    	print('>Expected=%.1f, Predicted=%.1f' % (argmax(auxx), argmax(yhat)))
-
-
+    	print("[" + str(i) +  "/" + str(len(train_x)) + ']>Expected=' + str(argmax(auxx)) + " Predicted=" + str(argmax(yhat)))
 
     yhat = model.predict(test_x, batch_size = batch_size)
 
@@ -392,11 +389,10 @@ if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/tes
     yhat = yhat.reshape(len(yhat),1)
 
     print_smth("yhat", yhat)
-    print yhat.shape
+    print(yhat.shape)
 
     test_x = test_x.reshape((test_x.shape[0], test_x.shape[2] * n_in))
     test_x = test_x[:,[0,1,2]]
-
 
     inv_yhat = scaler.inverse_transform(test_x)
 
@@ -426,7 +422,7 @@ if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/tes
 
     # Calculate RMSE
     rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
-    print col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC
+    print(col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC)
 
     calculate_no_errors(inv_y, inv_yhat)
 
@@ -450,7 +446,6 @@ if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/tes
 
     yhat   = model.predict(prediction_x, batch_size = batch_size)
 
-    print_array("Prediction OUT", yhat)
 
     # invert to_categorical
     yhat = argmax(yhat, axis = 1)
@@ -487,7 +482,7 @@ if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/tes
 
     # Calculate RMSE
     rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
-    print col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC
+    print(col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC)
 
     calculate_no_errors(inv_y, inv_yhat)
 
@@ -501,11 +496,11 @@ if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/tes
 # Makes future predictions by doing iterations, takes some real initial samples
 # makes a prediction and then uses the prediction to predict
 
-print col.BOLD, "\n\n------------------------------------------------------------------------"
-print "Predicting a whole day of availability"
-print "------------------------------------------------------------------------\n\n", col.ENDC
+print(col.BOLD, "\n\n------------------------------------------------------------------------")
+print("Predicting a whole day of availability")
+print("------------------------------------------------------------------------\n\n", col.ENDC)
 
-inital_bikes = 18
+inital_bikes = 17
 today   = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday = weekdays[datetime.datetime.today().weekday()]
 hour    = "00:00"
@@ -531,11 +526,11 @@ data_in = numpy.append(data_in, inital_bikes)
 
 data_to_feed = numpy.array([data_in])
 
-print data_to_feed, data_to_feed.shape
+
 
 # data_to_feed = numpy.append(data_to_feed, [data_in], axis = 1)
 
-# print data_to_feed, data_to_feed.shape
+# print(data_to_feed, data_to_feed.shape
 
 # If there are more than one time-steps create the initial array
 if n_in > 1:
@@ -554,22 +549,24 @@ print_array("data_to_feed",  data_to_feed)
 auxxx = data_to_feed
 
 for i in range(batch_size - 1):
-    # print i
+    # print(i
     data_to_feed = numpy.append(data_to_feed, auxxx, axis = 1)    
 
 data_to_feed = data_to_feed.reshape((batch_size, n_in, max_cases +3)) # (...,1,4)
 # print_array("data_to_feed",  data_to_feed)
 
-print data_to_feed, data_to_feed.shape
+print(data_to_feed, data_to_feed.shape)
 
 
 # Generate predictions for 24 hours, as every interval is 5' a whole day it's 288 predictions
 
-n_horas = 12 * n_in * 12 + 1
+# n_horas = 12 * n_in * 11 #+ 1
+labels_x = []
+
 
 for i in range(0,290):
 
-    print col.FAIL, ">>> Prediction n." + str(i), col.ENDC
+    print(col.FAIL, ">>> Prediction n." + str(i), col.ENDC)
 
     # undo the transformation of the input that is in the shape of [batch_size, n_in, 24], 
     # and get the first 3 columns
@@ -578,26 +575,18 @@ for i in range(0,290):
 
     data_rescaled = scaler.inverse_transform([datoa]).astype(int)
     
-
-    # data_to_feed = data_to_feed.reshape((-1, n_in, max_cases +3)) # [batch_size, n_in, 24]
-
     # print_array("model.predict", data_to_feed)
 
-    predicted_bikes =  model.predict(data_to_feed, batch_size = 1)
+    predicted_bikes =  model.predict(data_to_feed, batch_size = batch_size)
 
 
     predicted_bikes = predicted_bikes[0]
-    # print_array("predicted", predicted_bikes)
-    # undo encoding of the hour column
     
-    # if (i % 5) == 0:
-    print col.blue, "Predichas ", argmax(predicted_bikes), " bicis a las ", hour_encoder.inverse_transform(data_rescaled[:,1].astype(int))[0], col.ENDC
+    print(col.blue, "Predichas ", argmax(predicted_bikes), " bicis a las ", hour_encoder.inverse_transform(data_rescaled[:,1].astype(int))[0], col.ENDC)
 
     data_predicted.append(argmax(predicted_bikes))
 
     data_rescaled[0][1] += 1 # increase hour interval (+5')
-
-
 
     data_in = scaler.transform(data_rescaled)
 
@@ -605,10 +594,7 @@ for i in range(0,290):
 
     data_to_feed = data_to_feed.reshape((1, n_in * (max_cases +3))) # (...,1,4)
 
-
     # discard the oldest sample to shift the data
-
-
 
     data_to_feed = data_to_feed[:,range(max_cases+3, n_in * (max_cases+3))]
 
@@ -618,21 +604,14 @@ for i in range(0,290):
     data_to_feed = numpy.append(data_to_feed, [data_in], axis = 1)
     data_to_feed = data_to_feed.reshape((data_to_feed.shape[0], n_in, max_cases +3)) # (...,1,4)
 
-    # print_array("DATA TO FEED 2", data_to_feed)
-
     for i in range(batch_size - 1):
         print_array("DATA TO FEED", data_to_feed)
-        print data_to_feed
+
         data_to_feed = numpy.append(data_to_feed, auxxx, axis = 1)    
 
     
-    # print_array("data_to_feed " + str(i),  data_to_feed)
 
-    # print ">>>>> ", data_to_feed, data_to_feed.shape
-
-
-
-print data_predicted
+print(data_predicted)
 
 prepare_plot('Time', 'Bikes', data_predicted, [], 'predictron')
 
