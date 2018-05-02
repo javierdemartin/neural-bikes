@@ -12,6 +12,9 @@
 from math import sqrt
 import numpy
 # import pandas
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from numpy import concatenate
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
@@ -27,17 +30,18 @@ import pandas.core.frame
 from sklearn.externals import joblib
 import os
 
+
 ################################################################################
 # Global Variables
 ################################################################################
 
-stationToRead = 'ZUNZUNEGI'
+stationToRead = 'IRALA'
 is_in_debug = True
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
-lstm_neurons = 10
+lstm_neurons = 50
 batch_size   = 1
-epochs       = 200
+epochs       = 5
 n_in         = 10
 n_out        = 1
 
@@ -333,12 +337,10 @@ print(col.HEADER + "Neural Network definition" + col.ENDC)
 lstm_neurons = max_cases * n_out + int(max_cases/2)
 
 model = Sequential()
-model.add(Dropout(0.3, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2])))
-# model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=True, return_sequences=True))
+# model.add(Dropout(0.3, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2])))
 model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=True))
 
-# model.add(LSTM(lstm_neurons))
-model.add(Dense(max_cases * n_out + int(max_cases/2), activation='relu'))
+# model.add(Dense(max_cases * n_out + int(max_cases/2), activation='relu'))
 model.add(Dense(max_cases * n_out, activation='sigmoid'))
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy', 'mse', 'mae'])
 # model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy'])
@@ -352,7 +354,7 @@ model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['acc
 
 
 # If the model is already trained don't do it again
-if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/test_3/model.h5") == False:
+if os.path.isfile("/home/aholab/javier/model.h5") == False:
     for i in range(epochs):
 
         print("Epoch " + str(i+1) + "/" + str(epochs))
@@ -368,7 +370,7 @@ if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/tes
     model.save_weights("model.h5")
     print("Saved model to disk")
 
-    plot_model(model, to_file='plots/model.png', show_shapes = True)
+    #plot_model(model, to_file='plots/model.png', show_shapes = True)
 
     #--------------------------------------------------------------------------------
     # Predicted data (yhat)
@@ -380,7 +382,7 @@ if os.path.isfile("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/tes
 
     	yhat = model.predict(auxx, batch_size = batch_size)
 
-    	print("[" + str(i) +  "/" + str(len(train_x)) + ']>Expected=' + str(argmax(auxx)) + " Predicted=" + str(argmax(yhat)))
+    	print("[" + str(i+1) +  "/" + str(len(train_x)) + ']>Expected=' + str(argmax(auxx)) + " Predicted=" + str(argmax(yhat)))
 
     yhat = model.predict(test_x, batch_size = batch_size)
 
@@ -559,14 +561,12 @@ print(data_to_feed, data_to_feed.shape)
 
 
 # Generate predictions for 24 hours, as every interval is 5' a whole day it's 288 predictions
-
 # n_horas = 12 * n_in * 11 #+ 1
-labels_x = []
+
 
 
 for i in range(0,290):
 
-    print(col.FAIL, ">>> Prediction n." + str(i), col.ENDC)
 
     # undo the transformation of the input that is in the shape of [batch_size, n_in, 24], 
     # and get the first 3 columns
@@ -575,14 +575,10 @@ for i in range(0,290):
 
     data_rescaled = scaler.inverse_transform([datoa]).astype(int)
     
-    # print_array("model.predict", data_to_feed)
-
     predicted_bikes =  model.predict(data_to_feed, batch_size = batch_size)
-
-
     predicted_bikes = predicted_bikes[0]
     
-    print(col.blue, "Predichas ", argmax(predicted_bikes), " bicis a las ", hour_encoder.inverse_transform(data_rescaled[:,1].astype(int))[0], col.ENDC)
+    print(col.blue, "[" + str(i + 1) + "] Predichas ", argmax(predicted_bikes), " bicis a las ", hour_encoder.inverse_transform(data_rescaled[:,1].astype(int))[0], col.ENDC)
 
     data_predicted.append(argmax(predicted_bikes))
 
@@ -591,11 +587,9 @@ for i in range(0,290):
     data_in = scaler.transform(data_rescaled)
 
     data_to_feed = data_to_feed[0]
-
     data_to_feed = data_to_feed.reshape((1, n_in * (max_cases +3))) # (...,1,4)
 
     # discard the oldest sample to shift the data
-
     data_to_feed = data_to_feed[:,range(max_cases+3, n_in * (max_cases+3))]
 
     bikes = to_categorical(argmax(predicted_bikes), max_cases)
@@ -614,6 +608,8 @@ for i in range(0,290):
 print(data_predicted)
 
 prepare_plot('Time', 'Bikes', data_predicted, [], 'predictron')
+
+os.system("touch finished")
 
 
 
