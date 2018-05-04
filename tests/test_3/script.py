@@ -18,7 +18,7 @@ import numpy
 # import pandas
 
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('Agg') # Needed when running on headless server
 import sys
 import matplotlib.pyplot as plt
 from numpy import concatenate
@@ -34,6 +34,7 @@ from numpy import argmax
 import pandas.core.frame
 from sklearn.externals import joblib
 import os
+import csv
 
 ################################################################################
 # Global Variables
@@ -42,6 +43,9 @@ import os
 stationToRead = 'IRALA'
 is_in_debug = True
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+
+list_of_stations = ["PLAZA LEVANTE", "IRUÑA", "AYUNTAMIENTO", "PLAZA ARRIAGA", "SANTIAGO COMPOSTELA", "PLAZA REKALDE", "DR. AREILZA", "ZUNZUNEGI", "ASTILLERO", "EGUILLOR", "S. CORAZON", "PLAZA INDAUTXU", "LEHENDAKARI LEIZAOLA", "CAMPA IBAIZABAL", "POLID. ATXURI", "SAN PEDRO", "KARMELO", "BOLUETA", "OTXARKOAGA", "OLABEAGA", "SARRIKO", "HEROS", "EGAÑA", "P. ETXEBARRIA", "TXOMIN GARAT", "ABANDO", "ESTRADA CALEROS", "EPALZA", "IRALA", "S. ARANA", "C. MARIA"]
+print(len(list_of_stations))
 
 lstm_neurons = int(sys.argv[1]) # 50
 batch_size   = 1
@@ -53,7 +57,6 @@ new_batch_size = int(sys.argv[2]) #1000
 
 print('Number of arguments:', len(sys.argv), 'arguments.')
 print('Argument List:', str(sys.argv))
-
 
 ################################################################################
 # Classes and Functions
@@ -211,13 +214,16 @@ print(col.HEADER + "Data reading and preparation" + col.ENDC)
 
 dataset         = pandas.read_csv('data/Bilbao.txt')
 dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_bikes', 'free_docks'] 
-dataset         = dataset[dataset['station'].isin([stationToRead])]
+# dataset         = dataset[dataset['station'].isin([stationToRead])]
 
 print(col.HEADER, "> Data from " + dataset['datetime'].iloc[0], " to ", dataset['datetime'].iloc[len(dataset) - 1], col.ENDC)
 
 print_array("Read dataset", dataset.head())
+print_array("Read dataset", dataset)
 
-dataset.drop(dataset.columns[[2,3,5]], axis = 1, inplace = True)
+dataset.drop(dataset.columns[[2,5]], axis = 1, inplace = True) # Remove ID of the sation and free docks
+
+print_array("Read dataset", dataset)
 
 dataset = dataset.reset_index(drop = True)
 values  = dataset.values
@@ -246,9 +252,11 @@ print_array("Dataset with unwanted columns removed", dataset.head())
 
 hour_encoder    = LabelEncoder() # Encode columns that are not numbers
 weekday_encoder = LabelEncoder() # Encode columns that are not numbers
+station_encoder = LabelEncoder() 
 
 values[:,1] = hour_encoder.fit_transform(values[:,1])    # Encode HOUR as an integer value
 values[:,2] = weekday_encoder.fit_transform(values[:,2]) # Encode HOUR as int
+values[:,3] = station_encoder.fit_transform(values[:,3]) # Encode HOUR as int
 
 max_bikes = max(values[:,3]) # Maximum number of bikes a station holds
 max_cases = max_bikes + 1
@@ -259,7 +267,11 @@ print_array("Prescaled values", values)
 
 oneHot = to_categorical(values[:,3])
 
+print_array("HEEEEEEEEEEY", values)
+
 values = values[:,:-1]
+
+print_array("HEEEEEEEEEEY", values)
 
 scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
 scaled = scaler.fit_transform(values)
@@ -274,22 +286,24 @@ print_array("Dataset with normalized values", scaled)
 # Generate the columns list for the supervised transformation
 #--------------------------------------------------------------------------------
 
-columns = generate_column_array(['doy', 'time', 'weekday'], max_cases)
+columns = generate_column_array(['doy', 'time', 'weekday', 'station'], max_cases)
 
 print("COLUMNS", columns)
 
 reframed = series_to_supervised(columns, scaled, n_in, n_out)
 
 # Drop columns that I don't want to predict, every (t) column except free_bikes(t)
-to_drop = range((max_cases + 3) * n_in, (max_cases + 3) * n_in + 3)
+to_drop = range((max_cases + 4) * n_in, (max_cases + 4) * n_in + 4)
 
 reframed.drop(reframed.columns[to_drop], axis=1, inplace=True)
+
+print_smth("PUTO", reframed.columns)
 
 values = reframed.values
 
 print_array("Reframed dataset without columns that are not going to be predicted", reframed.head())
 
-train_size, test_size, prediction_size = int(len(values) * 0.65) , int(len(values) * 0.3), int(len(values) * 0.005)
+train_size, test_size, prediction_size = int(len(values) * 0.65) , int(len(values) * 0.3), int(len(values) * 0.05)
 
 train_size      = int(int(train_size / new_batch_size) * new_batch_size) 
 test_size       = int(int(test_size / new_batch_size) * new_batch_size) 
@@ -298,12 +312,12 @@ prediction_size = int(int(prediction_size / new_batch_size) * new_batch_size)
 # Divide between train and test sets
 train, test, prediction = values[0:train_size,:], values[train_size:train_size + test_size, :], values[train_size + test_size:train_size + test_size + prediction_size, :]
 
-output_vals = range(n_in * (max_cases + 3),n_in * (max_cases + 3) + n_out * max_cases)
+output_vals = range(n_in * (max_cases + 4),n_in * (max_cases + 4) + n_out * max_cases)
 print(output_vals)
 
-train_x, train_y           = train[:,range(0,(max_cases+3) * n_in)], train[:,output_vals]
-test_x, test_y             = test[:,range(0,(max_cases+3) * n_in)], test[:,output_vals]
-prediction_x, prediction_y = prediction[:,range(0,(max_cases+3) * n_in)], prediction[:,output_vals]
+train_x, train_y           = train[:,range(0,(max_cases+4) * n_in)], train[:,output_vals]
+test_x, test_y             = test[:,range(0,(max_cases+4) * n_in)], test[:,output_vals]
+prediction_x, prediction_y = prediction[:,range(0,(max_cases+4) * n_in)], prediction[:,output_vals]
 
 print_array("TRAIN_X ", train_x)
 print_array("TRAIN_Y ", train_y)
@@ -313,9 +327,9 @@ print_array("PREDICTION_X ", prediction_x)
 print_array("PREDICTION_Y ", prediction_y)
 
 # reshape input to be [samples, time_steps, features]
-train_x       = train_x.reshape((train_x.shape[0], n_in, max_cases +3)) # (...,n_in,4)
-test_x        = test_x.reshape((test_x.shape[0], n_in, max_cases +3))    # (...,n_in,4)
-prediction_x  = prediction_x.reshape((prediction_x.shape[0], n_in, max_cases +3))    # (...,n_in,4)
+train_x       = train_x.reshape((train_x.shape[0], n_in, max_cases +4)) # (...,n_in,4)
+test_x        = test_x.reshape((test_x.shape[0], n_in, max_cases +4))    # (...,n_in,4)
+prediction_x  = prediction_x.reshape((prediction_x.shape[0], n_in, max_cases +4))    # (...,n_in,4)
 
 print_array("TRAIN_X 2 ", train_x)
 print_array("TRAIN_Y 2 ", train_y)
@@ -330,34 +344,36 @@ print(col.blue, "[Dimensions]> ", "Train X ", train_x.shape, "Train Y ", train_y
 # Neural Network
 ################################################################################
 
-print(col.HEADER + "Neural Network definition" + col.ENDC)
-
-#--------------------------------------------------------------------------------
-# Network definition
-#--------------------------------------------------------------------------------
-
-# lstm_neurons = max_cases * n_out + int(max_cases/2)
-
-model = Sequential()
-# model.add(Dropout(0.3, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2])))
-model.add(LSTM(lstm_neurons, batch_input_shape=(new_batch_size, train_x.shape[1], train_x.shape[2]), stateful=False))
-
-# model.add(Dense(max_cases * n_out + int(max_cases/2), activation='relu'))
-model.add(Dense(max_cases * n_out, activation='sigmoid'))
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy', 'mse', 'mae'])
-# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy'])
-
-# history = model.fit(train_x, train_y, 
-#     epochs = epochs, 
-#     batch_size = batch_size, 
-#     validation_data = (test_x, test_y), 
-#     verbose = 1, 
-#     shuffle = False)
-
-list_acc = []
 
 # If the model is already trained don't do it again
-if os.path.isfile("/home/aholab/javier/test/model.h5") == False:
+if os.path.isfile("model/model.h5") == False:
+
+
+
+	print(col.HEADER + "Neural Network definition" + col.ENDC)
+
+	#--------------------------------------------------------------------------------
+	# Network definition
+	#--------------------------------------------------------------------------------
+
+	# lstm_neurons = max_cases * n_out + int(max_cases/2)
+
+	model = Sequential()
+	model.add(LSTM(lstm_neurons, batch_input_shape=(new_batch_size, train_x.shape[1], train_x.shape[2]), stateful=False))
+	model.add(Dense(max_cases * n_out, activation='sigmoid'))
+	model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy', 'mse', 'mae'])
+	# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy'])
+
+	# history = model.fit(train_x, train_y, 
+	#     epochs = epochs, 
+	#     batch_size = batch_size, 
+	#     validation_data = (test_x, test_y), 
+	#     verbose = 1, 
+	#     shuffle = False)
+
+	list_acc  = []
+	list_loss = []
+	list_mse  = []
 
 	for i in range(epochs):
 
@@ -365,22 +381,43 @@ if os.path.isfile("/home/aholab/javier/test/model.h5") == False:
 		history = model.fit(train_x, train_y, epochs=1, batch_size=new_batch_size, verbose=2, shuffle=False)
 
 		list_acc.append(float(history.history['acc'][0]))
+		list_loss.append(float(history.history['loss'][0]))
+		list_loss.append(float(history.history['mean_squared_error'][0]))
 
 		model.reset_states()
 
-	import csv
-
 	print(list_acc)
 
-	file_name = str(epochs) + "_" + str(new_batch_size) + "_" + str(n_in) + "_" + str(lstm_neurons)
+	file_name = str(lstm_neurons) + "_" + str(new_batch_size) + "_" + str(epochs) + "_" + str(n_in)
 
 	if os.path.isdir("/data_gen") == False:
 		os.system("mkdir data_gen")
 		os.system("chmod 775 data_gen")
 
-	with open('data_gen/' + file_name, 'w') as file:
+	if os.path.isdir("/data_gen/acc") == False:
+		os.system("mkdir data_gen/acc")
+		os.system("chmod 775 data_gen/acc")
+
+	if os.path.isdir("/data_gen/loss") == False:
+		os.system("mkdir data_gen/loss")
+		os.system("chmod 775 data_gen/loss")
+
+	if os.path.isdir("/data_gen/mse") == False:
+		os.system("mkdir data_gen/mse")
+		os.system("chmod 775 data_gen/mse")
+
+
+	with open('data_gen/acc/' + file_name, 'w') as file:
 		wr = csv.writer(file, delimiter = '\n')
 		wr.writerow(list_acc)
+
+	with open('data_gen/loss/' + file_name, 'w') as file:
+		wr = csv.writer(file, delimiter = '\n')
+		wr.writerow(list_loss)
+	
+	with open('data_gen/mse/' + file_name, 'w') as file:
+		wr = csv.writer(file, delimiter = '\n')
+		wr.writerow(list_mse)
 
 	min_y = min(history.history['loss'])
 	max_y = max(history.history['loss'])
@@ -392,263 +429,263 @@ if os.path.isfile("/home/aholab/javier/test/model.h5") == False:
 	model_json = model.to_json()
 	with open("model/model.json", "w") as json_file:
 		json_file.write(model_json)
+
 	model.save_weights("model/model.h5")
-
-
-
-	print("Saved model to disk")
-
-	w = model.get_weights()
-
-	model = Sequential()
-	# model.add(Dropout(0.3, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2])))
-	model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=True))
-
-	# model.add(Dense(max_cases * n_out + int(max_cases/2), activation='relu'))
-	model.add(Dense(max_cases * n_out, activation='sigmoid'))
-	model.set_weights(w)
 
 	plot_model(model, to_file='model/model.png', show_shapes = True)
 
-	#--------------------------------------------------------------------------------
-	# Predicted data (yhat)
-	#--------------------------------------------------------------------------------
+	print("Saved model to disk")
 
-#     for i in range(0, len(test_x)):
 
-#     	auxx = test_x[i].reshape((batch_size, test_x[i].shape[0], test_x[i].shape[1])) # (...,n_in,4)
+# Load trained model from disk
+model = Sequential()
+model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=True)) # Changed batch size
+model.add(Dense(max_cases * n_out, activation='sigmoid'))
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy', 'mse', 'mae'])
 
-#     	yhat = model.predict(auxx, batch_size = batch_size)
+model.load_weights('model/model.h5')
 
-#     	print("[" + str(i+1) +  "/" + str(len(train_x)) + ']> Expected=' + str(argmax(auxx)) + " Predicted=" + str(argmax(yhat)))
+# Redefinition of the neural to change the input shape
 
-#     yhat = model.predict(test_x, batch_size = batch_size)
+# --------------------------------------------------------------------------------
+# Predicted data (yhat)
+# --------------------------------------------------------------------------------
+for i in range(0, len(test_x)):
 
-#     # revert to_categorical
-#     yhat = argmax(yhat, axis = 1)
-#     yhat = yhat.reshape(len(yhat),1)
+	auxx = test_x[i].reshape((batch_size, test_x[i].shape[0], test_x[i].shape[1])) # (...,n_in,4)
 
-#     print_smth("yhat", yhat)
-#     print(yhat.shape)
+	yhat = model.predict(auxx, batch_size = batch_size)
 
-#     test_x = test_x.reshape((test_x.shape[0], test_x.shape[2] * n_in))
-#     test_x = test_x[:,[0,1,2]]
+	# print("[" + str(i+1) +  "/" + str(len(train_x)) + ']> Expected=' + str(argmax(auxx)) + " Predicted=" + str(argmax(yhat)))
 
-#     inv_yhat = scaler.inverse_transform(test_x)
+yhat = model.predict(test_x, batch_size = batch_size)
 
-#     inv_yhat = concatenate((inv_yhat, yhat), axis=1)
+# revert to_categorical
+yhat = argmax(yhat, axis = 1)
+yhat = yhat.reshape(len(yhat),1)
 
-#     print_smth("inv_yhat before cast", inv_yhat)
+print_smth("yhat", yhat)
+print(yhat.shape)
 
-#     #--------------------------------------------------------------------------------
-#     # Real data (inv_yhat)
-#     #--------------------------------------------------------------------------------
+test_x = test_x.reshape((test_x.shape[0], test_x.shape[2] * n_in))
+test_x = test_x[:,[0,1,2]]
 
-#     yhat = argmax(test_y, axis = 1)
-#     yhat = yhat.reshape(len(yhat),1)
+inv_yhat = scaler.inverse_transform(test_x)
+inv_yhat = concatenate((inv_yhat, yhat), axis=1)
 
-#     # Real values
-#     inv_y = scaler.inverse_transform(test_x)
-#     inv_y = concatenate((inv_y, yhat), axis=1)
+print_smth("inv_yhat before cast", inv_yhat)
 
-#     print_smth("inv_y before cast", inv_y)
+#--------------------------------------------------------------------------------
+# Real data (inv_yhat)
+#--------------------------------------------------------------------------------
 
-#     # Cast the bikes as ints
-#     inv_yhat = inv_yhat[:,3].astype(int)
-#     inv_y    = inv_y[:,3].astype(int) 
+yhat = argmax(test_y, axis = 1)
+yhat = yhat.reshape(len(yhat),1)
 
-#     print_smth("inv_y after casting to int the bikes", inv_y)
-#     print_smth("inv_yhat after casting to int the bikes", inv_yhat)
+# Real values
+inv_y = scaler.inverse_transform(test_x)
+inv_y = concatenate((inv_y, yhat), axis=1)
 
-#     # Calculate RMSE
-#     rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
-#     print(col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC)
+print_smth("inv_y before cast", inv_y)
 
-#     calculate_no_errors(inv_y, inv_yhat)
+# Cast the bikes as ints
+inv_yhat = inv_yhat[:,3].astype(int)
+inv_y    = inv_y[:,3].astype(int) 
 
-#     ################################################################################
-#     # Plot styling
-#     ################################################################################
+print_smth("inv_y after casting to int the bikes", inv_y)
+print_smth("inv_yhat after casting to int the bikes", inv_yhat)
 
-#     # prepare_plot('epochs', 'loss', history.history['loss'], history.history['val_loss'], 'loss')
-#     # prepare_plot('epoch', 'accuracy', history.history['acc'], history.history['val_acc'], 'acc')
-#     prepare_plot('samples', 'bikes', inv_yhat, inv_y, 'train')
-#     prepare_plot('samples', 'bikes', inv_y[range(3100,3100 + 500)], inv_yhat[range(3100,3100 + 500)], 'train_zoomed')
+# Calculate RMSE
+rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
+print(col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC)
 
-#     ################################################################################
-#     # Value predictions
-#     ################################################################################
+calculate_no_errors(inv_y, inv_yhat)
 
-#     print_array("Prediction IN", prediction_x)
+################################################################################
+# Plot styling
+################################################################################
 
-#     numpy.save("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/test_3/prediction_x", prediction_x)
-#     numpy.save("/Users/javierdemartin/Documents/GitHub/neural-bikes/tests/test_3/prediction_y", prediction_y)
+# prepare_plot('epochs', 'loss', history.history['loss'], history.history['val_loss'], 'loss')
+# prepare_plot('epoch', 'accuracy', history.history['acc'], history.history['val_acc'], 'acc')
+prepare_plot('samples', 'bikes', inv_yhat, inv_y, 'train')
+prepare_plot('samples', 'bikes', inv_y[range(3100,3100 + 500)], inv_yhat[range(3100,3100 + 500)], 'train_zoomed')
 
-#     yhat   = model.predict(prediction_x, batch_size = batch_size)
+################################################################################
+# Value predictions
+################################################################################
 
-#     print_smth("HEY MIRA ESTO", yhat)
+print_array("Prediction IN", prediction_x)
 
-#     # invert to_categorical
-#     yhat = argmax(yhat, axis = 1)
-#     yhat = yhat.reshape(len(yhat),1)
+yhat   = model.predict(prediction_x, batch_size = batch_size)
 
-#     prediction_x = prediction_x.reshape((prediction_x.shape[0], prediction_x.shape[2] * n_in))
-#     prediction_x = prediction_x[:,[0,1,2]]
+print_array("HEY MIRA ESTO", yhat)
 
-#     inv_yhat = scaler.inverse_transform(prediction_x)
+# invert to_categorical
+yhat = argmax(yhat, axis = 1)
+yhat = yhat.reshape(len(yhat),1)
 
-#     inv_yhat = concatenate((inv_yhat, yhat), axis=1)
+prediction_x = prediction_x.reshape((prediction_x.shape[0], prediction_x.shape[2] * n_in))
+prediction_x = prediction_x[:,[0,1,2]]
 
-#     print_smth("inv_yhat before cast", inv_yhat)
+inv_yhat = scaler.inverse_transform(prediction_x)
+inv_yhat = concatenate((inv_yhat, yhat), axis=1)
 
-#     #--------------------------------------------------------------------------------
-#     # Real data (inv_yhat)
-#     #--------------------------------------------------------------------------------
+print_smth("inv_yhat before cast", inv_yhat)
 
-#     yhat = argmax(prediction_y, axis = 1)
-#     yhat = yhat.reshape(len(yhat),1)
+#--------------------------------------------------------------------------------
+# Real data (inv_yhat)
+#--------------------------------------------------------------------------------
 
-#     # Real values
-#     inv_y = scaler.inverse_transform(prediction_x)
-#     inv_y = concatenate((inv_y, yhat), axis=1)
+yhat = argmax(prediction_y, axis = 1)
+yhat = yhat.reshape(len(yhat),1)
 
-#     print_smth("inv_y before cast", inv_y)
+# Real values
+inv_y = scaler.inverse_transform(prediction_x)
+inv_y = concatenate((inv_y, yhat), axis=1)
 
-#     # Cast the bikes as ints
-#     inv_yhat = inv_yhat[:,3].astype(int)
-#     inv_y    = inv_y[:,3].astype(int) 
+print_smth("inv_y before cast", inv_y)
 
-#     print_smth("inv_y after casting to int the bikes", inv_y)
-#     print_smth("inv_yhat after casting to int the bikes", inv_yhat)
+# Cast the bikes as ints
+inv_yhat = inv_yhat[:,3].astype(int)
+inv_y    = inv_y[:,3].astype(int) 
 
-#     # Calculate RMSE
-#     rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
-#     print(col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC)
+print_smth("inv_y after casting to int the bikes", inv_y)
+print_smth("inv_yhat after casting to int the bikes", inv_yhat)
 
-#     calculate_no_errors(inv_y, inv_yhat)
+# Calculate RMSE
+rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
+print(col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC)
 
-#     prepare_plot('asa', 'ylabel', inv_y, inv_yhat, 'name')
+calculate_no_errors(inv_y, inv_yhat)
 
-# ################################################################################
-# # Predictron
-# ################################################################################
+prepare_plot('asa', 'ylabel', inv_y, inv_yhat, 'name')
 
+################################################################################
+# Predictron
+################################################################################
 
-# # Makes future predictions by doing iterations, takes some real initial samples
-# # makes a prediction and then uses the prediction to predict
 
-# print(col.BOLD, "\n\n------------------------------------------------------------------------")
-# print("Predicting a whole day of availability")
-# print("------------------------------------------------------------------------\n\n", col.ENDC)
+# Makes future predictions by doing iterations, takes some real initial samples
+# makes a prediction and then uses the prediction to predict
 
-# inital_bikes = 17
-# today   = datetime.datetime.now().timetuple().tm_yday # Current day of the year
-# weekday = weekdays[datetime.datetime.today().weekday()]
-# hour    = "00:00"
+print(col.BOLD, "\n\n------------------------------------------------------------------------")
+print("Predicting a whole day of availability")
+print("------------------------------------------------------------------------\n\n", col.ENDC)
 
+inital_bikes = 17
+today   = datetime.datetime.now().timetuple().tm_yday # Current day of the year
+weekday = weekdays[datetime.datetime.today().weekday()]
+hour    = "00:30"
+station_to_predict = "IRALA"
 
-# data_predicted = []
 
-# data_predicted.append(inital_bikes)
+data_predicted = []
 
+data_predicted.append(inital_bikes)
 
-# hour = hour_encoder.transform([hour])[0]
-# weekday = weekday_encoder.transform([weekday])[0]
-# inital_bikes = to_categorical(inital_bikes, max_cases)
 
-# three_main = numpy.array(today)
-# three_main = numpy.append(three_main, hour)
-# three_main = numpy.append(three_main, weekday)
+hour = hour_encoder.transform([hour])[0]
+weekday = weekday_encoder.transform([weekday])[0]
+station_to = station_encoder.transform([weekday])[0]
 
-# data_in = scaler.transform([three_main])
+inital_bikes = to_categorical(inital_bikes, max_cases)
 
-# data_in = numpy.append(data_in, inital_bikes)
+three_main = numpy.array(today)
+three_main = numpy.append(three_main, hour)
+three_main = numpy.append(three_main, weekday)
+three_main = numpy.append(three_main, station_to)
 
+data_in = scaler.transform([three_main])
 
-# data_to_feed = numpy.array([data_in])
+data_in = numpy.append(data_in, inital_bikes)
 
+data_to_feed = numpy.array([data_in])
 
 
-# # data_to_feed = numpy.append(data_to_feed, [data_in], axis = 1)
 
-# # print(data_to_feed, data_to_feed.shape
+# data_to_feed = numpy.append(data_to_feed, [data_in], axis = 1)
 
-# # If there are more than one time-steps create the initial array
-# if n_in > 1:
-#     for ts in range(1,n_in):
-#         three_main[1] += 1
-#         data_in = scaler.transform([three_main])
-#         data_in = numpy.append(data_in, inital_bikes)
+# print(data_to_feed, data_to_feed.shape
 
-#         data_to_feed = numpy.append(data_to_feed, [data_in], axis = 1)
+# If there are more than one time-steps create the initial array
+if n_in > 1:
+    for ts in range(1,n_in):
+        three_main[1] += 1
+        data_in = scaler.transform([three_main])
+        data_in = numpy.append(data_in, inital_bikes)
 
+        data_to_feed = numpy.append(data_to_feed, [data_in], axis = 1)
 
-# data_to_feed = data_to_feed.reshape((data_to_feed.shape[0], n_in, max_cases +3)) # (...,1,4)
 
+data_to_feed = data_to_feed.reshape((data_to_feed.shape[0], n_in, max_cases +4)) # (...,1,4)
+
+print_array("data_to_feed",  data_to_feed)
+
+auxxx = data_to_feed
+
+for i in range(batch_size - 1):
+    # print(i
+    data_to_feed = numpy.append(data_to_feed, auxxx, axis = 1)    
+
+data_to_feed = data_to_feed.reshape((batch_size, n_in, max_cases +4)) # (...,1,4)
 # print_array("data_to_feed",  data_to_feed)
 
-# auxxx = data_to_feed
-
-# for i in range(batch_size - 1):
-#     # print(i
-#     data_to_feed = numpy.append(data_to_feed, auxxx, axis = 1)    
-
-# data_to_feed = data_to_feed.reshape((batch_size, n_in, max_cases +3)) # (...,1,4)
-# # print_array("data_to_feed",  data_to_feed)
-
-# print(data_to_feed, data_to_feed.shape)
+print(data_to_feed, data_to_feed.shape)
 
 
-# # Generate predictions for 24 hours, as every interval is 5' a whole day it's 288 predictions
-# # n_horas = 12 * n_in * 11 #+ 1
+# Generate predictions for 24 hours, as every interval is 5' a whole day it's 288 predictions
+# n_horas = 12 * n_in * 11 #+ 1
 
 
 
-# for i in range(0,290):
+for i in range(0,290):
 
 
-#     # undo the transformation of the input that is in the shape of [batch_size, n_in, 24], 
-#     # and get the first 3 columns
-#     # and inverse transform of the first three columns [doy, time, dow]
-#     datoa = data_to_feed[0][:,range(0, 3)][n_in - 1]
 
-#     data_rescaled = scaler.inverse_transform([datoa]).astype(int)
+    # undo the transformation of the input that is in the shape of [batch_size, n_in, 24], 
+    # and get the first 3 columns
+    # and inverse transform of the first three columns [doy, time, dow]
+    datoa = data_to_feed[0][:,range(0, 4)][n_in - 1]
+
+    data_rescaled = scaler.inverse_transform([datoa]).astype(int)
 	
-#     predicted_bikes =  model.predict(data_to_feed, batch_size = batch_size)
-#     predicted_bikes = predicted_bikes[0]
+    predicted_bikes =  model.predict(data_to_feed, batch_size = batch_size)
+    predicted_bikes = predicted_bikes[0]
 	
-#     print(col.blue, "[" + str(i + 1) + "] Predichas ", argmax(predicted_bikes), " bicis a las ", hour_encoder.inverse_transform(data_rescaled[:,1].astype(int))[0], col.ENDC)
+    print(col.blue, "[" + str(i + 1) + "] Predichas ", argmax(predicted_bikes), " bicis a las ", hour_encoder.inverse_transform(data_rescaled[:,1].astype(int))[0], col.ENDC)
 
-#     data_predicted.append(argmax(predicted_bikes))
+    data_predicted.append(argmax(predicted_bikes))
 
-#     data_rescaled[0][1] += 1 # increase hour interval (+5')
+    data_rescaled[0][1] += 1 # increase hour interval (+5')
 
-#     data_in = scaler.transform(data_rescaled)
+    data_in = scaler.transform(data_rescaled)
 
-#     data_to_feed = data_to_feed[0]
-#     data_to_feed = data_to_feed.reshape((1, n_in * (max_cases +3))) # (...,1,4)
+    data_to_feed = data_to_feed[0]
+    data_to_feed = data_to_feed.reshape((1, n_in * (max_cases +4))) # (...,1,4)
 
-#     # discard the oldest sample to shift the data
-#     data_to_feed = data_to_feed[:,range(max_cases+3, n_in * (max_cases+3))]
+    # discard the oldest sample to shift the data
+    data_to_feed = data_to_feed[:,range(max_cases+4, n_in * (max_cases+4))]
 
-#     bikes = to_categorical(argmax(predicted_bikes), max_cases)
+    bikes = to_categorical(argmax(predicted_bikes), max_cases)
 
-#     data_in = numpy.append(data_in, bikes)
-#     data_to_feed = numpy.append(data_to_feed, [data_in], axis = 1)
-#     data_to_feed = data_to_feed.reshape((data_to_feed.shape[0], n_in, max_cases +3)) # (...,1,4)
+    data_in = numpy.append(data_in, bikes)
+    data_to_feed = numpy.append(data_to_feed, [data_in], axis = 1)
+    data_to_feed = data_to_feed.reshape((data_to_feed.shape[0], n_in, max_cases +4)) # (...,1,4)
 
-#     for i in range(batch_size - 1):
-#         print_array("DATA TO FEED", data_to_feed)
+    print_array("HEEYEYYEE", data_to_feed)
 
-#         data_to_feed = numpy.append(data_to_feed, auxxx, axis = 1)    
+    for j in range(batch_size - 1):
+        print_array("DATA TO FEED", data_to_feed)
+
+        data_to_feed = numpy.append(data_to_feed, auxxx, axis = 1)    
 
 	
 
-# print(data_predicted)
+print(data_predicted)
 
-# prepare_plot('Time', 'Bikes', data_predicted, [], 'predictron')
+prepare_plot('Time', 'Bikes', data_predicted, [], 'predictron')
 
-# os.system("touch finished")
+os.system("touch finished")
 
 
 
