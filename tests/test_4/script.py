@@ -244,13 +244,7 @@ weekday_encoder = LabelEncoder() # Encode columns that are not numbers
 values[:,1] = hour_encoder.fit_transform(values[:,1])    # Encode HOUR as an integer value
 values[:,2] = weekday_encoder.fit_transform(values[:,2]) # Encode HOUR as int
 
-print_array("HEHEHEHEHEEHEHEHEH", values)
-
 values = values.astype('float')
-
-print_smth("LOL", max(values[:,2]))
-print_smth("LOL", numpy.pi)
-print_smth("LOL", values[:,2].astype('float'))
 
 max_time = max(values[:,0])
 max_hour = max(values[:,1])
@@ -268,10 +262,21 @@ new_dataset['wday_cos'] = numpy.cos(2. * numpy.pi * values[:,2].astype('float') 
 
 new_dataset['bikes'] = values[:,3]
 
-aux = new_dataset.sample(300)
 
-plt.scatter(aux['wday_sin'], aux['wday_cos'])
-plt.savefig("plots/hahe.png", bbox_inches="tight")
+plt.plot(numpy.arange(0, len(new_dataset['hour_sin'].values[0:300]), 1), new_dataset['hour_sin'].values[0:300])
+plt.axis('off')
+
+plt.savefig("plots/cyclic_encoding_sin.png", bbox_inches="tight")
+plt.close()
+
+plt.plot(numpy.arange(0, len(new_dataset['hour_cos'].values[0:300]), 1), new_dataset['hour_cos'].values[0:300])
+plt.axis('off')
+plt.savefig("plots/cyclic_encoding_cos.png", bbox_inches="tight")
+plt.close()
+
+plt.scatter(new_dataset['hour_sin'].values[0:300], new_dataset['hour_cos'].values[0:300], alpha = 0.5)
+plt.axis('off')
+plt.savefig("plots/cyclic_encoding.png", bbox_inches="tight")
 plt.close()
 
 values = new_dataset.values
@@ -302,19 +307,17 @@ print("COLUMNS", columns)
 
 reframed = series_to_supervised(columns, scaled, n_in, n_out)
 
-to_drop = range(n_in * len(columns) , (1+n_in) * len(columns) - 1)
+to_drop = range(n_in * len(columns) , (1 + n_in) * len(columns) - 1)
 
 print_smth("TODROP", to_drop)
 
 reframed.drop(reframed.columns[to_drop], axis=1, inplace=True)
 
-print_smth("PUTO", reframed.columns)
-
 values = reframed.values
 
 print_array("Reframed dataset without columns that are not going to be predicted", reframed.head())
 
-train_size, test_size, prediction_size = int(len(values) * 0.9) , int(len(values) * 0.0), int(len(values) * 0.1)
+train_size, test_size, prediction_size = int(len(values) * 0.75) , int(len(values) * 0.2), int(len(values) * 0.05)
 
 train_size      = int(int(train_size / new_batch_size) * new_batch_size) 
 test_size       = int(int(test_size / new_batch_size) * new_batch_size) 
@@ -377,8 +380,8 @@ if os.path.isfile("model/model.h5") == False:
 
 	model = Sequential()
 	model.add(LSTM(lstm_neurons, batch_input_shape=(new_batch_size, train_x.shape[1], train_x.shape[2]), stateful=False))
-	model.add(Dense(n_out))
-	model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['accuracy', 'mse', 'mae'])
+	model.add(Dense(n_out, activation = 'relu'))
+	model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mse', 'acc'])
 	# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy'])
 
 	print("DIMENSIONS LOCO")
@@ -398,12 +401,11 @@ if os.path.isfile("model/model.h5") == False:
 	for i in range(epochs):
 
 		print("Epoch " + str(i+1) + "/" + str(epochs))
-		# history = model.fit(train_x, train_y, epochs=1, batch_size=new_batch_size, verbose=2, shuffle=False)
 		history = model.fit(train_x, train_y, epochs=1, batch_size=new_batch_size, verbose=2, shuffle=False, validation_data = (test_x, test_y))
 
 		list_acc.append(float(history.history['acc'][0]))
 		list_loss.append(float(history.history['loss'][0]))
-		list_loss.append(float(history.history['mean_squared_error'][0]))
+		list_mse.append(float(history.history['mean_squared_error'][0]))
 
 		model.reset_states()
 
@@ -466,13 +468,55 @@ print("Loading model from disk")
 # Load trained model from disk
 model = Sequential()
 model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=True))
-model.add(Dense(n_out))
-model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['accuracy', 'mse', 'mae'])
+model.add(Dense(n_out, activation = 'relu'))
+model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mse'])
 print("Prev load")
 model.load_weights("model/model.h5")
-# model.set_weights(w)
+
 # plot_model(model, to_file='model/new_model.png', show_shapes = True)
 print("POST")
+
+print_array("TEST_X", prediction_x)
+
+
+if os.path.isdir("/data_gen/prediction") == False:
+		os.system("mkdir data_gen/prediction")
+		os.system("chmod 775 data_gen/prediction")
+
+
+predicted = []
+
+for i in range(len(prediction_x)):
+
+	aux = prediction_x[i]
+	aux = aux.reshape(1, prediction_x[i].shape[0], prediction_x[i].shape[1])
+
+	print_array("Feeding", aux)
+
+	yhat = model.predict(aux)
+
+	predicted.append(yhat[0][0] * max_bikes)
+
+
+with open('data_gen/prediction/' + file_name, 'w') as file:
+		wr = csv.writer(file, delimiter = '\n')
+		wr.writerow(predicted)
+
+prepare_plot('samples', 'bikes', predicted, [], 'YOYOYO')
+
+# test_X = test_X.reshape((test_X.shape[0], test_X.shape[2]))
+# # invert scaling for forecast
+# inv_yhat = concatenate((yhat, test_X[:, 1:]), axis=1)
+# inv_yhat = scaler.inverse_transform(inv_yhat)
+# inv_yhat = inv_yhat[:,0]
+# # invert scaling for actual
+# test_y = test_y.reshape((len(test_y), 1))
+# inv_y = concatenate((test_y, test_X[:, 1:]), axis=1)
+# inv_y = scaler.inverse_transform(inv_y)
+# inv_y = inv_y[:,0]
+# # calculate RMSE
+# rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
+# print('Test RMSE: %.3f' % rmse)
 
 # --------------------------------------------------------------------------------
 # Predicted data (yhat)
@@ -668,7 +712,7 @@ predicted_bikes = -1
 
 pred = []
 
-for i in range(0,288):
+for i in range(0,200):
 
 	predicted_bikes = model.predict(d)
 
@@ -680,10 +724,17 @@ for i in range(0,288):
 
 	# print_array("DATA", d)
 
-	d = d[range((n_in-1) * len(columns), n_in * len(columns))]
+	newest = d[range((n_in-1) * len(columns), (n_in) * len(columns))]
+
+	print_array("NEWEST", newest)
+
+
+	d = d[range(0, (n_in-1) * len(columns))]
+
+	print_array("d", d)
 
 	# print_array("DATAaaaa", d)
-	newest = scaler.inverse_transform([d])
+	newest = scaler.inverse_transform([newest])
 	# print_array("DATAaaaa", newest)
 
 	aux = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))
@@ -702,79 +753,18 @@ for i in range(0,288):
 
 	d = d.reshape(1, n_in, len(columns))
 
-
-	# print_array("TRATATA", d)
+	print_array("FINAL", d)
 
 print(pred)
 
+
+if os.path.isdir("/data_gen/predictron") == False:
+		os.system("mkdir data_gen/predictron")
+		os.system("chmod 775 data_gen/predictron")
+
+
+with open('data_gen/predictron/' + file_name, 'w') as file:
+		wr = csv.writer(file, delimiter = '\n')
+		wr.writerow(pred)
+
 prepare_plot('Time', 'Bikes', pred, [], 'predictron')
-
-
-
-# # Generate predictions for 24 hours, as every interval is 5' a whole day it's 288 predictions
-# # n_horas = 12 * n_in * 11 #+ 1
-
-
-
-# for i in range(0,290):
-
-
-
-# 	# undo the transformation of the input that is in the shape of [batch_size, n_in, 24], 
-# 	# and get the first 3 columns
-# 	# and inverse transform of the first three columns [doy, time, dow]
-# 	datoa = data_to_feed[0][:,range(0, len(columns))][n_in - 1]
-
-# 	print_array("DATOA", datoa)
-
-# 	data_rescaled = scaler.inverse_transform([datoa]).astype(int)
-	
-# 	predicted_bikes =  model.predict(data_to_feed, batch_size = batch_size)
-# 	predicted_bikes = predicted_bikes[0]
-	
-# 	print(col.blue, "[" + str(i + 1) + "] Predichas ", str(predicted_bikes), " bicis a las ", hour_encoder.inverse_transform(data_rescaled[:,1].astype(int))[0], col.ENDC)
-
-# 	data_predicted.append(predicted_bikes)
-
-# 	data_rescaled[0][1] += 1 # increase hour interval (+5')
-
-# 	data_in = scaler.transform(data_rescaled)
-
-# 	data_to_feed = data_to_feed[0]
-# 	data_to_feed = data_to_feed.reshape((1, n_in * len(columns))) # (...,1,4)
-
-# 	# discard the oldest sample to shift the data
-# 	data_to_feed = data_to_feed[:,range(len(columns), n_in * len(columns))]
-
-
-# 	data_in = scaler.inverse_transform(data_in)
-# 	data_in[0][3] = predicted_bikes
-# 	data_in = scaler.transform(data_in)
-
-# 	print_array("DATA_IN", data_in)
-
-
-
-# 	# bikes = to_categorical(argmax(predicted_bikes), max_cases)
-
-
-# 	data_to_feed = numpy.append(data_to_feed, data_in, axis = 1)
-# 	data_to_feed = data_to_feed.reshape((data_to_feed.shape[0], n_in, len(columns))) # (...,1,4)
-
-# 	print_array("HEEYEYYEE", data_to_feed)
-
-# 	for j in range(batch_size - 1):
-# 		print_array("DATA TO FEED", data_to_feed)
-
-# 		data_to_feed = numpy.append(data_to_feed, auxxx, axis = 1)    
-
-	
-
-# print(data_predicted)
-
-# prepare_plot('Time', 'Bikes', data_predicted, [], 'predictron')
-
-# os.system("touch finished")
-
-
-
