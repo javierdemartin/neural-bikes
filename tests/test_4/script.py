@@ -73,6 +73,15 @@ class col:
 	BOLD      = '\033[1m'
 	UNDERLINE = '\033[4m'
 
+def create_model(batch_size, statefulness):
+
+	model = Sequential()
+	model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=statefulness))
+	model.add(Dense(n_out, activation = 'relu'))
+	model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mse', 'acc'])
+
+	return model
+
 # Formatted output
 def print_smth(description, x):
 	
@@ -360,8 +369,10 @@ print(col.blue, "[Dimensions]> ", "Train X ", train_x.shape, "Train Y ", train_y
 # Neural Network
 ################################################################################
 
-
 print("Checking if exists")
+
+file_name = str(lstm_neurons) + "_" + str(new_batch_size) + "_" + str(epochs) + "_" + str(n_in)
+
 
 # If the model is already trained don't do it again
 if os.path.isfile("model/model.h5") == False:
@@ -378,21 +389,10 @@ if os.path.isfile("model/model.h5") == False:
 	# Network definition
 	#--------------------------------------------------------------------------------
 
-	model = Sequential()
-	model.add(LSTM(lstm_neurons, batch_input_shape=(new_batch_size, train_x.shape[1], train_x.shape[2]), stateful=False))
-	model.add(Dense(n_out, activation = 'relu'))
-	model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mse', 'acc'])
-	# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy'])
+	model = create_model(new_batch_size, False)
 
 	print("DIMENSIONS LOCO")
 	print(train_x.shape[1], train_x.shape[2])
-
-	# history = model.fit(train_x, train_y, 
-	#     epochs = epochs, 
-	#     batch_size = new_batch_size, 
-	#     validation_data = (test_x, test_y), 
-	#     verbose = 1, 
-	#     shuffle = False)
 
 	list_acc  = []
 	list_loss = []
@@ -401,7 +401,7 @@ if os.path.isfile("model/model.h5") == False:
 	for i in range(epochs):
 
 		print("Epoch " + str(i+1) + "/" + str(epochs))
-		history = model.fit(train_x, train_y, epochs=1, batch_size=new_batch_size, verbose=2, shuffle=False, validation_data = (test_x, test_y))
+		history = model.fit(train_x, train_y, epochs=1, batch_size=new_batch_size, verbose=1, shuffle=False, validation_data = (test_x, test_y))
 
 		list_acc.append(float(history.history['acc'][0]))
 		list_loss.append(float(history.history['loss'][0]))
@@ -414,7 +414,6 @@ if os.path.isfile("model/model.h5") == False:
 
 	print(list_acc)
 
-	file_name = str(lstm_neurons) + "_" + str(new_batch_size) + "_" + str(epochs) + "_" + str(n_in)
 
 	if os.path.isdir("/data_gen") == False:
 		os.system("mkdir data_gen")
@@ -456,7 +455,7 @@ if os.path.isfile("model/model.h5") == False:
 
 	model.save_weights("model/model.h5")
 
-	# plot_model(model, to_file='model/model.png', show_shapes = True)
+	plot_model(model, to_file='model/model.png', show_shapes = True)
 
 	w = model.get_weights()
 
@@ -466,18 +465,12 @@ if os.path.isfile("model/model.h5") == False:
 print("Loading model from disk")
 
 # Load trained model from disk
-model = Sequential()
-model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=True))
-model.add(Dense(n_out, activation = 'relu'))
-model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mse'])
-print("Prev load")
+model = create_model(batch_size, True)
 model.load_weights("model/model.h5")
 
-# plot_model(model, to_file='model/new_model.png', show_shapes = True)
-print("POST")
+plot_model(model, to_file='model/new_model.png', show_shapes = True)
 
 print_array("TEST_X", prediction_x)
-
 
 if os.path.isdir("/data_gen/prediction") == False:
 		os.system("mkdir data_gen/prediction")
@@ -504,141 +497,9 @@ with open('data_gen/prediction/' + file_name, 'w') as file:
 
 prepare_plot('samples', 'bikes', predicted, [], 'YOYOYO')
 
-# test_X = test_X.reshape((test_X.shape[0], test_X.shape[2]))
-# # invert scaling for forecast
-# inv_yhat = concatenate((yhat, test_X[:, 1:]), axis=1)
-# inv_yhat = scaler.inverse_transform(inv_yhat)
-# inv_yhat = inv_yhat[:,0]
-# # invert scaling for actual
-# test_y = test_y.reshape((len(test_y), 1))
-# inv_y = concatenate((test_y, test_X[:, 1:]), axis=1)
-# inv_y = scaler.inverse_transform(inv_y)
-# inv_y = inv_y[:,0]
-# # calculate RMSE
-# rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
-# print('Test RMSE: %.3f' % rmse)
-
-# --------------------------------------------------------------------------------
-# Predicted data (yhat)
-# --------------------------------------------------------------------------------
-# for i in range(0, len(test_x)):
-
-# 	auxx = test_x[i].reshape((batch_size, test_x[i].shape[0], test_x[i].shape[1])) # (...,n_in,4)
-
-# 	yhat = model.predict(auxx, batch_size = batch_size)
-
-# 	# print("[" + str(i+1) +  "/" + str(len(train_x)) + ']> Expected=' + str(argmax(auxx)) + " Predicted=" + str(argmax(yhat)))
-
-# yhat = model.predict(test_x, batch_size = batch_size)
-
-# # revert to_categorical
-# # yhat = argmax(yhat, axis = 1)
-# yhat = yhat.reshape(len(yhat),1)
-
-# print_smth("yhat", yhat)
-# print(yhat.shape)
-
-# print_array("HEYOOO", test_x)
-
-# test_x = test_x.reshape(test_x.shape[0], test_x.shape[2] * n_in)
-# test_x = test_x[:,[range(0,len(columns))]]
-
-# print_array("HEYOOO", test_x)
-
-# inv_yhat = scaler.inverse_transform(test_x)
-# inv_yhat = concatenate((inv_yhat, yhat), axis=1)
-
-# print_smth("inv_yhat before cast", inv_yhat)
-
-# #--------------------------------------------------------------------------------
-# # Real data (inv_yhat)
-# #--------------------------------------------------------------------------------
-
-# # yhat = argmax(test_y, axis = 1)
-# yhat = yhat.reshape(len(yhat),1)
-
-# # Real values
-# inv_y = scaler.inverse_transform(test_x)
-# inv_y = concatenate((inv_y, yhat), axis=1)
-
-# print_smth("inv_y before cast", inv_y)
-
-# # Cast the bikes as ints
-# inv_yhat = inv_yhat[:,3].astype(int)
-# inv_y    = inv_y[:,3].astype(int) 
-
-# print_smth("inv_y after casting to int the bikes", inv_y)
-# print_smth("inv_yhat after casting to int the bikes", inv_yhat)
-
-# # Calculate RMSE
-# rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
-# print(col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC)
-
-# calculate_no_errors(inv_y, inv_yhat)
-
-# ################################################################################
-# # Plot styling
-# ################################################################################
-
-# # prepare_plot('epochs', 'loss', history.history['loss'], history.history['val_loss'], 'loss')
-# # prepare_plot('epoch', 'accuracy', history.history['acc'], history.history['val_acc'], 'acc')
-# prepare_plot('samples', 'bikes', inv_yhat, inv_y, 'train')
-# prepare_plot('samples', 'bikes', inv_y[range(3100,3100 + 500)], inv_yhat[range(3100,3100 + 500)], 'train_zoomed')
-
-# ################################################################################
-# # Value predictions
-# ################################################################################
-
-# print_array("Prediction IN", prediction_x)
-
-# yhat   = model.predict(prediction_x, batch_size = batch_size)
-
-# print_array("HEY MIRA ESTO", yhat)
-
-# # invert to_categorical
-# # yhat = argmax(yhat, axis = 1)
-# yhat = yhat.reshape(len(yhat),1)
-
-# prediction_x = prediction_x.reshape((prediction_x.shape[0], prediction_x.shape[2] * n_in))
-# prediction_x = prediction_x[:,[0,1,2]]
-
-# inv_yhat = scaler.inverse_transform(prediction_x)
-# inv_yhat = concatenate((inv_yhat, yhat), axis=1)
-
-# print_smth("inv_yhat before cast", inv_yhat)
-
-# #--------------------------------------------------------------------------------
-# # Real data (inv_yhat)
-# #--------------------------------------------------------------------------------
-
-# yhat = argmax(prediction_y, axis = 1)
-# yhat = yhat.reshape(len(yhat),1)
-
-# # Real values
-# inv_y = scaler.inverse_transform(prediction_x)
-# inv_y = concatenate((inv_y, yhat), axis=1)
-
-# print_smth("inv_y before cast", inv_y)
-
-# # Cast the bikes as ints
-# inv_yhat = inv_yhat[:,3].astype(int)
-# inv_y    = inv_y[:,3].astype(int) 
-
-# print_smth("inv_y after casting to int the bikes", inv_y)
-# print_smth("inv_yhat after casting to int the bikes", inv_yhat)
-
-# # Calculate RMSE
-# rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
-# print(col.HEADER + '> Test RMSE: %.3f' % rmse + col.ENDC)
-
-# calculate_no_errors(inv_y, inv_yhat)
-
-# prepare_plot('asa', 'ylabel', inv_y, inv_yhat, 'name')
-
 ################################################################################
 # Predictron
 ################################################################################
-
 
 # Makes future predictions by doing iterations, takes some real initial samples
 # makes a prediction and then uses the prediction to predict
@@ -651,62 +512,55 @@ inital_bikes = 7
 today   = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday = weekdays[datetime.datetime.today().weekday()]
 hour    = "00:30"
-# station_to_predict = "IRALA"
 
 hour = hour_encoder.transform([hour])[0]
 weekday = weekday_encoder.transform([weekday])[0]
 
-print(hour)
-print(weekday)
-print(today)
+print("Starting prediction at " + str(hour) + " of the day " + str(today) + " which is " + str(weekday) + " with " + str(initial_bikes) + " initial bikes")
 
+# Create the initial array of information with only one time-step and then adding the remaining ones
+# --------------------------------------------------------------------------------------------------- 
 
-d = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))
+d = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))      # Day of the year SIN
+d = numpy.append(d,numpy.cos(2. * numpy.pi * today / (max_time + 1)))   # Day of the year COS
 
-d = numpy.append(d,numpy.cos(2. * numpy.pi * today / (max_time + 1)))
+d = numpy.append(d,numpy.sin(2. * numpy.pi * hour / (max_hour + 1)))    # Hour SIN
+d = numpy.append(d,numpy.cos(2. * numpy.pi * hour / (max_hour + 1)))    # Hour COS
 
-d = numpy.append(d,numpy.sin(2. * numpy.pi * hour / (max_hour + 1)))
-d = numpy.append(d,numpy.cos(2. * numpy.pi * hour / (max_hour + 1)))
+d = numpy.append(d,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1))) # Weekday SIN
+d = numpy.append(d,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1))) # Weekday COS
 
-d = numpy.append(d,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))
-d = numpy.append(d,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))
+d = numpy.append(d,inital_bikes) 
 
-d = numpy.append(d,inital_bikes)
+d = scaler.transform([d]) # Scale the values using the same scaler as before
 
-print_smth("VAAAALS", d)
+print_smth("Scaled values", d)
 
-d = scaler.transform([d])
-
-print_smth("VAAAALS", d)
-
-# Create the timesteps
+# Create the remaining timesteps to later feed the network
 
 if n_in > 1:
 
 	for ts in range(1,n_in):
 
-		aux = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))
-		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * today / (max_time + 1)))
+		aux = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))           # Day of the year SIN
+		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * today / (max_time + 1)))      # Day of the year COS
 
-		aux = numpy.append(aux,numpy.sin(2. * numpy.pi * (hour+ts) / (max_hour + 1)))
-		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * (hour+ts) / (max_hour + 1)))
+		aux = numpy.append(aux,numpy.sin(2. * numpy.pi * (hour+ts) / (max_hour + 1)))  # Hour SIN
+		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * (hour+ts) / (max_hour + 1)))  # Hour COS
 
-		aux = numpy.append(aux,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))
-		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))
+		aux = numpy.append(aux,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))    # Weekday SIN
+		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))    # Weekday COS
 		aux = numpy.append(aux,inital_bikes)
 
 		aux = scaler.transform([aux])
 
 		d = numpy.append(d, aux)
 
-
-	print_array("DDD", d)
-
-
+	print_array("Resulting array with all the time-steps", d)
 
 d = d.reshape(1, n_in, len(columns))
 
-print_array("DDD", d)
+print_array("Reshaped array", d)
 
 predicted_bikes = -1
 
@@ -717,8 +571,6 @@ for i in range(0,200):
 	predicted_bikes = model.predict(d)
 
 	pred.append(predicted_bikes[0][0] * max_bikes)
-
-	# print_array("DATA", d)
 
 	d = d.reshape(n_in * len(columns),)
 
