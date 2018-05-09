@@ -24,6 +24,12 @@ time_sin | time_cos | hour_sin | hour_cos | wday_sin | wday_cos | bikes
 
 # Model
 
+<div align = "center">
+ <img src="model/model.png" width="30%"  />
+</div>
+
+> Training the model using batch training
+
 ```python
 model = Sequential()
 model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, time_steps, 7), stateful=False))
@@ -32,6 +38,12 @@ model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mse'])
 ```
 
 > Batch training
+
+<div align = "center">
+ <img src="model/new_model.png" width="30%"  />
+</div>
+
+> Stateful model used for online predictions
 
 After training the model I switch to a stateful network with batch size `1`. With that I can predict one sample and then with the predicted data feed it to the model and predict again.
 
