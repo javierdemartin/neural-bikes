@@ -9,9 +9,9 @@ Previously I encoded the day of the year, weekday and time using a `LabelEncoder
 Time is a continuous function so I am expressing it as a sine and cosine functions.
 
 <div align = "center">
- <img src="plots/cyclic_encoding_sin.png" width="32%"  /> +
- <img src="plots/cyclic_encoding_cos.png" width="32%"  /> =
- <img src="plots/cyclic_encoding.png" width="32%"  />
+ <img src="plots/cyclic_encoding_sin.png" width="30%"  /> +
+ <img src="plots/cyclic_encoding_cos.png" width="30%"  /> =
+ <img src="plots/cyclic_encoding.png" width="30%"  />
 </div>
 
 Also I previously one-hot encoded the number of bikes, that gave an increase in accuracy when fitting the model but the neural network basically learnt to predict the previously fed value. As I am not interested in predicting the exact position of the bike in the dock I don't need to do this kind of encoding.
@@ -33,14 +33,41 @@ model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mse'])
 
 > Batch training
 
+After training the model I switch to a stateful network with batch size `1`. With that I can predict one sample and then with the predicted data feed it to the model and predict again.
+
+```python
+model = Sequential()
+model.add(LSTM(lstm_neurons, batch_input_shape=(1, time_steps, 7), stateful=True))
+model.add(Dense(1))
+model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mse'])
+model.load_weights("model/model.h5")
+```
+
 ## Plots
 
-<div align = "center">
- <img src="plots/accuracy.png" width="33%"  />
- <img src="plots/loss.png" width="33%"  />
- <img src="plots/mse.png" width="33%"  />
-</div>
+Different plots based on varying the batch size as input
 
-> Accuracy, Loss and MSE plots
+![Accuracy](plots/accuracy.png)
+
+> Accuracy
+
+Accuracy never goes above `0.0XX`.
+
+![Accuracy](plots/loss.png)
+
+> Loss
+
+![Accuracy](plots/mse.png)
+
+> MSE
+
+![Prediction](plots/prediction.png)
+
+> Prediction using sample data
+
+![My Prediction](plots/predictron.png)
+
+> Predictions done creating my data
+
 
 There's something wrong here for sure...
