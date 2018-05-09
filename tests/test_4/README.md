@@ -9,18 +9,24 @@ Previously I encoded the day of the year, weekday and time using a `LabelEncoder
 Time is a continuous function so I am expressing it as a sine and cosine functions.
 
 <div align = "center">
- <img src="plots/cyclic_encoding_sin.png" width="33%"  /> +
- <img src="plots/cyclic_encoding_cos.png" width="33%"  /> =
- <img src="plots/cyclic_encoding.png" width="33%"  />
+ <img src="plots/cyclic_encoding_sin.png" width="32%"  /> +
+ <img src="plots/cyclic_encoding_cos.png" width="32%"  /> =
+ <img src="plots/cyclic_encoding.png" width="32%"  />
 </div>
 
 Also I previously one-hot encoded the number of bikes, that gave an increase in accuracy when fitting the model but the neural network basically learnt to predict the previously fed value. As I am not interested in predicting the exact position of the bike in the dock I don't need to do this kind of encoding.
+
+After all this the input features would be the following 7 columns
+
+```
+time_sin | time_cos | hour_sin | hour_cos | wday_sin | wday_cos | bikes
+```
 
 # Model
 
 ```python
 model = Sequential()
-model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=False))
+model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, time_steps, 7), stateful=False))
 model.add(Dense(1))
 model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mse'])
 ```
