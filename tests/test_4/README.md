@@ -59,7 +59,7 @@ model.load_weights("model/model.h5")
 
 Different plots based on varying the batch size as input
 
-![Accuracy](plots/accuracy.png)
+![Accuracy](plots/acc.png)
 
 > Accuracy
 
