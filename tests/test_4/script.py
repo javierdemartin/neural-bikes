@@ -189,6 +189,24 @@ def calculate_no_errors(predicted, real):
 
 	print(wrong_val, "/", len(predicted))
 
+# Returns the array with generated cyclic encoding UNSCALED
+# Input data has to be encoded previously
+
+def create_array(doy, hour, weekday, bikes):
+
+	array = numpy.array(numpy.sin(2. * numpy.pi * doy / (max_time + 1)))      # Day of the year SIN
+	array = numpy.append(array,numpy.cos(2. * numpy.pi * doy / (max_time + 1)))   # Day of the year COS
+
+	array = numpy.append(array,numpy.sin(2. * numpy.pi * hour / (max_hour + 1)))    # Hour SIN
+	array = numpy.append(array,numpy.cos(2. * numpy.pi * hour / (max_hour + 1)))    # Hour COS
+
+	array = numpy.append(array,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1))) # Weekday SIN
+	array = numpy.append(array,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1))) # Weekday COS
+
+	array = numpy.append(array,bikes) 
+
+	return array
+
 print(col.HEADER)
 print("   __            __     _____")
 print("  / /____  _____/ /_   |__  /")
@@ -270,7 +288,6 @@ new_dataset['wday_sin'] = numpy.sin(2. * numpy.pi * values[:,2].astype('float') 
 new_dataset['wday_cos'] = numpy.cos(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
 
 new_dataset['bikes'] = values[:,3]
-
 
 plt.plot(numpy.arange(0, len(new_dataset['hour_sin'].values[0:300]), 1), new_dataset['hour_sin'].values[0:300])
 plt.axis('off')
@@ -484,7 +501,7 @@ for i in range(len(prediction_x)):
 	aux = prediction_x[i]
 	aux = aux.reshape(1, prediction_x[i].shape[0], prediction_x[i].shape[1])
 
-	print_array("Feeding", aux)
+	# print_array("Feeding", aux)
 
 	yhat = model.predict(aux)
 
@@ -508,29 +525,25 @@ print(col.BOLD, "\n\n-----------------------------------------------------------
 print("Predicting a whole day of availability")
 print("------------------------------------------------------------------------\n\n", col.ENDC)
 
-inital_bikes = 7
-today   = datetime.datetime.now().timetuple().tm_yday # Current day of the year
-weekday = weekdays[datetime.datetime.today().weekday()]
-hour    = "00:30"
+inital_bikes = 15
+today        = datetime.datetime.now().timetuple().tm_yday # Current day of the year
+weekday      = weekdays[datetime.datetime.today().weekday()]
+hour         = "00:30"
 
 hour = hour_encoder.transform([hour])[0]
 weekday = weekday_encoder.transform([weekday])[0]
 
-print("Starting prediction at " + str(hour) + " of the day " + str(today) + " which is " + str(weekday) + " with " + str(initial_bikes) + " initial bikes")
+print("Starting prediction at " + str(hour) + " of the day " + str(today) + " which is " + str(weekday) + " with " + str(inital_bikes) + " initial bikes")
+
+
+
+
+
 
 # Create the initial array of information with only one time-step and then adding the remaining ones
 # --------------------------------------------------------------------------------------------------- 
 
-d = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))      # Day of the year SIN
-d = numpy.append(d,numpy.cos(2. * numpy.pi * today / (max_time + 1)))   # Day of the year COS
-
-d = numpy.append(d,numpy.sin(2. * numpy.pi * hour / (max_hour + 1)))    # Hour SIN
-d = numpy.append(d,numpy.cos(2. * numpy.pi * hour / (max_hour + 1)))    # Hour COS
-
-d = numpy.append(d,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1))) # Weekday SIN
-d = numpy.append(d,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1))) # Weekday COS
-
-d = numpy.append(d,inital_bikes) 
+d = create_array(today, hour, weekday, inital_bikes)
 
 d = scaler.transform([d]) # Scale the values using the same scaler as before
 
@@ -566,46 +579,120 @@ predicted_bikes = -1
 
 pred = []
 
-for i in range(0,200):
+def return_og_hour(lista):
 
-	predicted_bikes = model.predict(d)
+	print(hour_encoder.inverse_transform([[int(reverse_hour_sin(lista))]])[0][0])
 
-	pred.append(predicted_bikes[0][0] * max_bikes)
+	# return hour_encoder.inverse_transform([[int(reverse_hour_sin(lista))]])[0][0]
 
-	d = d.reshape(n_in * len(columns),)
+def reverse_hour_sin(lista):
 
-	# print_array("DATA", d)
+	# print("> " + str(numpy.arcsin(lista[2]) * (max_hour+1) / (2 * numpy.pi)))
 
-	newest = d[range((n_in-1) * len(columns), (n_in) * len(columns))]
+	return numpy.arcsin(lista[2]) * (max_hour+1) / (2 * numpy.pi)
 
-	print_array("NEWEST", newest)
+def reverse_hour_cos(lista):
+
+	# print("> " + str(numpy.arcsin(lista[2]) * (max_hour+1) / (2 * numpy.pi)))
+
+	return numpy.arccos(lista[3]) * (max_hour+1) / (2 * numpy.pi)
+
+def return_og_day(lista):
+	return hour_encoder.inverse_transform([[int(reverse_day(lista))]])[0][0]
+
+def reverse_day(lista):
+	return (numpy.arcsin(lista[:,0]) * (max_hour+1) / (2 * numpy.pi))[0]
+
+# def reverse_day(list):
 
 
-	d = d[range(0, (n_in-1) * len(columns))]
+# def unencode_array(array, time_steps):
 
-	print_array("d", d)
 
-	# print_array("DATAaaaa", d)
-	newest = scaler.inverse_transform([newest])
-	# print_array("DATAaaaa", newest)
+for i in range(0,800):
 
-	aux = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))
-	aux = numpy.append(aux,numpy.cos(2. * numpy.pi * today / (max_time + 1)))
+	predicted_bikes = model.predict(d)[0][0] * max_bikes
+	pred.append(predicted_bikes)
 
-	aux = numpy.append(aux, numpy.sin(numpy.arcsin(newest[:,2]) * (max_hour+1) / (2 * numpy.pi) + 1) * 2 * numpy.pi / (max_hour + 1))
-	aux = numpy.append(aux, numpy.cos(numpy.arcsin(newest[:,2]) * (max_hour+1) / (2 * numpy.pi) + 1) * 2 * numpy.pi / (max_hour + 1))
 
-	aux = numpy.append(aux,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))
-	aux = numpy.append(aux,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))
-	aux = numpy.append(aux,predicted_bikes)
 
-	aux = scaler.transform([aux])
+	d = d.reshape(n_in * len(columns),) # Flattens the array to the shape  (n_in * 7,) :: (n_in * len(columns),)
 
-	d = numpy.append(d, aux)
+	# Get the newest sample
+	newest = d[range(0, len(columns))] # (7,)
+	newest = scaler.inverse_transform([newest])[0] # Back to the original scale (7,0)
 
-	d = d.reshape(1, n_in, len(columns))
+	# print_array("NEWEST RESCALED", newest)
 
-	print_array("FINAL", d)
+	# reverse_hour(newest)
+
+	return_og_hour(newest)
+
+
+	# d = d[range(0, (n_in-1) * len(columns))]
+
+	# A partir de la muestra más reciente crear la nueva con un timestep mas de hora
+	new_sample = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))
+	new_sample = numpy.append(new_sample,numpy.cos(2. * numpy.pi * today / (max_time + 1)))
+
+	new_sample = numpy.append(new_sample, numpy.sin((reverse_hour_sin(newest) + 1) * 2 * numpy.pi / (max_hour + 1)))
+	new_sample = numpy.append(new_sample, numpy.cos((reverse_hour_cos(newest) + 1) * 2 * numpy.pi / (max_hour + 1)))
+
+	# reverse_hour(new_sample)
+
+	new_sample = numpy.append(new_sample,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))
+	new_sample = numpy.append(new_sample,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))
+
+	new_sample = numpy.append(new_sample,predicted_bikes)
+
+	new_sample = scaler.transform([new_sample])
+
+
+
+	# print_array("Newest", newest)
+	# print_array("new_sample", new_sample)
+	# print_array("Total data", d)
+
+	d = numpy.append(d, new_sample) # Now the array has one more sample at the end
+
+	# print_array("Total data", d)	
+
+	# print(range(len(columns), (n_in+1) * len(columns)))
+
+	d = d[range(len(columns), (n_in+1) * len(columns))] # Remove the oldest sample, the one that is at the beginning
+	d = d.reshape(1, n_in, len(columns)) 
+
+	# print_array("Total data", d)	
+
+	# # print_array("DATAaaaa", d)
+	# newest = scaler.inverse_transform([newest])
+
+	# # print_array("newest", newest)
+	# print("> " + str(return_og_hour(newest)) + " - " + str(return_og_day(newest)))
+
+	# aux = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))
+	# aux = numpy.append(aux,numpy.cos(2. * numpy.pi * today / (max_time + 1)))
+
+	# aux = numpy.append(aux, numpy.sin(numpy.arcsin(newest[:,2]) * (max_hour+1) / (2 * numpy.pi) + 1) * 2 * numpy.pi / (max_hour + 1))
+	# aux = numpy.append(aux, numpy.cos(numpy.arcsin(newest[:,2]) * (max_hour+1) / (2 * numpy.pi) + 1) * 2 * numpy.pi / (max_hour + 1))
+
+	# aux = numpy.append(aux,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))
+	# aux = numpy.append(aux,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))
+	# aux = numpy.append(aux,predicted_bikes)
+
+
+
+	
+
+	# aux = scaler.transform([aux])
+
+
+
+	# d = numpy.append(d, aux)
+
+	# d = d.reshape(1, n_in, len(columns))
+
+
 
 print(pred)
 
