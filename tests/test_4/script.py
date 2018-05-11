@@ -1,4 +1,13 @@
-# Multivariate Time Series Forecasting with LSTMs
+###############################################################################################################
+#  _                  _       _  _   
+# | |                | |     | || |  
+# | |_    ___   ___  | |_    | || |_ 
+# | __|  / _ \ / __| | __|   |__   _|
+# | |_  |  __/ \__ \ | |_       | |   
+#  \__|  \___| |___/  \__|      |_|  
+#
+#                                    
+##############################################################################################################          
 
 #
 # Summary
@@ -10,13 +19,13 @@
 # Libraries and Imports
 ################################################################################
 
-# Parameters
-# lstm_neurons batch_size epochs n_in
+# -- Input Parameters
+# --------------------------------------------------------------------------------
+# python3 script.py [lstm_neurons] [batch_size] [epochs] [n_in]
 
 from math import sqrt
 import math
 import numpy
-# import pandas
 
 import matplotlib
 matplotlib.use('Agg') # Needed when running on headless server
@@ -44,7 +53,7 @@ os.system("reset") # Clears the screen
 ################################################################################
 
 stationToRead = 'IRALA'
-is_in_debug = True
+is_in_debug = False
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
 list_of_stations = ["PLAZA LEVANTE", "IRUÑA", "AYUNTAMIENTO", "PLAZA ARRIAGA", "SANTIAGO COMPOSTELA", "PLAZA REKALDE", "DR. AREILZA", "ZUNZUNEGI", "ASTILLERO", "EGUILLOR", "S. CORAZON", "PLAZA INDAUTXU", "LEHENDAKARI LEIZAOLA", "CAMPA IBAIZABAL", "POLID. ATXURI", "SAN PEDRO", "KARMELO", "BOLUETA", "OTXARKOAGA", "OLABEAGA", "SARRIKO", "HEROS", "EGAÑA", "P. ETXEBARRIA", "TXOMIN GARAT", "ABANDO", "ESTRADA CALEROS", "EPALZA", "IRALA", "S. ARANA", "C. MARIA"]
@@ -149,6 +158,17 @@ def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
 	plt.close()
 	print(col.HEADER + "> Loss plot saved" + col.ENDC)
 
+def check_directory(path):
+	if os.path.isdir(path) == False:
+		os.system("mkdir " + path)
+		os.system("chmod 775 " + path)
+
+def save_file_to(directory, fileName, data):
+
+	with open(directory + fileName, 'w') as file:
+		wr = csv.writer(file, delimiter = '\n')
+		wr.writerow(data)
+
 # Convert series to supervised learning
 # Arguments
 #  * [Columns]> Array of strings to name the supervised transformation
@@ -193,12 +213,15 @@ def calculate_no_errors(predicted, real):
 	print(wrong_val, "/", len(predicted))
 
 
+
 print(col.HEADER)
-print("   __            __     _____")
-print("  / /____  _____/ /_   |__  /")
-print(" / __/ _ \/ ___/ __/    /_ < ")
-print("/ /_/  __(__  ) /_    ___/ / ")
-print("\__/\___/____/\__/   /____/  ", col.ENDC)
+print("  _                  _     _  _   ")
+print(" | |                | |   | || |  ")
+print(" | |_    ___   ___  | |_  | || |_ ")
+print(" | __|  / _ \ / __| | __| |__   _|")
+print(" | |_  |  __/ \__ \ | |_     | |  ")
+print("  \__|  \___| |___/  \__|    |_|  ", col.ENDC) 
+                                 
 
 if os.path.isdir("plots") == False:
 	os.system("mkdir plots")
@@ -301,7 +324,6 @@ max_cases = max_bikes + 1
 values    = values.astype('float32') # Convert al values to floats
 
 print_array("Prescaled values", values)
-# print_array("Prescaled values NEW NEW", dataset)
 
 scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
 scaled = scaler.fit_transform(values)
@@ -328,6 +350,9 @@ reframed.drop(reframed.columns[to_drop], axis=1, inplace=True)
 values = reframed.values
 
 print_array("Reframed dataset without columns that are not going to be predicted", reframed.head())
+
+# -- Calculate the number of samples for each set
+# --------------------------------------------------------------------------------------------------------------
 
 train_size, test_size, prediction_size = int(len(values) * 0.6) , int(len(values) * 0.2), int(len(values) * 0.2)
 
@@ -372,34 +397,28 @@ print_array("PREDICTION_Y 2 ", prediction_y)
 
 print(col.blue, "[Dimensions]> ", "Train X ", train_x.shape, "Train Y ", train_y.shape, "Test X ", test_x.shape, "Test Y ", test_y.shape, "Prediction X", prediction_x.shape, "Prediction Y", prediction_y.shape, col.ENDC)
 
-################################################################################
-# Neural Network
-################################################################################
+# -------------------------------------------------------------------------------
+# -- Neural Network--------------------------------------------------------------
+#
+# Model definition
+#--------------------------------------------------------------------------------
 
 print("Checking if exists")
 
-file_name = str(lstm_neurons) + "_" + str(new_batch_size) + "_" + str(epochs) + "_" + str(n_in)
 
+
+
+file_name = str(lstm_neurons) + "_" + str(new_batch_size) + "_" + str(epochs) + "_" + str(n_in)
 
 # If the model is already trained don't do it again
 if os.path.isfile("model/model.h5") == False:
 
-	print("EXISTS")
-
+	# As the model doesn't exists create the folder to save it there
 	if os.path.isdir("/model") == False:
 		os.system("mkdir model")
 		os.system("chmod 775 model")
 
-	print(col.HEADER + "Neural Network definition" + col.ENDC)
-
-	#--------------------------------------------------------------------------------
-	# Network definition
-	#--------------------------------------------------------------------------------
-
 	model = create_model(new_batch_size, False)
-
-	print("DIMENSIONS LOCO")
-	print(train_x.shape[1], train_x.shape[2])
 
 	list_acc  = []
 	list_loss = []
@@ -416,45 +435,23 @@ if os.path.isfile("model/model.h5") == False:
 
 		model.reset_states()
 
+		# Save every N epochs the model, in case it gets interrupted
 		if i % 10 == 0:
 			model.save_weights("model/model.h5")
 
-	print(list_acc)
 
+	check_directory("data_gen")
+	check_directory("/data_gen/acc")
+	check_directory("/data_gen/loss")
+	check_directory("/data_gen/mse")
 
-	if os.path.isdir("/data_gen") == False:
-		os.system("mkdir data_gen")
-		os.system("chmod 775 data_gen")
-
-	if os.path.isdir("/data_gen/acc") == False:
-		os.system("mkdir data_gen/acc")
-		os.system("chmod 775 data_gen/acc")
-
-	if os.path.isdir("/data_gen/loss") == False:
-		os.system("mkdir data_gen/loss")
-		os.system("chmod 775 data_gen/loss")
-
-	if os.path.isdir("/data_gen/mse") == False:
-		os.system("mkdir data_gen/mse")
-		os.system("chmod 775 data_gen/mse")
-
-
-	with open('data_gen/acc/' + file_name, 'w') as file:
-		wr = csv.writer(file, delimiter = '\n')
-		wr.writerow(list_acc)
-
-	with open('data_gen/loss/' + file_name, 'w') as file:
-		wr = csv.writer(file, delimiter = '\n')
-		wr.writerow(list_loss)
-	
-	with open('data_gen/mse/' + file_name, 'w') as file:
-		wr = csv.writer(file, delimiter = '\n')
-		wr.writerow(list_mse)
+	save_file_to("data_gen/acc/", file_name, list_acc)
+	save_file_to("data_gen/loss/", file_name, list_loss)
+	save_file_to("data_gen/mse/", file_name, list_mse)
 
 	min_y = min(history.history['loss'])
 	max_y = max(history.history['loss'])
 
-	
 
 	model_json = model.to_json()
 	with open("model/model.json", "w") as json_file:
@@ -479,49 +476,61 @@ plot_model(model, to_file='model/new_model.png', show_shapes = True)
 
 print_array("TEST_X", prediction_x)
 
-if os.path.isdir("/data_gen/prediction") == False:
-		os.system("mkdir data_gen/prediction")
-		os.system("chmod 775 data_gen/prediction")
+check_directory("/data_gen/prediction")
+
 
 
 predicted = []
 
 for i in range(len(prediction_x)):
 
-	aux = prediction_x[i]
-	aux = aux.reshape(1, prediction_x[i].shape[0], prediction_x[i].shape[1])
+	sample = prediction_x[i]
+	sample = sample.reshape(1, prediction_x[i].shape[0], prediction_x[i].shape[1])
 
-	# print_array("Feeding", aux)
+	yhat = model.predict(sample)
 
-	yhat = model.predict(aux)
-
-	predicted.append(int(yhat[0][0] * max_bikes))
+	predicted.append(int(yhat[0][0] * max_bikes)) # Rescale back the predictions
 
 
-print_array("JAVI JAVI ", prediction_y)
+prediction_y = [x * max_bikes for x in prediction_y] # Rescale back the real data
 
-prediction_y = [x * max_bikes for x in prediction_y]
 
-print_smth("JAVI JAVI ", prediction_y)
+save_file_to('data_gen/prediction/', file_name, predicted)
 
-with open('data_gen/prediction/' + file_name, 'w') as file:
-		wr = csv.writer(file, delimiter = '\n')
-		wr.writerow(predicted)
 
 prepare_plot('samples', 'bikes', predicted, prediction_y, 'prediction')
 
-################################################################################
-# Predictron
-################################################################################
+################################################################################################################################################################
+# 
+#                            _   _          _                          
+#                           | | (_)        | |                         
+#  _ __    _ __    ___    __| |  _    ___  | |_   _ __    ___    _ __  
+# | '_ \  | '__|  / _ \  / _` | | |  / __| | __| | '__|  / _ \  | '_ \ 
+# | |_) | | |    |  __/ | (_| | | | | (__  | |_  | |    | (_) | | | | |
+# | .__/  |_|     \___|  \__,_| |_|  \___|  \__| |_|     \___/  |_| |_|
+# | |                                                                  
+# |_|                                                                  
+#
+#
+#
+################################################################################################################################################################
 
-# Makes future predictions by doing iterations, takes some real initial samples
-# makes a prediction and then uses the prediction to predict
+print(col.HEADER, "                            _   _          _                          ")
+print("                           | | (_)        | |                         ")
+print("  _ __    _ __    ___    __| |  _    ___  | |_   _ __    ___    _ __  ")
+print(" | '_ \  | '__|  / _ \  / _` | | |  / __| | __| | '__|  / _ \  | '_ \ ")
+print(" | |_) | | |    |  __/ | (_| | | | | (__  | |_  | |    | (_) | | | | |")
+print(" | .__/  |_|     \___|  \__,_| |_|  \___|  \__| |_|     \___/  |_| |_|")
+print(" | |                                                                  ")
+print(" |_|                                                                  ", col.ENDC)
+
+
 
 print(col.BOLD, "\n\n------------------------------------------------------------------------")
 print("Predicting a whole day of availability")
 print("------------------------------------------------------------------------\n\n", col.ENDC)
 
-inital_bikes = 9
+inital_bikes = 18
 today        = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday      = weekdays[datetime.datetime.today().weekday()]
 hour         = "10:00"
@@ -587,7 +596,6 @@ def create_array(doy, hour, weekday, bikes):
 
 		print_array("FINAL ARR", array)
 
-
 	print_array("Resulting array with all the time-steps", array)
 
 	array = array.reshape(1, n_in, len(columns))
@@ -596,9 +604,7 @@ def create_array(doy, hour, weekday, bikes):
 
 	return array
 
-
 d = create_array(today, hour, weekday, inital_bikes)
-
 
 predicted_bikes = -1
 
@@ -607,15 +613,11 @@ pred = []
 print("TEST TEST")
 
 
-# def unencode_array(array, time_steps):
-
-
 for i in range(0,50):
 
 
-
 	predicted_bikes = model.predict(d)[0][0]
-	pred.append(predicted_bikes)
+	pred.append(predicted_bikes * max_bikes)
 
 	print("Predicted " + str(predicted_bikes))
 
@@ -632,7 +634,6 @@ for i in range(0,50):
 	
 	
 	newest = scaler.inverse_transform([newest])[0] # Back to the original scale (7,0)
-
 	
 	og_list(newest)
 
@@ -652,12 +653,6 @@ for i in range(0,50):
 	new_sample = numpy.append(new_sample,predicted_bikes)
 
 	new_sample = scaler.transform([new_sample])
-
-
-
-	# print_array("Newest", newest)
-	# print_array("new_sample", new_sample)
-	# print_array("Total data", d)
 
 	d = numpy.append(d, new_sample) # Now the array has one more sample at the end
 
