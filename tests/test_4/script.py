@@ -133,12 +133,12 @@ def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
 
 	plt.text((len(plot_1) - 1) * 1.005,
 		 plot_1[len(plot_1) - 1] + 0.01,
-		 "Training Loss", color = '#458DE1')
+		 "Predicted", color = '#458DE1')
 
 	if len(plot_2) > 0:
 		plt.text((len(plot_2) - 1) * 1.005,
 		 plot_2[len(plot_2) - 1],
-		 "Validation Loss", color = '#80C797')
+		 "Real", color = '#80C797')
 
 	# texto = "RMSE " +  str('%.3f' % (rmse))  + " | Batch size " + str(batch_size) + " | Epochs " + str(epochs) + " |  " + str(lstm_neurons) + " LSTM neurons"
 	texto = " | Batch size " + str(batch_size) + " | Epochs " + str(epochs) + " |  " + str(lstm_neurons) + " LSTM neurons"
@@ -192,23 +192,6 @@ def calculate_no_errors(predicted, real):
 
 	print(wrong_val, "/", len(predicted))
 
-# Returns the array with generated cyclic encoding UNSCALED
-# Input data has to be encoded previously
-
-def create_array(doy, hour, weekday, bikes):
-
-	array = numpy.array(numpy.sin(2. * numpy.pi * doy / (max_time + 1)))      # Day of the year SIN
-	array = numpy.append(array,numpy.cos(2. * numpy.pi * doy / (max_time + 1)))   # Day of the year COS
-
-	array = numpy.append(array,numpy.sin(2. * numpy.pi * hour / (max_hour + 1)))    # Hour SIN
-	array = numpy.append(array,numpy.cos(2. * numpy.pi * hour / (max_hour + 1)))    # Hour COS
-
-	array = numpy.append(array,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1))) # Weekday SIN
-	array = numpy.append(array,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1))) # Weekday COS
-
-	array = numpy.append(array,bikes) 
-
-	return array
 
 print(col.HEADER)
 print("   __            __     _____")
@@ -346,11 +329,15 @@ values = reframed.values
 
 print_array("Reframed dataset without columns that are not going to be predicted", reframed.head())
 
-train_size, test_size, prediction_size = int(len(values) * 0.75) , int(len(values) * 0.2), int(len(values) * 0.05)
+train_size, test_size, prediction_size = int(len(values) * 0.6) , int(len(values) * 0.2), int(len(values) * 0.2)
 
 train_size      = int(int(train_size / new_batch_size) * new_batch_size) 
 test_size       = int(int(test_size / new_batch_size) * new_batch_size) 
 prediction_size = int(int(prediction_size / new_batch_size) * new_batch_size) 
+
+prediction_size = 1000
+
+print("Train size " + str(train_size) + " Prediction size " + str(prediction_size))
 
 # Divide between train and test sets
 train, test, prediction = values[0:train_size,:], values[train_size:train_size + test_size, :], values[train_size + test_size:train_size + test_size + prediction_size, :]
@@ -475,7 +462,7 @@ if os.path.isfile("model/model.h5") == False:
 
 	model.save_weights("model/model.h5")
 
-	#plot_model(model, to_file='model/model.png', show_shapes = True)
+	plot_model(model, to_file='model/model.png', show_shapes = True)
 
 	w = model.get_weights()
 
@@ -488,7 +475,7 @@ print("Loading model from disk")
 model = create_model(batch_size, True)
 model.load_weights("model/model.h5")
 
-#plot_model(model, to_file='model/new_model.png', show_shapes = True)
+plot_model(model, to_file='model/new_model.png', show_shapes = True)
 
 print_array("TEST_X", prediction_x)
 
@@ -508,14 +495,20 @@ for i in range(len(prediction_x)):
 
 	yhat = model.predict(aux)
 
-	predicted.append(yhat[0][0] * max_bikes)
+	predicted.append(int(yhat[0][0] * max_bikes))
 
+
+print_array("JAVI JAVI ", prediction_y)
+
+prediction_y = [x * max_bikes for x in prediction_y]
+
+print_smth("JAVI JAVI ", prediction_y)
 
 with open('data_gen/prediction/' + file_name, 'w') as file:
 		wr = csv.writer(file, delimiter = '\n')
 		wr.writerow(predicted)
 
-#prepare_plot('samples', 'bikes', predicted, [], 'YOYOYO')
+prepare_plot('samples', 'bikes', predicted, prediction_y, 'prediction')
 
 ################################################################################
 # Predictron
@@ -539,45 +532,6 @@ weekday = weekday_encoder.transform([weekday])[0]
 print("Starting prediction at " + str(hour) + " of the day " + str(today) + " which is " + str(weekday) + " with " + str(inital_bikes) + " initial bikes")
 
 
-# Create the initial array of information with only one time-step and then adding the remaining ones
-# --------------------------------------------------------------------------------------------------- 
-
-d = create_array(today, hour, weekday, inital_bikes)
-
-d = scaler.transform([d]) # Scale the values using the same scaler as before
-
-print_smth("Scaled values", d)
-
-# Create the remaining timesteps to later feed the network
-
-if n_in > 1:
-
-	for ts in range(1,n_in):
-
-		aux = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))           # Day of the year SIN
-		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * today / (max_time + 1)))      # Day of the year COS
-
-		aux = numpy.append(aux,numpy.sin(2. * numpy.pi * (hour+ts) / (max_hour + 1)))  # Hour SIN
-		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * (hour+ts) / (max_hour + 1)))  # Hour COS
-
-		aux = numpy.append(aux,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))    # Weekday SIN
-		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))    # Weekday COS
-		aux = numpy.append(aux,inital_bikes)
-
-		aux = scaler.transform([aux])
-
-		d = numpy.append(d, aux)
-
-	print_array("Resulting array with all the time-steps", d)
-
-d = d.reshape(1, n_in, len(columns))
-
-print_array("Reshaped array", d)
-
-predicted_bikes = -1
-
-pred = []
-
 def return_og_hour(lista):
 
 # 	print(hour_encoder.inverse_transform([[int(reverse_hour_sin(lista))]])[0][0])
@@ -586,35 +540,78 @@ def return_og_hour(lista):
 
 def reverse_hour_sin(lista):
 
-# 	print("> " + str(numpy.arcsin(lista[2]) * (max_hour+1) / (2 * numpy.pi)))
-# 	print("> " + str(math.ceil(numpy.arcsin(lista[2]) * (max_hour+1) / (2 * numpy.pi))))
+	print("-------> " + str(math.ceil(((max_hour + 1)/(2 * numpy.pi)) * numpy.arcsin(lista[2]))))
 
-	return math.ceil(numpy.arcsin(lista[2]) * (max_hour+1) / (2 * numpy.pi))
+	return math.ceil(((max_hour + 1)/(2 * numpy.pi)) * numpy.arcsin(lista[2]))
 
 def reverse_hour_cos(lista):
 
 	# print("> " + str(numpy.arcsin(lista[2]) * (max_hour+1) / (2 * numpy.pi)))
 
-	return math.ceil(numpy.arccos(lista[3]) * (max_hour+1) / (2 * numpy.pi))
+	return math.ceil(((max_hour + 1)/(2 * numpy.pi)) * numpy.arccos(lista[3]))
 
-def return_og_day(lista):
-	return hour_encoder.inverse_transform([[int(reverse_day_sin(lista))]])[0][0]
 
 def reverse_day_sin(lista):
 	return math.ceil(numpy.arcsin(lista[0]) * (max_time+1) / (2 * numpy.pi))
 	
 def og_list(lista):
 	
-	print(col.green + "Hora " + return_og_hour(lista) + " del dia " + str(reverse_day_sin(lista)) + col.ENDC)
+	print(col.green + "Hora " + str(reverse_hour_cos(lista)) + " del dia " + str(reverse_day_sin(lista)) + col.ENDC)
+
+# Create the initial array of information with only one time-step and then adding the remaining ones
+# values are returned scaled and reshaped
+# --------------------------------------------------------------------------------------------------- 
+def create_array(doy, hour, weekday, bikes):
+	
+	array = numpy.empty(0)
+
+	for ts in range(0,n_in):
+
+		print("PAYASO HORA " + str(hour) + " +  TS " + str(ts) + " MAX H " + str(max_hour))
+
+		aux = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))           # Day of the year SIN
+		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * today / (max_time + 1)))      # Day of the year COS
+		aux = numpy.append(aux,numpy.sin(2. * numpy.pi * (hour+ts) / (max_hour + 1)))  # Hour SIN
+		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * (hour+ts) / (max_hour + 1)))  # Hour COS
+		aux = numpy.append(aux,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))    # Weekday SIN
+		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))    # Weekday COS
+		aux = numpy.append(aux,inital_bikes)
+		
+		og_list(aux)
+
+		aux = scaler.transform([aux])
+ 
+		print_array("Scaled " + str(ts) + " sample of the array", aux)
+
+		array = numpy.append(array, aux)
+
+		print_array("FINAL ARR", array)
+
+
+	print_array("Resulting array with all the time-steps", array)
+
+	array = array.reshape(1, n_in, len(columns))
+
+	print_array("Scaled & reshaped array", array)
+
+	return array
+
+
+d = create_array(today, hour, weekday, inital_bikes)
+
+
+predicted_bikes = -1
+
+pred = []
+
+print("TEST TEST")
+
 
 # def unencode_array(array, time_steps):
 
 
-for i in range(0,5):
+for i in range(0,50):
 
-	print(col.FAIL + "\n###############################################################################\n" + col.ENDC)
-
-	print_array("Data fed to the model", d)
 
 
 	predicted_bikes = model.predict(d)[0][0]
@@ -627,18 +624,15 @@ for i in range(0,5):
 
 	d = d.reshape(n_in * len(columns),) # Flattens the array to the shape  (n_in * 7,) :: (n_in * len(columns),)
 	
-	print_array("Flattened Data", d)
 
 	print(range((n_in - 1) * len(columns), n_in * len(columns)))
 
 	# Get the newest sample
 	newest = d[range((n_in - 1) * len(columns), n_in * len(columns))] # (7,)
 	
-	print_array("Got the newest sample of the previous data", newest)
 	
 	newest = scaler.inverse_transform([newest])[0] # Back to the original scale (7,0)
 
-	print_array("Scaled back to the original size the newest sample", newest)
 	
 	og_list(newest)
 
@@ -650,6 +644,7 @@ for i in range(0,5):
 	new_sample = numpy.append(new_sample, numpy.cos((reverse_hour_cos(newest) + 1) * 2 * numpy.pi / (max_hour + 1)))
 
 	# reverse_hour(new_sample)
+	print("$$$ " + str(reverse_hour_cos(new_sample)))
 
 	new_sample = numpy.append(new_sample,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))
 	new_sample = numpy.append(new_sample,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))
@@ -673,7 +668,7 @@ for i in range(0,5):
 	d = d[range(len(columns), (n_in+1) * len(columns))] # Remove the oldest sample, the one that is at the beginning
 	d = d.reshape(1, n_in, len(columns))  # (1, n_in, 7)
 	
-	print_array("FInal", d)
+	print_array("Final", d)
 
 
 print(pred)
