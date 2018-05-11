@@ -59,25 +59,41 @@ model.load_weights("model/model.h5")
 
 Different plots based on varying the batch size as input
 
-![Accuracy](plots/acc.png)
+<div align = "center">
+ <img src="plots/acc.png" width="70%"  />
+
+</div>
 
 > Accuracy
 
 Accuracy never goes above `0.0XX`.
 
-![Accuracy](plots/loss.png)
+
+<div align = "center">
+ <img src="plots/loss.png" width="70%"  />
+</div>
 
 > Loss
 
-![Accuracy](plots/mse.png)
+<div align = "center">
+ <img src="plots/mse.png" width="70%"  />
+</div>
 
 > MSE
 
-![Prediction](plots/prediction.png)
+
+<div align = "center">
+ <img src="plots/prediction.png" width="70%"  />
+</div>
 
 > Prediction using sample data
 
-![My Prediction](plots/predictron.png)
+Actually prediction is kinda off, hence the `0.01` accuracy, but seeing the plot it's not bad at all.
+
+
+<div align = "center">
+ <img src="plots/predictron.png" width="70%"  />
+</div>
 
 > Predictions done creating my data
 
