@@ -53,7 +53,7 @@ os.system("reset") # Clears the screen
 ################################################################################
 
 stationToRead = 'IRALA'
-is_in_debug = False
+is_in_debug = True
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
 list_of_stations = ["PLAZA LEVANTE", "IRUÑA", "AYUNTAMIENTO", "PLAZA ARRIAGA", "SANTIAGO COMPOSTELA", "PLAZA REKALDE", "DR. AREILZA", "ZUNZUNEGI", "ASTILLERO", "EGUILLOR", "S. CORAZON", "PLAZA INDAUTXU", "LEHENDAKARI LEIZAOLA", "CAMPA IBAIZABAL", "POLID. ATXURI", "SAN PEDRO", "KARMELO", "BOLUETA", "OTXARKOAGA", "OLABEAGA", "SARRIKO", "HEROS", "EGAÑA", "P. ETXEBARRIA", "TXOMIN GARAT", "ABANDO", "ESTRADA CALEROS", "EPALZA", "IRALA", "S. ARANA", "C. MARIA"]
@@ -405,18 +405,13 @@ print(col.blue, "[Dimensions]> ", "Train X ", train_x.shape, "Train Y ", train_y
 
 print("Checking if exists")
 
-
-
-
 file_name = str(lstm_neurons) + "_" + str(new_batch_size) + "_" + str(epochs) + "_" + str(n_in)
 
 # If the model is already trained don't do it again
 if os.path.isfile("model/model.h5") == False:
 
 	# As the model doesn't exists create the folder to save it there
-	if os.path.isdir("/model") == False:
-		os.system("mkdir model")
-		os.system("chmod 775 model")
+	check_directory("model")
 
 	model = create_model(new_batch_size, False)
 
@@ -439,11 +434,11 @@ if os.path.isfile("model/model.h5") == False:
 		if i % 10 == 0:
 			model.save_weights("model/model.h5")
 
-
 	check_directory("data_gen")
-	check_directory("/data_gen/acc")
-	check_directory("/data_gen/loss")
-	check_directory("/data_gen/mse")
+	check_directory("data_gen/acc")
+	check_directory("data_gen/loss")
+	check_directory("data_gen/mse")
+	check_directory("data_gen/prediction")
 
 	save_file_to("data_gen/acc/", file_name, list_acc)
 	save_file_to("data_gen/loss/", file_name, list_loss)
@@ -512,7 +507,6 @@ prepare_plot('samples', 'bikes', predicted, prediction_y, 'prediction')
 # |_|                                                                  
 #
 #
-#
 ################################################################################################################################################################
 
 print(col.HEADER, "                            _   _          _                          ")
@@ -524,11 +518,6 @@ print(" | .__/  |_|     \___|  \__,_| |_|  \___|  \__| |_|     \___/  |_| |_|")
 print(" | |                                                                  ")
 print(" |_|                                                                  ", col.ENDC)
 
-
-
-print(col.BOLD, "\n\n------------------------------------------------------------------------")
-print("Predicting a whole day of availability")
-print("------------------------------------------------------------------------\n\n", col.ENDC)
 
 inital_bikes = 18
 today        = datetime.datetime.now().timetuple().tm_yday # Current day of the year
@@ -578,29 +567,30 @@ def create_array(doy, hour, weekday, bikes):
 
 		print("PAYASO HORA " + str(hour) + " +  TS " + str(ts) + " MAX H " + str(max_hour))
 
-		aux = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))           # Day of the year SIN
-		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * today / (max_time + 1)))      # Day of the year COS
-		aux = numpy.append(aux,numpy.sin(2. * numpy.pi * (hour+ts) / (max_hour + 1)))  # Hour SIN
-		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * (hour+ts) / (max_hour + 1)))  # Hour COS
-		aux = numpy.append(aux,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))    # Weekday SIN
-		aux = numpy.append(aux,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))    # Weekday COS
+		aux = numpy.array(today)           # Day of the year SIN
+		aux = numpy.append(aux, today)      # Day of the year COS
+		aux = numpy.append(aux, (hour + ts))  # Hour SIN
+		aux = numpy.append(aux, (hour + ts))  # Hour SIN
+		aux = numpy.append(aux, weekday)  # Hour SIN
+		aux = numpy.append(aux, weekday)  # Hour SIN
 		aux = numpy.append(aux,inital_bikes)
-		
-		og_list(aux)
 
 		aux = scaler.transform([aux])
- 
-		print_array("Scaled " + str(ts) + " sample of the array", aux)
 
 		array = numpy.append(array, aux)
+
+
 
 		print_array("FINAL ARR", array)
 
 	print_array("Resulting array with all the time-steps", array)
 
+
+	print_array("Scaled array", array)
+
 	array = array.reshape(1, n_in, len(columns))
 
-	print_array("Scaled & reshaped array", array)
+	print_array("reshaped array", array)
 
 	return array
 
@@ -613,46 +603,27 @@ pred = []
 print("TEST TEST")
 
 
-for i in range(0,50):
+for i in range(0,2):
 
-
-	predicted_bikes = model.predict(d)[0][0]
-	pred.append(predicted_bikes * max_bikes)
-
-	print("Predicted " + str(predicted_bikes))
-
-
-	print("\t> " + str(predicted_bikes * max_bikes))
 
 	d = d.reshape(n_in * len(columns),) # Flattens the array to the shape  (n_in * 7,) :: (n_in * len(columns),)
 	
-
-	print(range((n_in - 1) * len(columns), n_in * len(columns)))
-
 	# Get the newest sample
 	newest = d[range((n_in - 1) * len(columns), n_in * len(columns))] # (7,)
 	
-	
-	newest = scaler.inverse_transform([newest])[0] # Back to the original scale (7,0)
-	
-	og_list(newest)
 
 	# A partir de la muestra más reciente crear la nueva con un timestep mas de hora
-	new_sample = numpy.array(numpy.sin(2. * numpy.pi * today / (max_time + 1)))
-	new_sample = numpy.append(new_sample,numpy.cos(2. * numpy.pi * today / (max_time + 1)))
+	new_sample = numpy.array(today)
+	new_sample = numpy.append(new_sample, today)
 
-	new_sample = numpy.append(new_sample, numpy.sin((reverse_hour_sin(newest) + 1) * 2 * numpy.pi / (max_hour + 1)))
-	new_sample = numpy.append(new_sample, numpy.cos((reverse_hour_cos(newest) + 1) * 2 * numpy.pi / (max_hour + 1)))
+	new_sample = numpy.append(new_sample, newest[2] + 1)
+	new_sample = numpy.append(new_sample, newest[3] + 1)
 
-	# reverse_hour(new_sample)
-	print("$$$ " + str(reverse_hour_cos(new_sample)))
+	new_sample = numpy.append(new_sample,weekday)
+	new_sample = numpy.append(new_sample,weekday)
 
-	new_sample = numpy.append(new_sample,numpy.sin(2. * numpy.pi * weekday / (max_wday + 1)))
-	new_sample = numpy.append(new_sample,numpy.cos(2. * numpy.pi * weekday / (max_wday + 1)))
+	new_sample = numpy.append(new_sample,inital_bikes)
 
-	new_sample = numpy.append(new_sample,predicted_bikes)
-
-	new_sample = scaler.transform([new_sample])
 
 	d = numpy.append(d, new_sample) # Now the array has one more sample at the end
 
