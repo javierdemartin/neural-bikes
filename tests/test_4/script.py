@@ -282,13 +282,13 @@ values[:,2] = weekday_encoder.fit_transform(values[:,2]) # Encode HOUR as int
 
 values = values.astype('float')
 
-max_time = max(values[:,0])
+max_day  = max(values[:,0])
 max_hour = max(values[:,1])
 max_wday = max(values[:,2])
 
 new_dataset = DataFrame()
-new_dataset['time_sin'] = numpy.sin(2. * numpy.pi * values[:,0].astype('float') / (max_time + 1))
-new_dataset['time_cos'] = numpy.cos(2. * numpy.pi * values[:,0].astype('float') / (max_wday + 1))
+new_dataset['time_sin'] = numpy.sin(2. * numpy.pi * values[:,0].astype('float') / (max_day + 1))
+new_dataset['time_cos'] = numpy.cos(2. * numpy.pi * values[:,0].astype('float') / (max_day + 1))
 
 new_dataset['hour_sin'] = numpy.sin(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
 new_dataset['hour_cos'] = numpy.cos(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
@@ -519,10 +519,10 @@ print(" | |                                                                  ")
 print(" |_|                                                                  ", col.ENDC)
 
 
-inital_bikes = 18
+inital_bikes = 9
 today        = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday      = weekdays[datetime.datetime.today().weekday()]
-hour         = "10:00"
+hour         = "00:00"
 
 hour = hour_encoder.transform([hour])[0]
 weekday = weekday_encoder.transform([weekday])[0]
@@ -550,11 +550,30 @@ def reverse_hour_cos(lista):
 
 
 def reverse_day_sin(lista):
-	return math.ceil(numpy.arcsin(lista[0]) * (max_time+1) / (2 * numpy.pi))
+	return math.ceil(numpy.arcsin(lista[0]) * (max_day + 1) / (2 * numpy.pi))
 	
 def og_list(lista):
 	
 	print(col.green + "Hora " + str(reverse_hour_cos(lista)) + " del dia " + str(reverse_day_sin(lista)) + col.ENDC)
+
+#        + | +             - | +
+# Seno  -------   Coseno  -------
+#        - | -		       - | + 
+
+def detectar_cuadrante(seno, coseno):
+
+	cuadrante = (-1,-1)
+
+	if seno >= 0 and coseno >= 0:
+		cuadrante = (0, numpy.pi / 2)
+	elif seno >= 0 and coseno <= 0:
+		cuadrante = (numpy.pi / 2, numpy.pi)
+	elif seno < 0 and coseno < 0:
+		cuadrante = (numpy.pi, numpy.pi * 3 / 2)
+	elif seno < 0 and coseno >= 0:
+		cuadrante = (numpy.pi * 3 / 2, 2 * numpy.pi - 0.00000001)
+
+	return cuadrante
 
 # Create the initial array of information with only one time-step and then adding the remaining ones
 # values are returned scaled and reshaped
@@ -567,12 +586,14 @@ def create_array(doy, hour, weekday, bikes):
 
 		print("PAYASO HORA " + str(hour) + " +  TS " + str(ts) + " MAX H " + str(max_hour))
 
-		aux = numpy.array(today)           # Day of the year SIN
-		aux = numpy.append(aux, today)      # Day of the year COS
-		aux = numpy.append(aux, (hour + ts))  # Hour SIN
-		aux = numpy.append(aux, (hour + ts))  # Hour SIN
-		aux = numpy.append(aux, weekday)  # Hour SIN
-		aux = numpy.append(aux, weekday)  # Hour SIN
+		print(">> Day " + str(today) + " MAX DAY " + str(max_day) + " = " + str(numpy.sin(2 * numpy.pi * float(today) / (max_day + 1))))
+
+		aux = numpy.array(numpy.sin(2 * numpy.pi * float(today) / (max_day + 1)))           # Day of the year SIN
+		aux = numpy.append(aux, numpy.cos(2 * numpy.pi * float(today) / (max_day + 1)))      # Day of the year COS
+		aux = numpy.append(aux, numpy.sin(2 * numpy.pi * float(hour + ts) / (max_hour + 1)))  # Hour SIN
+		aux = numpy.append(aux, numpy.cos(2 * numpy.pi * float(hour + ts) / (max_hour + 1)))  # Hour SIN
+		aux = numpy.append(aux, numpy.sin(2 * numpy.pi * float(weekday) / (max_wday + 1)))  # Hour SIN
+		aux = numpy.append(aux, numpy.cos(2 * numpy.pi * float(weekday) / (max_wday + 1)))  # Hour SIN
 		aux = numpy.append(aux,inital_bikes)
 
 		aux = scaler.transform([aux])
@@ -602,30 +623,93 @@ pred = []
 
 print("TEST TEST")
 
+#################################################################
+#
+# PREDICT
+#
+#################################################################
 
-for i in range(0,2):
+for i in range(0,280):
 
+
+	predicted_bikes = model.predict(d)[0][0]
+
+	print("PRED " + str(predicted_bikes))
+
+	pred.append(predicted_bikes * max_bikes)
 
 	d = d.reshape(n_in * len(columns),) # Flattens the array to the shape  (n_in * 7,) :: (n_in * len(columns),)
 	
 	# Get the newest sample
 	newest = d[range((n_in - 1) * len(columns), n_in * len(columns))] # (7,)
+
+	########################## DECODE ##########################	
+
+	aux = scaler.inverse_transform([newest])[0]
+
+	print_array("Inverted scaling on new_sample", aux)
+
+	# --------------- Detectar Cuadrante Dia Año ---------------
+
+	inverso_s = ((max_day + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[0])
+	inverso_c = ((max_day + 1) / (2 * numpy.pi)) * numpy.arccos(aux[1])
+
+	print("CUADRANTE DIA>" + str(detectar_cuadrante(aux[0], aux[1])))
+	print("Seno-1 " + str(numpy.arcsin(aux[0])))
+	print("Coseno-1 " + str(numpy.arccos(aux[1])))
+
+	min_quad, max_quad = detectar_cuadrante(aux[0], aux[1])
+
+	correct_day = -1
+
+	# Utiliza el seno
+	if aux[0] > min_quad and aux[1] < max_quad:
+		print("El dia es " + str(inverso_s))
+	else:
+		print("El dia es " + str(inverso_c))
+		correct_day = inverso_c
+
+	# ----------------------------------------------------------	
+
+	# --------------- Detectar Cuadrante Hora ---------------
+
+	inverso_s = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[2])
+	inverso_c = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arccos(aux[3])
+
+	print("CUADRANTE HORA>" + str(detectar_cuadrante(aux[2], aux[3])))
+	print("Seno-1 " + str(numpy.arcsin(aux[2])))
+	print("Coseno-1 " + str(numpy.arccos(aux[3])))
+
+	min_quad, max_quad = detectar_cuadrante(aux[2], aux[3])
+
+	correct_hour = -1
+
+	# Utiliza el seno
+	if aux[2] > min_quad and aux[3] < max_quad:
+		print("La hora es " + str(inverso_s))
+	else:
+		print("La hora es " + str(inverso_c))
+		correct_hour = inverso_c
+
+	# ----------------------------------------------------------	
+
 	
 
+	########################## ENCODE ##########################
+
 	# A partir de la muestra más reciente crear la nueva con un timestep mas de hora
-	new_sample = numpy.array(today)
-	new_sample = numpy.append(new_sample, today)
-
-	new_sample = numpy.append(new_sample, newest[2] + 1)
-	new_sample = numpy.append(new_sample, newest[3] + 1)
-
-	new_sample = numpy.append(new_sample,weekday)
-	new_sample = numpy.append(new_sample,weekday)
-
+	new_sample = numpy.array(numpy.sin(2 * numpy.pi * correct_day / (max_day + 1)))                     # SIN Day
+	new_sample = numpy.append(new_sample, numpy.cos(2 * numpy.pi * correct_day / (max_day + 1)))        # COS Day
+	new_sample = numpy.append(new_sample, numpy.sin(2 * numpy.pi * float(correct_hour + 1) / (max_hour + 1)))   # SIN Time
+	new_sample = numpy.append(new_sample, numpy.cos(2 * numpy.pi * float(correct_hour + 1) / (max_hour + 1)))   # COS Time
+	new_sample = numpy.append(new_sample,numpy.sin(2 * numpy.pi * float(((max_day + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[4])) / (max_wday + 1)))        # SIN WEEKDAY
+	new_sample = numpy.append(new_sample,numpy.cos(2 * numpy.pi * float(((max_day + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[5])) / (max_wday + 1)))        # COS Weekday
 	new_sample = numpy.append(new_sample,inital_bikes)
 
+	new_sample = scaler.transform([new_sample])
 
 	d = numpy.append(d, new_sample) # Now the array has one more sample at the end
+
 
 	# print_array("Total data", d)	
 
