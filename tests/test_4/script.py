@@ -89,8 +89,11 @@ def create_model(batch_size, statefulness):
 
 	model = Sequential()
 	model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=statefulness))
+	# model.add(Dense(lstm_neurons * 2, activation = "relu"))
+	# model.add(Dense(int(lstm_neurons * 0.5)))
+	# model.add(Dense(n_out * 2))
 	model.add(Dense(n_out, activation = 'relu'))
-	model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mse', 'acc'])
+	model.compile(loss='mse', optimizer='adam', metrics = ['mse', 'acc'])
 
 	return model
 
@@ -354,13 +357,13 @@ print_array("Reframed dataset without columns that are not going to be predicted
 # -- Calculate the number of samples for each set
 # --------------------------------------------------------------------------------------------------------------
 
-train_size, test_size, prediction_size = int(len(values) * 0.6) , int(len(values) * 0.2), int(len(values) * 0.2)
+train_size, test_size, prediction_size = int(len(values) * 0.6) , int(len(values) * 0.2), int(len(values) * 0.15)
 
 train_size      = int(int(train_size / new_batch_size) * new_batch_size) 
 test_size       = int(int(test_size / new_batch_size) * new_batch_size) 
 prediction_size = int(int(prediction_size / new_batch_size) * new_batch_size) 
 
-prediction_size = 1000
+prediction_size = 1500
 
 print("Train size " + str(train_size) + " Prediction size " + str(prediction_size))
 
@@ -418,6 +421,8 @@ if os.path.isfile("model/model.h5") == False:
 	list_acc  = []
 	list_loss = []
 	list_mse  = []
+
+	# history = model.fit(train_x, train_y, epochs=epochs, batch_size=new_batch_size, verbose=2, shuffle=False, validation_data = (test_x, test_y))
 
 	for i in range(epochs):
 
@@ -519,7 +524,7 @@ print(" | |                                                                  ")
 print(" |_|                                                                  ", col.ENDC)
 
 
-inital_bikes = 9
+inital_bikes = 4
 today        = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday      = weekdays[datetime.datetime.today().weekday()]
 hour         = "00:00"
@@ -530,31 +535,7 @@ weekday = weekday_encoder.transform([weekday])[0]
 print("Starting prediction at " + str(hour) + " of the day " + str(today) + " which is " + str(weekday) + " with " + str(inital_bikes) + " initial bikes")
 
 
-def return_og_hour(lista):
-
-# 	print(hour_encoder.inverse_transform([[int(reverse_hour_sin(lista))]])[0][0])
-
-	return hour_encoder.inverse_transform([[int(reverse_hour_sin(lista))]])[0][0]
-
-def reverse_hour_sin(lista):
-
-	print("-------> " + str(math.ceil(((max_hour + 1)/(2 * numpy.pi)) * numpy.arcsin(lista[2]))))
-
-	return math.ceil(((max_hour + 1)/(2 * numpy.pi)) * numpy.arcsin(lista[2]))
-
-def reverse_hour_cos(lista):
-
-	# print("> " + str(numpy.arcsin(lista[2]) * (max_hour+1) / (2 * numpy.pi)))
-
-	return math.ceil(((max_hour + 1)/(2 * numpy.pi)) * numpy.arccos(lista[3]))
-
-
-def reverse_day_sin(lista):
-	return math.ceil(numpy.arcsin(lista[0]) * (max_day + 1) / (2 * numpy.pi))
-	
-def og_list(lista):
-	
-	print(col.green + "Hora " + str(reverse_hour_cos(lista)) + " del dia " + str(reverse_day_sin(lista)) + col.ENDC)
+# Every column is split into two: the sine and cosine value.
 
 #        + | +             - | +
 # Seno  -------   Coseno  -------
@@ -562,16 +543,21 @@ def og_list(lista):
 
 def detectar_cuadrante(seno, coseno):
 
-	cuadrante = (-1,-1)
+	cuadrante = -1
 
 	if seno >= 0 and coseno >= 0:
-		cuadrante = (0, numpy.pi / 2)
+		print("Primer cuadrante")
+		cuadrante = 1
 	elif seno >= 0 and coseno <= 0:
-		cuadrante = (numpy.pi / 2, numpy.pi)
+		print("Segundo cuadrante")
+		cuadrante = 2
 	elif seno < 0 and coseno < 0:
-		cuadrante = (numpy.pi, numpy.pi * 3 / 2)
+		print("Tercer cuadrante")
+		cuadrante = 3
 	elif seno < 0 and coseno >= 0:
-		cuadrante = (numpy.pi * 3 / 2, 2 * numpy.pi - 0.00000001)
+		print("Cuarto cuadrante")
+		cuadrante = 4
+
 
 	return cuadrante
 
@@ -600,8 +586,6 @@ def create_array(doy, hour, weekday, bikes):
 
 		array = numpy.append(array, aux)
 
-
-
 		print_array("FINAL ARR", array)
 
 	print_array("Resulting array with all the time-steps", array)
@@ -621,20 +605,18 @@ predicted_bikes = -1
 
 pred = []
 
-print("TEST TEST")
-
 #################################################################
 #
 # PREDICT
 #
 #################################################################
 
-for i in range(0,280):
+for i in range(0,240):
 
 
 	predicted_bikes = model.predict(d)[0][0]
 
-	print("PRED " + str(predicted_bikes))
+	# print(str(predicted_bikes) + " predicted bikes")
 
 	pred.append(predicted_bikes * max_bikes)
 
@@ -653,21 +635,18 @@ for i in range(0,280):
 
 	inverso_s = ((max_day + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[0])
 	inverso_c = ((max_day + 1) / (2 * numpy.pi)) * numpy.arccos(aux[1])
+	inverso_c_360 = ((max_day + 1) / (2 * numpy.pi)) * (2 * numpy.pi - numpy.arccos(aux[1]))
 
-	print("CUADRANTE DIA>" + str(detectar_cuadrante(aux[0], aux[1])))
-	print("Seno-1 " + str(numpy.arcsin(aux[0])))
-	print("Coseno-1 " + str(numpy.arccos(aux[1])))
 
-	min_quad, max_quad = detectar_cuadrante(aux[0], aux[1])
+	cuadrante = detectar_cuadrante(aux[0], aux[1])
 
 	correct_day = -1
 
 	# Utiliza el seno
-	if aux[0] > min_quad and aux[1] < max_quad:
-		print("El dia es " + str(inverso_s))
-	else:
-		print("El dia es " + str(inverso_c))
+	if cuadrante == 1 or cuadrante == 2:
 		correct_day = inverso_c
+	else:
+		correct_day = inverso_c_360
 
 	# ----------------------------------------------------------	
 
@@ -675,25 +654,25 @@ for i in range(0,280):
 
 	inverso_s = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[2])
 	inverso_c = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arccos(aux[3])
+	inverso_c_360 = ((max_hour + 1) / (2 * numpy.pi)) * (2 * numpy.pi - numpy.arccos(aux[3]))
 
-	print("CUADRANTE HORA>" + str(detectar_cuadrante(aux[2], aux[3])))
-	print("Seno-1 " + str(numpy.arcsin(aux[2])))
-	print("Coseno-1 " + str(numpy.arccos(aux[3])))
-
-	min_quad, max_quad = detectar_cuadrante(aux[2], aux[3])
+	cuadrante = detectar_cuadrante(aux[2], aux[3])
 
 	correct_hour = -1
 
-	# Utiliza el seno
-	if aux[2] > min_quad and aux[3] < max_quad:
-		print("La hora es " + str(inverso_s))
-	else:
-		print("La hora es " + str(inverso_c))
+	if cuadrante == 1 or cuadrante == 2:
 		correct_hour = inverso_c
+	else:
+		correct_hour = inverso_c_360
+
+	correct_hour = math.ceil(correct_hour)
+
+	print("Inverso SIN=" + str(numpy.degrees(numpy.arcsin(aux[2]))) + " inverso COS=" + str(numpy.degrees(numpy.arccos(aux[3]))) )
+	print("Inverso " + str(math.ceil(correct_hour)))		
+
+	print(col.HEADER +  "Predichas " + str(int(predicted_bikes * max_bikes)) + " a las " + str(hour_encoder.inverse_transform([math.ceil(correct_hour)])[0]) + " del " + str(int(correct_day)) + col.ENDC)
 
 	# ----------------------------------------------------------	
-
-	
 
 	########################## ENCODE ##########################
 
@@ -704,7 +683,7 @@ for i in range(0,280):
 	new_sample = numpy.append(new_sample, numpy.cos(2 * numpy.pi * float(correct_hour + 1) / (max_hour + 1)))   # COS Time
 	new_sample = numpy.append(new_sample,numpy.sin(2 * numpy.pi * float(((max_day + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[4])) / (max_wday + 1)))        # SIN WEEKDAY
 	new_sample = numpy.append(new_sample,numpy.cos(2 * numpy.pi * float(((max_day + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[5])) / (max_wday + 1)))        # COS Weekday
-	new_sample = numpy.append(new_sample,inital_bikes)
+	new_sample = numpy.append(new_sample,int(predicted_bikes * max_bikes))
 
 	new_sample = scaler.transform([new_sample])
 
@@ -718,7 +697,7 @@ for i in range(0,280):
 	d = d[range(len(columns), (n_in+1) * len(columns))] # Remove the oldest sample, the one that is at the beginning
 	d = d.reshape(1, n_in, len(columns))  # (1, n_in, 7)
 	
-	print_array("Final", d)
+	# print_array("Final", d)
 
 
 print(pred)
