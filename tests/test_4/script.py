@@ -133,8 +133,8 @@ def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
 	ax.get_xaxis().tick_bottom()
 	ax.get_yaxis().tick_left()
 
-	plt.xlabel(xlabel, color = 'silver')
-	plt.ylabel(ylabel, color = 'silver')
+	plt.xlabel(xlabel, color = 'silver', fontsize = 17)
+	plt.ylabel(ylabel, color = 'silver', fontsize = 17)
 
 	lines  = plt.plot(plot_1, label = 'train', color = '#458DE1')
 
@@ -570,16 +570,14 @@ def create_array(doy, hour, weekday, bikes):
 
 	for ts in range(0,n_in):
 
-		print("PAYASO HORA " + str(hour) + " +  TS " + str(ts) + " MAX H " + str(max_hour))
-
 		print(">> Day " + str(today) + " MAX DAY " + str(max_day) + " = " + str(numpy.sin(2 * numpy.pi * float(today) / (max_day + 1))))
 
-		aux = numpy.array(numpy.sin(2 * numpy.pi * float(today) / (max_day + 1)))           # Day of the year SIN
-		aux = numpy.append(aux, numpy.cos(2 * numpy.pi * float(today) / (max_day + 1)))      # Day of the year COS
+		aux = numpy.array(numpy.sin(2 * numpy.pi * float(today) / (max_day + 1)))             # Day of the year SIN
+		aux = numpy.append(aux, numpy.cos(2 * numpy.pi * float(today) / (max_day + 1)))       # Day of the year COS
 		aux = numpy.append(aux, numpy.sin(2 * numpy.pi * float(hour + ts) / (max_hour + 1)))  # Hour SIN
 		aux = numpy.append(aux, numpy.cos(2 * numpy.pi * float(hour + ts) / (max_hour + 1)))  # Hour SIN
-		aux = numpy.append(aux, numpy.sin(2 * numpy.pi * float(weekday) / (max_wday + 1)))  # Hour SIN
-		aux = numpy.append(aux, numpy.cos(2 * numpy.pi * float(weekday) / (max_wday + 1)))  # Hour SIN
+		aux = numpy.append(aux, numpy.sin(2 * numpy.pi * float(weekday) / (max_wday + 1)))    # Hour SIN
+		aux = numpy.append(aux, numpy.cos(2 * numpy.pi * float(weekday) / (max_wday + 1)))    # Hour SIN
 		aux = numpy.append(aux,inital_bikes)
 
 		aux = scaler.transform([aux])
@@ -616,9 +614,7 @@ for i in range(0,240):
 
 	predicted_bikes = model.predict(d)[0][0]
 
-	# print(str(predicted_bikes) + " predicted bikes")
-
-	pred.append(predicted_bikes * max_bikes)
+	pred.append(int(predicted_bikes * max_bikes))
 
 	d = d.reshape(n_in * len(columns),) # Flattens the array to the shape  (n_in * 7,) :: (n_in * len(columns),)
 	
@@ -633,7 +629,7 @@ for i in range(0,240):
 
 	# --------------- Detectar Cuadrante Dia Año ---------------
 
-	inverso_s = ((max_day + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[0])
+	# inverso_s = ((max_day + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[0])
 	inverso_c = ((max_day + 1) / (2 * numpy.pi)) * numpy.arccos(aux[1])
 	inverso_c_360 = ((max_day + 1) / (2 * numpy.pi)) * (2 * numpy.pi - numpy.arccos(aux[1]))
 
@@ -642,7 +638,6 @@ for i in range(0,240):
 
 	correct_day = -1
 
-	# Utiliza el seno
 	if cuadrante == 1 or cuadrante == 2:
 		correct_day = inverso_c
 	else:
@@ -652,7 +647,7 @@ for i in range(0,240):
 
 	# --------------- Detectar Cuadrante Hora ---------------
 
-	inverso_s = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[2])
+	# inverso_s = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[2])
 	inverso_c = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arccos(aux[3])
 	inverso_c_360 = ((max_hour + 1) / (2 * numpy.pi)) * (2 * numpy.pi - numpy.arccos(aux[3]))
 
@@ -689,15 +684,14 @@ for i in range(0,240):
 
 	d = numpy.append(d, new_sample) # Now the array has one more sample at the end
 
-
-	# print_array("Total data", d)	
-
-	# print(range(len(columns), (n_in+1) * len(columns)))
+	if is_in_debug:
+		print_array("Total data", d)	
 
 	d = d[range(len(columns), (n_in+1) * len(columns))] # Remove the oldest sample, the one that is at the beginning
 	d = d.reshape(1, n_in, len(columns))  # (1, n_in, 7)
 	
-	# print_array("Final", d)
+	if is_in_debug:
+		print_array("Final", d)
 
 
 print(pred)
