@@ -52,8 +52,8 @@ os.system("reset") # Clears the screen
 # Global Variables
 ################################################################################
 
-stationToRead = 'IRALA'
-is_in_debug = False
+stationToRead = 'ZUNZUNEGI'
+is_in_debug = True
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
 list_of_stations = ["PLAZA LEVANTE", "IRUÑA", "AYUNTAMIENTO", "PLAZA ARRIAGA", "SANTIAGO COMPOSTELA", "PLAZA REKALDE", "DR. AREILZA", "ZUNZUNEGI", "ASTILLERO", "EGUILLOR", "S. CORAZON", "PLAZA INDAUTXU", "LEHENDAKARI LEIZAOLA", "CAMPA IBAIZABAL", "POLID. ATXURI", "SAN PEDRO", "KARMELO", "BOLUETA", "OTXARKOAGA", "OLABEAGA", "SARRIKO", "HEROS", "EGAÑA", "P. ETXEBARRIA", "TXOMIN GARAT", "ABANDO", "ESTRADA CALEROS", "EPALZA", "IRALA", "S. ARANA", "C. MARIA"]
@@ -240,6 +240,9 @@ dataset         = pandas.read_csv('data/Bilbao.txt')
 dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_bikes', 'free_docks'] 
 dataset         = dataset[dataset['station'].isin([stationToRead])]
 
+
+
+
 print(col.HEADER, "> Data from " + dataset['datetime'].iloc[0], " to ", dataset['datetime'].iloc[len(dataset) - 1], col.ENDC)
 
 print_array("Read dataset", dataset.head())
@@ -267,6 +270,10 @@ dataset.insert(loc = 1, column = 'time', value = times)
 values  = dataset.values
 
 print_array("Dataset with unwanted columns removed", dataset.head())
+
+misDatos =  dataset[dataset['datetime'].isin([datetime.datetime.now().timetuple().tm_yday])].values
+
+print_array("JAVI BOBO", misDatos)
 
 #--------------------------------------------------------------------------------
 #-- Data encoding ---------------------------------------------------------------
@@ -518,10 +525,10 @@ print(" | |                                                                  ")
 print(" |_|                                                                  ", col.ENDC)
 
 
-inital_bikes = 4
+inital_bikes = 14
 today        = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday      = weekdays[datetime.datetime.today().weekday()]
-hour         = "00:00"
+hour         = "00:30"
 
 hour = hour_encoder.transform([hour])[0]
 weekday = weekday_encoder.transform([weekday])[0]
@@ -700,4 +707,4 @@ with open('data_gen/predictron/' + file_name, 'w') as file:
 		wr = csv.writer(file, delimiter = '\n')
 		wr.writerow(pred)
 
-prepare_plot('Time', 'Bikes', pred, [], 'predictron')
+prepare_plot('Time', 'Bikes', pred, misDatos[:,3], 'predictron')
