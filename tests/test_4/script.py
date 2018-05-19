@@ -53,7 +53,7 @@ os.system("reset") # Clears the screen
 ################################################################################
 
 stationToRead = 'IRALA'
-is_in_debug = True
+is_in_debug = False
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
 list_of_stations = ["PLAZA LEVANTE", "IRUÑA", "AYUNTAMIENTO", "PLAZA ARRIAGA", "SANTIAGO COMPOSTELA", "PLAZA REKALDE", "DR. AREILZA", "ZUNZUNEGI", "ASTILLERO", "EGUILLOR", "S. CORAZON", "PLAZA INDAUTXU", "LEHENDAKARI LEIZAOLA", "CAMPA IBAIZABAL", "POLID. ATXURI", "SAN PEDRO", "KARMELO", "BOLUETA", "OTXARKOAGA", "OLABEAGA", "SARRIKO", "HEROS", "EGAÑA", "P. ETXEBARRIA", "TXOMIN GARAT", "ABANDO", "ESTRADA CALEROS", "EPALZA", "IRALA", "S. ARANA", "C. MARIA"]
@@ -88,11 +88,8 @@ class col:
 def create_model(batch_size, statefulness):
 
 	model = Sequential()
-	model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=statefulness))
-	# model.add(Dense(lstm_neurons * 2, activation = "relu"))
-	# model.add(Dense(int(lstm_neurons * 0.5)))
-	# model.add(Dense(n_out * 2))
-	model.add(Dense(n_out, activation = 'relu'))
+	model.add(LSTM(100, input_shape=(train_x.shape[1], train_x.shape[2]), stateful=statefulness))
+	model.add(Dense(1))
 	model.compile(loss='mse', optimizer='adam', metrics = ['mse', 'acc'])
 
 	return model
@@ -292,45 +289,39 @@ max_wday = max(values[:,2])
 new_dataset = DataFrame()
 new_dataset['time_sin'] = numpy.sin(2. * numpy.pi * values[:,0].astype('float') / (max_day + 1))
 new_dataset['time_cos'] = numpy.cos(2. * numpy.pi * values[:,0].astype('float') / (max_day + 1))
-
 new_dataset['hour_sin'] = numpy.sin(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
 new_dataset['hour_cos'] = numpy.cos(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
-
 new_dataset['wday_sin'] = numpy.sin(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
 new_dataset['wday_cos'] = numpy.cos(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
+new_dataset['bikes']    = values[:,3]
 
-new_dataset['bikes'] = values[:,3]
+# Plot the columns representing the sine and cosine
 
-plt.plot(numpy.arange(0, len(new_dataset['hour_sin'].values[0:300]), 1), new_dataset['hour_sin'].values[0:300])
+plt.plot(numpy.arange(0, len(new_dataset['hour_sin'].values[0:2000]), 1), new_dataset['hour_sin'].values[0:2000])
 plt.axis('off')
-
 plt.savefig("plots/cyclic_encoding_sin.png", bbox_inches="tight")
 plt.close()
 
-plt.plot(numpy.arange(0, len(new_dataset['hour_cos'].values[0:300]), 1), new_dataset['hour_cos'].values[0:300])
+plt.plot(numpy.arange(0, len(new_dataset['hour_cos'].values[0:2000]), 1), new_dataset['hour_cos'].values[0:2000])
 plt.axis('off')
 plt.savefig("plots/cyclic_encoding_cos.png", bbox_inches="tight")
 plt.close()
 
-plt.scatter(new_dataset['hour_sin'].values[0:300], new_dataset['hour_cos'].values[0:300], alpha = 0.5)
+plt.scatter(new_dataset['hour_sin'].values[0:2000], new_dataset['hour_cos'].values[0:2000], alpha = 0.5)
+plt.axes().set_aspect('equal')
 plt.axis('off')
 plt.savefig("plots/cyclic_encoding.png", bbox_inches="tight")
 plt.close()
 
 values = new_dataset.values
 
-print_array("Prescaled values NEW NEW", new_dataset.head(60500))
-
 max_bikes = max(values[:,6]) # Maximum number of bikes a station holds
-max_cases = max_bikes + 1
-
 values    = values.astype('float32') # Convert al values to floats
 
 print_array("Prescaled values", values)
 
 scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
 scaled = scaler.fit_transform(values)
-
 
 print_array("Dataset with normalized values", scaled)
 
@@ -342,7 +333,9 @@ columns = ['time_sin', 'time_cos', 'hour_sin', 'hour_cos', 'wday_sin', 'wday_cos
 
 print("COLUMNS", columns)
 
+# Transform a time series into a supervised learning problem
 reframed = series_to_supervised(columns, scaled, n_in, n_out)
+
 
 to_drop = range(n_in * len(columns) , (1 + n_in) * len(columns) - 1)
 
@@ -354,6 +347,7 @@ values = reframed.values
 
 print_array("Reframed dataset without columns that are not going to be predicted", reframed.head())
 
+# --------------------------------------------------------------------------------------------------------------
 # -- Calculate the number of samples for each set
 # --------------------------------------------------------------------------------------------------------------
 
@@ -469,7 +463,7 @@ if os.path.isfile("model/model.h5") == False:
 print("Loading model from disk")
 
 # Load trained model from disk
-model = create_model(batch_size, True)
+model = create_model(batch_size, False)
 model.load_weights("model/model.h5")
 
 plot_model(model, to_file='model/new_model.png', show_shapes = True)
