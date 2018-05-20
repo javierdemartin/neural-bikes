@@ -52,23 +52,25 @@ os.system("reset") # Clears the screen
 # Global Variables
 ################################################################################
 
-stationToRead = 'ZUNZUNEGI'
+stationToRead = 'IRALA'
 is_in_debug = True
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
-list_of_stations = ["PLAZA LEVANTE", "IRUÑA", "AYUNTAMIENTO", "PLAZA ARRIAGA", "SANTIAGO COMPOSTELA", "PLAZA REKALDE", "DR. AREILZA", "ZUNZUNEGI", "ASTILLERO", "EGUILLOR", "S. CORAZON", "PLAZA INDAUTXU", "LEHENDAKARI LEIZAOLA", "CAMPA IBAIZABAL", "POLID. ATXURI", "SAN PEDRO", "KARMELO", "BOLUETA", "OTXARKOAGA", "OLABEAGA", "SARRIKO", "HEROS", "EGAÑA", "P. ETXEBARRIA", "TXOMIN GARAT", "ABANDO", "ESTRADA CALEROS", "EPALZA", "IRALA", "S. ARANA", "C. MARIA"]
-print(len(list_of_stations))
-
-lstm_neurons = int(sys.argv[1]) # 50
-batch_size   = 1
-epochs       = int(sys.argv[3]) # 30
-n_in         = int(sys.argv[4]) # 10
-n_out        = 1
-
-new_batch_size = int(sys.argv[2]) #1000
-
-print('Number of arguments:', len(sys.argv), 'arguments.')
-print('Argument List:', str(sys.argv))
+# If no inputs are given train with these parameters
+if len(sys.argv) > 0:
+	lstm_neurons = 50
+	batch_size   = 1
+	epochs       = 10
+	n_in         = 6
+	n_out        = 1
+	new_batch_size = 10000
+else:
+	lstm_neurons = int(sys.argv[1]) # 50
+	batch_size   = 1
+	epochs       = int(sys.argv[3]) # 30
+	n_in         = int(sys.argv[4]) # 10
+	n_out        = 1
+	new_batch_size = int(sys.argv[2]) #1000
 
 ################################################################################
 # Classes and Functions
@@ -83,12 +85,14 @@ class col:
 	FAIL      = '\033[91m'
 	ENDC      = '\033[0m'
 	BOLD      = '\033[1m'
-	UNDERLINE = '\033[4m'
 
+# Create the model, used two times
+#  (1) Batch training the model (batch size = specified as input)
+#  (2) Making online predictions (batch size = 1)
 def create_model(batch_size, statefulness):
 
 	model = Sequential()
-	model.add(LSTM(100, input_shape=(train_x.shape[1], train_x.shape[2]), stateful=statefulness))
+	model.add(LSTM(100, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=statefulness))
 	model.add(Dense(1))
 	model.compile(loss='mse', optimizer='adam', metrics = ['mse', 'acc'])
 
@@ -104,16 +108,17 @@ def print_smth(description, x):
 		print(x)
 		print(col.yellow, "----------------------------------------------------------------------------", col.ENDC)
 
-# Formatted output
-def print_array(description, x):
+# Print an array with a description and its size
+def print_array(description, array):
 	
 	if is_in_debug == True:
 		print("", col.yellow)
-		print(description, " ", x.shape)
+		print(description, " ", array.shape)
 		print("----------------------------------------------------------------------------", col.ENDC)
-		print(x)
+		print(array)
 		print(col.yellow, "----------------------------------------------------------------------------", col.ENDC)
 
+# Stilish the plot without plot ticks, 
 def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
 
 	min_y = min(plot_1)
@@ -149,7 +154,6 @@ def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
 		 plot_2[len(plot_2) - 1],
 		 "Real", color = '#80C797')
 
-	# texto = "RMSE " +  str('%.3f' % (rmse))  + " | Batch size " + str(batch_size) + " | Epochs " + str(epochs) + " |  " + str(lstm_neurons) + " LSTM neurons"
 	texto = " | Batch size " + str(batch_size) + " | Epochs " + str(epochs) + " |  " + str(lstm_neurons) + " LSTM neurons"
 	plt.title(texto,color="black", alpha=0.3)
 	plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
@@ -158,6 +162,7 @@ def prepare_plot(xlabel, ylabel, plot_1, plot_2, name):
 	plt.close()
 	print(col.HEADER + "> Loss plot saved" + col.ENDC)
 
+# Check if the current directory exists, if not create it.
 def check_directory(path):
 	if os.path.isdir(path) == False:
 		os.system("mkdir " + path)
@@ -187,9 +192,9 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 		cols.append(dataset.shift(-i))
 		if i == 0:
 			#names += [('var%d(t)' % (j+1)) for j in range(n_vars)]
-					names += [(columns[j] + '(t)') for j in range(n_vars)]
+			names += [(columns[j] + '(t)') for j in range(n_vars)]
 		else:
-					names += [(columns[j] + '(t+%d)' % (i)) for j in range(n_vars)]
+			names += [(columns[j] + '(t+%d)' % (i)) for j in range(n_vars)]
 	# put it all together
 	agg = concat(cols, axis=1)
 	agg.columns = names
@@ -200,35 +205,18 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 	print_array("Reframed dataset after converting series to supervised", agg.head())
 
 	return agg
-
-# Calculates the number of incorrect samples
-def calculate_no_errors(predicted, real):
-
-	wrong_val = 0
-
-	for i in range(0, len(predicted)):
-		if predicted[i] != real[i]:
-			wrong_val += 1
-
-	print(wrong_val, "/", len(predicted))
-
-
-
-print(col.HEADER)
-print("  _                  _     _  _   ")
-print(" | |                | |   | || |  ")
-print(" | |_    ___   ___  | |_  | || |_ ")
-print(" | __|  / _ \ / __| | __| |__   _|")
-print(" | |_  |  __/ \__ \ | |_     | |  ")
-print("  \__|  \___| |___/  \__|    |_|  ", col.ENDC) 
-                                 
-
-if os.path.isdir("plots") == False:
-	os.system("mkdir plots")
-
+				
 ################################################################################
 # Data preparation
 ################################################################################
+
+check_directory("plots")
+check_directory("data_gen")
+check_directory("data_gen/acc")
+check_directory("data_gen/loss")
+check_directory("data_gen/mse")
+check_directory("data_gen/prediction")
+check_directory("encoders")
 
 print(col.HEADER + "Data reading and preparation" + col.ENDC)
 
@@ -242,6 +230,7 @@ dataset         = dataset[dataset['station'].isin([stationToRead])]
 
 
 
+# dataset         = dataset[dataset['station'].isin(hours_encoder)]
 
 print(col.HEADER, "> Data from " + dataset['datetime'].iloc[0], " to ", dataset['datetime'].iloc[len(dataset) - 1], col.ENDC)
 
@@ -263,6 +252,7 @@ values  = dataset.values
 
 times = [x.split(" ")[1] for x in values[:,0]]
 
+
 dataset['datetime'] = [datetime.datetime.strptime(x, '%Y/%m/%d %H:%M').timetuple().tm_yday for x in values[:,0]]
 
 dataset.insert(loc = 1, column = 'time', value = times)
@@ -273,12 +263,12 @@ print_array("Dataset with unwanted columns removed", dataset.head())
 
 misDatos =  dataset[dataset['datetime'].isin([datetime.datetime.now().timetuple().tm_yday])].values
 
-print_array("JAVI BOBO", misDatos)
-
 #--------------------------------------------------------------------------------
 #-- Data encoding ---------------------------------------------------------------
 #
-# Integer encode day of the year and hour and normalize the columns
+# First steps:
+#  * Hour Integer Encode
+#  * Weekday
 #--------------------------------------------------------------------------------
 
 hour_encoder    = LabelEncoder() # Encode columns that are not numbers
@@ -286,6 +276,14 @@ weekday_encoder = LabelEncoder() # Encode columns that are not numbers
 
 values[:,1] = hour_encoder.fit_transform(values[:,1])    # Encode HOUR as an integer value
 values[:,2] = weekday_encoder.fit_transform(values[:,2]) # Encode HOUR as int
+
+print_smth("JAVIER", hour_encoder.classes_)
+print(type(hour_encoder.classes_))
+
+weekday_encoder.classes_ = numpy.array(weekdays)
+
+hour_encoder.classes_.tofile('encoders/hour_encoder.txt', sep='\n')
+weekday_encoder.classes_.tofile('encoders/weekday_encoder.txt', sep='\n')
 
 values = values.astype('float')
 
@@ -343,7 +341,7 @@ print("COLUMNS", columns)
 # Transform a time series into a supervised learning problem
 reframed = series_to_supervised(columns, scaled, n_in, n_out)
 
-
+# Select the columns
 to_drop = range(n_in * len(columns) , (1 + n_in) * len(columns) - 1)
 
 print_smth("TODROP", to_drop)
@@ -417,34 +415,27 @@ if os.path.isfile("model/model.h5") == False:
 	# As the model doesn't exists create the folder to save it there
 	check_directory("model")
 
-	model = create_model(new_batch_size, False)
+	model = create_model(new_batch_size, True)
 
 	list_acc  = []
 	list_loss = []
 	list_mse  = []
-
-	# history = model.fit(train_x, train_y, epochs=epochs, batch_size=new_batch_size, verbose=2, shuffle=False, validation_data = (test_x, test_y))
 
 	for i in range(epochs):
 
 		print("Epoch " + str(i+1) + "/" + str(epochs))
 		history = model.fit(train_x, train_y, epochs=1, batch_size=new_batch_size, verbose=2, shuffle=False, validation_data = (test_x, test_y))
 
+
 		list_acc.append(float(history.history['acc'][0]))
 		list_loss.append(float(history.history['loss'][0]))
-		list_mse.append(float(history.history['mean_squared_error'][0]))
 
-		model.reset_states()
 
 		# Save every N epochs the model, in case it gets interrupted
 		if i % 10 == 0:
 			model.save_weights("model/model.h5")
 
-	check_directory("data_gen")
-	check_directory("data_gen/acc")
-	check_directory("data_gen/loss")
-	check_directory("data_gen/mse")
-	check_directory("data_gen/prediction")
+		model.reset_states()
 
 	save_file_to("data_gen/acc/", file_name, list_acc)
 	save_file_to("data_gen/loss/", file_name, list_loss)
@@ -466,7 +457,6 @@ if os.path.isfile("model/model.h5") == False:
 
 	print("Saved model to disk")
 
-
 print("Loading model from disk")
 
 # Load trained model from disk
@@ -475,11 +465,7 @@ model.load_weights("model/model.h5")
 
 plot_model(model, to_file='model/new_model.png', show_shapes = True)
 
-print_array("TEST_X", prediction_x)
-
 check_directory("/data_gen/prediction")
-
-
 
 predicted = []
 
@@ -515,17 +501,9 @@ prepare_plot('samples', 'bikes', predicted, prediction_y, 'prediction')
 #
 ################################################################################################################################################################
 
-print(col.HEADER, "                            _   _          _                          ")
-print("                           | | (_)        | |                         ")
-print("  _ __    _ __    ___    __| |  _    ___  | |_   _ __    ___    _ __  ")
-print(" | '_ \  | '__|  / _ \  / _` | | |  / __| | __| | '__|  / _ \  | '_ \ ")
-print(" | |_) | | |    |  __/ | (_| | | | | (__  | |_  | |    | (_) | | | | |")
-print(" | .__/  |_|     \___|  \__,_| |_|  \___|  \__| |_|     \___/  |_| |_|")
-print(" | |                                                                  ")
-print(" |_|                                                                  ", col.ENDC)
+print("Predictions using made up data")
 
-
-inital_bikes = 14
+inital_bikes = 4
 today        = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday      = weekdays[datetime.datetime.today().weekday()]
 hour         = "00:30"
@@ -547,16 +525,16 @@ def detectar_cuadrante(seno, coseno):
 	cuadrante = -1
 
 	if seno >= 0 and coseno >= 0:
-		print("Primer cuadrante")
+		# print("Primer cuadrante")
 		cuadrante = 1
 	elif seno >= 0 and coseno <= 0:
-		print("Segundo cuadrante")
+		# print("Segundo cuadrante")
 		cuadrante = 2
 	elif seno < 0 and coseno < 0:
-		print("Tercer cuadrante")
+		# print("Tercer cuadrante")
 		cuadrante = 3
 	elif seno < 0 and coseno >= 0:
-		print("Cuarto cuadrante")
+		# print("Cuarto cuadrante")
 		cuadrante = 4
 
 
@@ -610,7 +588,43 @@ pred = []
 #
 #################################################################
 
-for i in range(0,240):
+def get_og_day(list):
+
+	inverso_c = ((max_day + 1) / (2 * numpy.pi)) * numpy.arccos(aux[1])
+	inverso_c_360 = ((max_day + 1) / (2 * numpy.pi)) * (2 * numpy.pi - numpy.arccos(aux[1]))
+
+
+	cuadrante = detectar_cuadrante(aux[0], aux[1])
+
+	correct_day = -1
+
+	if cuadrante == 1 or cuadrante == 2:
+		correct_day = inverso_c
+	else:
+		correct_day = inverso_c_360
+
+	return correct_day
+
+def get_og_hour(list):
+
+	# inverso_s = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[2])
+	inverso_c = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arccos(aux[3])
+	inverso_c_360 = ((max_hour + 1) / (2 * numpy.pi)) * (2 * numpy.pi - numpy.arccos(aux[3]))
+
+	cuadrante = detectar_cuadrante(aux[2], aux[3])
+
+	correct_hour = -1
+
+	if cuadrante == 1 or cuadrante == 2:
+		correct_hour = inverso_c
+	else:
+		correct_hour = inverso_c_360
+
+	correct_hour = math.ceil(correct_hour)
+
+	return correct_hour
+
+for time_step in range(0,240):
 
 
 	predicted_bikes = model.predict(d)[0][0]
@@ -630,43 +644,18 @@ for i in range(0,240):
 
 	# --------------- Detectar Cuadrante Dia Año ---------------
 
-	# inverso_s = ((max_day + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[0])
-	inverso_c = ((max_day + 1) / (2 * numpy.pi)) * numpy.arccos(aux[1])
-	inverso_c_360 = ((max_day + 1) / (2 * numpy.pi)) * (2 * numpy.pi - numpy.arccos(aux[1]))
-
-
-	cuadrante = detectar_cuadrante(aux[0], aux[1])
-
-	correct_day = -1
-
-	if cuadrante == 1 or cuadrante == 2:
-		correct_day = inverso_c
-	else:
-		correct_day = inverso_c_360
+	correct_day = get_og_day(aux)
 
 	# ----------------------------------------------------------	
 
 	# --------------- Detectar Cuadrante Hora ---------------
 
-	# inverso_s = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arcsin(aux[2])
-	inverso_c = ((max_hour + 1) / (2 * numpy.pi)) * numpy.arccos(aux[3])
-	inverso_c_360 = ((max_hour + 1) / (2 * numpy.pi)) * (2 * numpy.pi - numpy.arccos(aux[3]))
+	correct_hour = math.ceil(get_og_hour(aux))
 
-	cuadrante = detectar_cuadrante(aux[2], aux[3])
+	# print("Inverso SIN=" + str(numpy.degrees(numpy.arcsin(aux[2]))) + " inverso COS=" + str(numpy.degrees(numpy.arccos(aux[3]))) )
+	# print("Inverso " + str(math.ceil(correct_hour)))		
 
-	correct_hour = -1
-
-	if cuadrante == 1 or cuadrante == 2:
-		correct_hour = inverso_c
-	else:
-		correct_hour = inverso_c_360
-
-	correct_hour = math.ceil(correct_hour)
-
-	print("Inverso SIN=" + str(numpy.degrees(numpy.arcsin(aux[2]))) + " inverso COS=" + str(numpy.degrees(numpy.arccos(aux[3]))) )
-	print("Inverso " + str(math.ceil(correct_hour)))		
-
-	print(col.HEADER +  "Predichas " + str(int(predicted_bikes * max_bikes)) + " a las " + str(hour_encoder.inverse_transform([math.ceil(correct_hour)])[0]) + " del " + str(int(correct_day)) + col.ENDC)
+	print(col.HEADER +  "Predichas " + str(int(predicted_bikes * max_bikes)) + " bicis a las " + str(hour_encoder.inverse_transform([math.ceil(correct_hour)])[0]) + " del dia " + str(int(correct_day)) + col.ENDC)
 
 	# ----------------------------------------------------------	
 
