@@ -1,19 +1,34 @@
-###############################################################################################################
-#  _                  _       _  _   
-# | |                | |     | || |  
-# | |_    ___   ___  | |_    | || |_ 
-# | __|  / _ \ / __| | __|   |__   _|
-# | |_  |  __/ \__ \ | |_       | |   
-#  \__|  \___| |___/  \__|      |_|  
 #
-#                                    
-##############################################################################################################          
-
-# One hot de nuevo
-
+#   _                  _     _____ 
+#  | |                | |   | ____|
+#  | |_    ___   ___  | |_  | |__  
+#  | __|  / _ \ / __| | __| |___ \ 
+#  | |_  |  __/ \__ \ | |_   ___) |
+#   \__|  \___| |___/  \__| |____/                                 
 #
-# Summary
-#-------------------------------------------------------------------------------
+#
+# ------------------------------------------------------------------------------
+# -- Summary -------------------------------------------------------------------
+# -
+# - (1) Read datafile into a DataFrame
+# - (2) Select data only for the desired station
+# - (3) Drop unused columns and only have left the wanted columns
+# -	   (3.1) Dropped columns
+# -            · Station ID
+# -            · Free Docks
+# -     (3.2) Remaining columns
+# -			  · datetime
+# -            · weekday
+# -            · free bikes
+# - (4) Split datetime into two columns
+# -     · day of the year
+# -     · time
+# - (5) Encode data
+# -     (5.1) Integer encode the values (doy, time, weekday)
+# -	    (5.2) Cyclic encode the values (doy, time, weekday)
+# - (6) Fit the model
+# ------------------------------------------------------------------------------
+
 # Import data and categorize the bikes, change LSTM layers' settings
 # Doesn't predict well, it learns the values and repeats the previous interval
 
@@ -39,7 +54,7 @@ from sklearn.metrics import mean_squared_error
 from pandas import concat,DataFrame
 from keras.models import Sequential
 from keras.utils import plot_model, to_categorical
-from keras.layers import Dense, LSTM, Dropout
+from keras.layers import Dense, LSTM, Dropout, Activation
 from datetime import datetime
 import datetime
 from numpy import argmax
@@ -60,20 +75,20 @@ is_in_debug = True
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
 # If no inputs are given train with these parameters
-if len(sys.argv) > 0:
-	lstm_neurons = 200
-	batch_size   = 1
-	epochs       = 10
-	n_in         = 10
-	n_out        = 1
-	new_batch_size = 5000
-else:
-	lstm_neurons = int(sys.argv[1]) # 50
-	batch_size   = 1
-	epochs       = int(sys.argv[3]) # 30
-	n_in         = int(sys.argv[4]) # 10
-	n_out        = 1
-	new_batch_size = int(sys.argv[2]) #1000
+# if len(sys.argv) > 0:
+# 	lstm_neurons = 200
+# 	batch_size   = 1
+# 	epochs       = 10
+# 	n_in         = 10
+# 	n_out        = 1
+# 	new_batch_size = 200
+# else:
+lstm_neurons = int(sys.argv[1]) # 50
+batch_size   = 1
+epochs       = int(sys.argv[3]) # 30
+n_in         = int(sys.argv[4]) # 10
+n_out        = 1
+new_batch_size = int(sys.argv[2]) #1000
 
 ################################################################################
 # Classes and Functions
@@ -196,6 +211,24 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 	print_array("Reframed dataset after converting series to supervised", agg.head())
 
 	return agg
+
+# Create the model, used two times
+#  (1) Batch training the model (batch size = specified as input)
+#  (2) Making online predictions (batch size = 1)
+def create_model(batch_size, statefulness):
+
+
+	model = Sequential()
+	model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=statefulness, return_sequences=True))
+	model.add(LSTM(lstm_neurons))
+	model.add(Dense(max_bikes + 1))
+	model.add(Activation('softmax'))
+	model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics = ['accuracy', 'mse', 'mae'])
+	# model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=statefulness, activation = 'relu'))
+	# model.add(Dense(max_bikes + 1, activation = 'sigmoid'))
+	# model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics = ['mse', 'acc'])
+
+	return model
 				
 ################################################################################
 # Data preparation
@@ -240,7 +273,6 @@ values  = dataset.values
 #--------------------------------------------------------------------------------
 
 times = [x.split(" ")[1] for x in values[:,0]]
-
 
 dataset['datetime'] = [datetime.datetime.strptime(x, '%Y/%m/%d %H:%M').timetuple().tm_yday for x in values[:,0]]
 
@@ -296,24 +328,6 @@ max_wday = max(values[:,2])
 
 max_bikes = int(max(values[:,3])) # Maximum number of bikes a station holds
 
-
-# Create the model, used two times
-#  (1) Batch training the model (batch size = specified as input)
-#  (2) Making online predictions (batch size = 1)
-def create_model(batch_size, statefulness):
-
-
-
-	model = Sequential()
-	model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=False))
-	model.add(Dense(max_bikes + 1, activation='softmax'))
-	model.compile(loss='categorical_crossentropy', optimizer='adam', metrics = ['accuracy', 'mse', 'mae'])
-	# model.add(LSTM(lstm_neurons, batch_input_shape=(batch_size, train_x.shape[1], train_x.shape[2]), stateful=statefulness, activation = 'relu'))
-	# model.add(Dense(max_bikes + 1, activation = 'sigmoid'))
-	# model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics = ['mse', 'acc'])
-
-	return model
-
 new_dataset = DataFrame()
 new_dataset['time_sin'] = numpy.sin(2. * numpy.pi * values[:,0].astype('float') / (max_day + 1))
 new_dataset['time_cos'] = numpy.cos(2. * numpy.pi * values[:,0].astype('float') / (max_day + 1))
@@ -321,7 +335,7 @@ new_dataset['hour_sin'] = numpy.sin(2. * numpy.pi * values[:,1].astype('float') 
 new_dataset['hour_cos'] = numpy.cos(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
 new_dataset['wday_sin'] = numpy.sin(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
 new_dataset['wday_cos'] = numpy.cos(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
-# new_dataset['bikes']    = oneHot #values[:,3]
+# new_dataset['bikes']    = oneHot # values[:,3]
 
 bikes_data = DataFrame(oneHot)
 
@@ -541,7 +555,7 @@ prepare_plot('samples', 'bikes', predicted, prediction_y, 'prediction')
 
 print("Predictions using made up data")
 
-inital_bikes = 11
+inital_bikes = 10
 today        = datetime.datetime.now().timetuple().tm_yday # Current day of the year
 weekday      = weekdays[datetime.datetime.today().weekday()]
 hour         = "00:30"
@@ -688,7 +702,7 @@ for time_step in range(0,230):
 
 	aux = scaler.inverse_transform([newest])[0]
 
-	print_array("Inverted scaling on new_sample", aux)
+	# print_array("Inverted scaling on new_sample", aux)
 
 	# --------------- Detectar Cuadrante Dia Año ---------------
 
@@ -722,8 +736,8 @@ for time_step in range(0,230):
 
 	d = numpy.append(d, new_sample) # Now the array has one more sample at the end
 
-	if is_in_debug:
-		print_array("Total data", d)	
+	# if is_in_debug:
+	# 	print_array("Total data", d)	
 
 		
 
