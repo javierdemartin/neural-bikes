@@ -65,6 +65,7 @@ is_in_debug    = True
 # Station to analyze and read the data from
 stationToRead  = 'IRALA'
 weekdays       = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
+
 list_hours = ['00:00', '00:05', '00:10', '00:15', '00:20', '00:25', '00:30', '00:35', '00:40',
  '00:45', '00:50', '00:55', '01:00', '01:05', '01:10', '01:15',
  '01:20', '01:25', '01:30', '01:35', '01:40', '01:45', 
@@ -110,7 +111,7 @@ n_in           = int(sys.argv[4]) # 10
 n_out          = int(sys.argv[5]) # 10
 new_batch_size = int(sys.argv[2]) * n_in #1000
 
-file_name = str(lstm_neurons) + "_" + str(new_batch_size) + "_" + str(epochs) + "_" + str(n_in)
+file_name = str(lstm_neurons) + "_" + str(int(new_batch_size/n_in)) + "_" + str(epochs) + "_" + str(n_in)
 
 model_name = "model_" + str(lstm_neurons) + "_neurons_" + str(new_batch_size) + "_batch_" + str(epochs) + "_epochs_" + str(n_in) + "_n_in_" + str(n_out) + "_n_out"
 
@@ -348,6 +349,7 @@ def generate_column_array(columns, max_bikes) :
 # Data preparation
 ################################################################################
 
+check_directory("model")
 check_directory("plots")
 check_directory("data_gen")
 check_directory("data_gen/acc")
@@ -396,11 +398,8 @@ dataset['datetime'] = [datetime.datetime.strptime(x, '%Y/%m/%d %H:%M').timetuple
 
 dataset.insert(loc = 1, column = 'time', value = times)
 
-
-
 print_array("Dataset with unwanted columns removed", dataset.head(15))
 
-# df[~df['title'].isin(to_drop)]
 
 dataset = dataset[dataset['time'].isin(list_hours)]
 og_dataset = dataset
@@ -408,7 +407,6 @@ og_dataset = dataset
 print_array("Dataset with unwanted columns removed 2", dataset.head(15))
 
 values  = dataset.values
-
 
 misDatos =  dataset[dataset['datetime'].isin([datetime.datetime.now().timetuple().tm_yday])].values
 
@@ -432,9 +430,6 @@ print(len(hour_encoder.classes_))
 
 print_array("JAVO MIRA ESTO", values)
 
-
-
-
 for i in range(0,30):
 	print(values[i])
 
@@ -450,7 +445,6 @@ for i in range(0, len(values)):
 		day = values[i][0]
 		hora = values[i][1]
 	else:
-		# print("[" + str(day) + "] (1) " + str(hora) + " (2) " + str(values[i][1]))
 
 		if day == values[i][0]:
 			
@@ -473,8 +467,6 @@ for i in range(0, len(values)):
 # print_smth("HEY", dataset.loc [ dataset [ 'datetime' ] == 273 ].values[:,3])
 # one_plot('time', 'bikes', dataset.loc [ dataset [ 'datetime' ] == 273 ].values[:,1], dataset.loc [ dataset [ 'datetime' ] == 273 ].values[:,3], 'usage_septiembre', 273)
 # one_plot('time', 'bikes', dataset.loc [ dataset [ 'datetime' ] == 20 ].values[:,1], dataset.loc [ dataset [ 'datetime' ] == 20 ].values[:,3], 'usage_enero', 20)
-
-
 
 weekday_encoder.classes_ = numpy.array(weekdays)
 
@@ -514,24 +506,23 @@ print_array("FINAL DATASET", new_dataset)
 
 # Plot the columns representing the sine and cosine
 
-plt.plot(numpy.arange(0, len(new_dataset['hour_sin'].values[0:2000]), 1), new_dataset['hour_sin'].values[0:2000])
+plt.plot(numpy.arange(0, len(new_dataset['hour_sin'].values[0:500]), 1), new_dataset['hour_sin'].values[0:500])
 plt.axis('off')
 plt.savefig("plots/cyclic_encoding_sin.png", bbox_inches="tight")
 plt.close()
 
-plt.plot(numpy.arange(0, len(new_dataset['hour_cos'].values[0:2000]), 1), new_dataset['hour_cos'].values[0:2000])
+plt.plot(numpy.arange(0, len(new_dataset['hour_cos'].values[0:500]), 1), new_dataset['hour_cos'].values[0:500])
 plt.axis('off')
 plt.savefig("plots/cyclic_encoding_cos.png", bbox_inches="tight")
 plt.close()
 
-plt.scatter(new_dataset['hour_sin'].values[0:2000], new_dataset['hour_cos'].values[0:2000], alpha = 0.5)
+plt.scatter(new_dataset['hour_sin'].values[0:500], new_dataset['hour_cos'].values[0:500], alpha = 0.5)
 plt.axes().set_aspect('equal')
 plt.axis('off')
 plt.savefig("plots/cyclic_encoding.png", bbox_inches="tight")
 plt.close()
 
 values = new_dataset.values
-
 
 values    = values.astype('float32') # Convert al values to floats
 
@@ -545,17 +536,12 @@ print_array("Dataset with normalized values", scaled)
 #--------------------------------------------------------------------------------
 # Generate the columns list for the supervised transformation
 #--------------------------------------------------------------------------------
-
-# columns = generate_column_array(['time_sin', 'time_cos', 'hour_sin', 'hour_cos', 'wday_sin', 'wday_cos'], int(max_bikes))
 columns = generate_column_array(['hour_sin', 'hour_cos', 'wday_sin', 'wday_cos'], int(max_bikes))
-
-# columns = ['time_sin', 'time_cos', 'hour_sin', 'hour_cos', 'wday_sin', 'wday_cos', 'bikes']
 
 print("COLUMNS", columns)
 
 # Transform a time series into a supervised learning problem
 reframed = series_to_supervised(columns, scaled, n_in, n_out)
-
 
 final_drop = []
 
@@ -586,7 +572,7 @@ for i in range(0,len(reframed.columns)):
 # -- Calculate the number of samples for each set
 # --------------------------------------------------------------------------------------------------------------
 
-train_size, test_size, prediction_size = int(len(values) * 0.6) , int(len(values) * 0.2), int(len(values) * 0.15)
+train_size, test_size, prediction_size = int(len(values) * 0.8) , int(len(values) * 0.1), int(len(values) * 0.1)
 
 train_size      = int(int(train_size / new_batch_size) * new_batch_size) 
 test_size       = int(int(test_size / new_batch_size) * new_batch_size) 
@@ -692,15 +678,11 @@ print_array("TRAIN_Y", train_y)
 # Model definition
 #--------------------------------------------------------------------------------
 
-print("Checking if exists")
-
-
-
 # If the model is already trained don't do it again
 if os.path.isfile("model/" + model_name + ".h5") == False:
 
 	# As the model doesn't exists create the folder to save it there
-	check_directory("model")
+	
 
 	model = create_model(int(new_batch_size/n_in), False)
 
@@ -708,47 +690,18 @@ if os.path.isfile("model/" + model_name + ".h5") == False:
 	list_loss = []
 	list_mse  = []
 
-	max_len = 20
+	history = model.fit(train_x, train_y, batch_size=int(new_batch_size/n_in), epochs=epochs, validation_data=(test_x, test_y), verbose=1, shuffle = True)
 
-	mean_tr_acc = []
-	mean_tr_loss = []
+	save_file_to("data_gen/acc/", file_name, history.history['acc'])
+	save_file_to("data_gen/acc/", file_name + "_validation", history.history['val_acc'])
+	save_file_to("data_gen/loss/", file_name, history.history['loss'])
+	save_file_to("data_gen/loss/", file_name + "_validation", history.history['loss'])
+	save_file_to("data_gen/mean_squared_error/", file_name, history.history['mean_squared_error'])
+	save_file_to("data_gen/mean_squared_error/", file_name + "_validation", history.history['val_mean_squared_error'])
 
-
-	model.fit(train_x, train_y, batch_size=int(new_batch_size/n_in), epochs=epochs, validation_data=(test_x, test_y), verbose=1)
-
-	# for i in range(epochs):
-
-
-
-	# 	print("Epoch " + str(i+1) + "/" + str(epochs))
-
-	# 	history = model.fit(train_x, train_y, epochs=1, batch_size=int(new_batch_size/n_in), verbose=1, validation_data=(test_x, test_y) , shuffle=False)
-
-	# 	print(history.history)
-            
-	# 	list_acc.append(float(history.history['acc'][0]))
-	# 	list_loss.append(float(history.history['loss'][0]))
-	# 	list_mse.append(float(history.history['mean_squared_error'][0]))
-
-	# 	# Save every N epochs the model, in case it gets interrupted
-	# 	if i % 10 == 0:
-	# 		model.save_weights("model/" + model_name + ".h5")
-	# 		prepare_plot('epochs', 'accuracy',  list_acc, [], 'provisional_accuracy')
-
-	# 	model.reset_states()
-
-	# save_file_to("data_gen/acc/", file_name, list_acc)
-	# save_file_to("data_gen/loss/", file_name, list_loss)
-	# save_file_to("data_gen/mean_squared_error/", file_name, list_mse)
-
-	# min_y = min(history.history['loss'])
-	# max_y = max(history.history['loss'])
-
-
-
-	model_json = model.to_json()
-	with open("model/model" + model_name +  ".json", "w") as json_file:
-		json_file.write(model_json)
+	prepare_plot('epoch', 'accuracy', history.history['acc'] ,history.history['val_acc'] , 'accuracy_' + file_name)
+	prepare_plot('epoch', 'loss', history.history['loss'] ,history.history['val_loss'] , 'loss_' + file_name)
+	# prepare_plot('epoch', 'accuracy', history.history['mean_squared_error'] ,history.history['val_mean_squared_error'] , 'mean_squared_error_' + file_name)
 
 	model.save_weights("model/" + model_name + ".h5")
 
@@ -771,8 +724,8 @@ if save_model_img:
 check_directory("/data_gen/prediction")
 
 
-prediction_x = prediction_x[2:int(n_in/n_in)+2,:]
-prediction_y = prediction_y[2:int(n_in/n_in)+2,:]
+prediction_x = prediction_x[0:int(n_in/n_in),:]
+prediction_y = prediction_y[0:int(n_in/n_in),:]
 
 print("LONGITU " + str(len(prediction_x)))
 
@@ -805,30 +758,9 @@ valos = [argmax(x) for x in prediction_y] # Rescale back the real data
 
 print_smth("VALOS", valos)
 
-print_smth("LEN VALOS", len(valos))
-
 print_smth("LEN PREDICTED", len(predicted))
 
-prepare_plot('samples', 'bikes', predicted , valos, 'A VER SI VA')
-
-save_file_to("data_gen/prediction/", file_name, predicted)
-
-for i in range(len(prediction_x)):
-
-	# print_array("INPUT X", prediction_x[i])
-	# print_array("INPUT X", prediction_x[i].reshape(1,n_in,25))
-
-	preddd = model.predict_on_batch(prediction_x)
-
-	print_smth("PREDICTED", preddd)
-
-	mean_te_acc.append(argmax(preddd[0]))
-
-	print(">> " + str(argmax(preddd[0])))
-	model.reset_states()
-
-
-prepare_plot('samples', 'bikes', mean_te_acc ,valos , 'prediction_using_sample_data')
+# prepare_plot('samples', 'bikes', predicted , valos, 'prediction_' + str(int(new_batch_size/n_in)))
 
 #################################################################################################################################
 #                            _   _          _                          
@@ -843,7 +775,7 @@ prepare_plot('samples', 'bikes', mean_te_acc ,valos , 'prediction_using_sample_d
 #################################################################################################################################
 
 # Get the last n_in samples to predict
-today        = datetime.datetime.now().timetuple().tm_yday # Current day of the year
+today        = datetime.datetime.now().timetuple().tm_yday  # - 1 # Current day of the year
 oldest_day_to_search = today - int(n_in/288)
 
 list_days_to_save = []
@@ -854,13 +786,107 @@ for i in range(int(n_in/288)):
 print_smth("A G UARDAR", list_days_to_save)
 
 # TODO: Tener en cuenta más días
-datos = og_dataset[og_dataset['datetime'].isin([list_days_to_save])]
+datos = og_dataset[og_dataset['datetime'].isin(list_days_to_save)]
 
 
+values = datos.values
+
+values[:,1] = hour_encoder.fit_transform(values[:,1])    # Encode HOUR as an integer value
+values[:,2] = weekday_encoder.fit_transform(values[:,2]) # Encode HOUR as int
+
+print_array("DATOS A GUARDAR", values)
 
 
+day = -1
+hora = -1
+counter = 0
+
+aux_datos = []
 
 
+for i in range(0, int(n_in/288)):
+
+	print("ANALIZANDO EL DIA " + str(i))
+
+	for j in range(0,288):
+
+		e = i*288 + j
+
+		print("VALUS " + str(values[e]))
+		print("> Hora " + str(j) + " | " + str(values[e][1]) + " / len " + str(len(values)))
+
+		# Comprobar si la hora actual y la siguiente están separadas 1 unidad
+		if values[e][1] != 287:
+			if values[e][1] != (values[e+1][1] - 1):
+				print("-> No coinciden")
+
+				element_aux = values[e]
+				element_aux[1] = element_aux[1] + 1
+
+				values = numpy.insert(values, e, numpy.array(element_aux), 0)
+
+				print("--> Insertar " + str(element_aux) + " | Longitud actual " + str(len(values)))
+
+
+print_array("RECREADOS DATOS QUE FALTAN", values)
+
+aux_datos = numpy.asarray(aux_datos)
+
+print_array("AUX_DATOS", aux_datos)
+
+oneHot = to_categorical(values[:,3])
+
+
+# +---------+---------+----------+----------+-------------+-------------+-------+
+# |         |         |          |          |             |             |       |
+# | day_sin | day_cos | time_sin | time_cos | weekday_sin | weekday_cos | bikes |
+# |         |         |          |          |             |             |       |
+# +---------+---------+----------+----------+-------------+-------------+-------+
+
+new_dataset = DataFrame()
+new_dataset['hour_sin'] = numpy.sin(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
+new_dataset['hour_cos'] = numpy.cos(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
+new_dataset['wday_sin'] = numpy.sin(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
+new_dataset['wday_cos'] = numpy.cos(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
+
+bikes_data = DataFrame(oneHot)
+
+new_dataset = new_dataset.join(bikes_data)
+
+print_array("FINAL DATASET", new_dataset)
+
+
+values = new_dataset.values
+
+values    = values.astype('float32') # Convert al values to floats
+
+print_array("Prescaled values", values)
+
+scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
+scaled = scaler.fit_transform(values)
+
+print_array("Dataset with normalized values", scaled)
+
+scaled       = scaled.reshape((1, n_in, len(columns))) # (...,n_in,4)
+
+print_array("SCALED RESHAPED", scaled)
+
+predicted = model.predict(scaled)
+predicted = predicted.reshape(predicted.shape[1])
+predicted = predicted.reshape(n_out, 21)
+predicted = [argmax(x) for x in predicted] # Rescale back the real data
+
+print_smth("PREDICTED FINAL 2", predicted)
+
+dia_hoy = datos = og_dataset[og_dataset['datetime'].isin([today])]
+
+print_smth("REAL BIKES AS OF TODAY", dia_hoy)
+
+bicis_hoy = dia_hoy.values[:,3]
+
+print_smth("REAL BIKES AS OF TODAY", bicis_hoy)
+
+prepare_plot('samples', 'bikes', predicted ,bicis_hoy , 'real_prediction_' + file_name)
 
 
 
