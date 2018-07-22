@@ -5,18 +5,19 @@ matplotlib.use('Agg')
 import sys
 import matplotlib.pyplot as plt
 import os
-
+import gc
 
 # Parameters
 # lstm | batch | epochs | n_in | n_out
 
-epochs = 10
+epochs = 3000
 batch_size = 100
-lstm_neurons = 500
-n_in = 864
+lstm_neurons = 200
+n_in = 576
 n_out = 288
 
-batches = [20]
+
+batches = [100]
 
 os.system("rm -rf data_gen/ model/ plots/ encoders/")
 
@@ -27,9 +28,11 @@ class col:
 for intento in batches:
 
 	os.system("rm -rf model/")
+
 	os.system("python3 script.py " + str(lstm_neurons) + " " + str(intento) + " " + str(epochs) + " " + str(n_in) + " " + str(n_out))
 
 	print("Terminado\a")
+	gc.collect()
 
 def generate_plot(plot):
 

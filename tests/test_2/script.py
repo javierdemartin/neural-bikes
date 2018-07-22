@@ -52,6 +52,7 @@ import pandas.core.frame
 from sklearn.externals import joblib
 import os
 import csv
+import gc
 
 os.system("reset") # Clears the screen
 
@@ -64,10 +65,12 @@ save_model_img = False
 # Prints the array
 is_in_debug    = True
 # Station to analyze and read the data from
-stationToRead  = 'IRALA'
+stationToRead  = 'PLAZA ARRIAGA'
 weekdays       = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
-list_of_stations = ["PLAZA LEVANTE", "IRUÑA", "AYUNTAMIENTO", "PLAZA ARRIAGA", "SANTIAGO COMPOSTELA", "PLAZA REKALDE", "DR. AREILZA", "ZUNZUNEGI", "ASTILLERO", "EGUILLOR", "S. CORAZON", "PLAZA INDAUTXU", "LEHENDAKARI LEIZAOLA", "CAMPA IBAIZABAL", "POLID. ATXURI", "SAN PEDRO", "KARMELO", "BOLUETA", "OTXARKOAGA", "OLABEAGA", "SARRIKO", "HEROS", "EGAÑA", "P.ETXEBARRIA", "TXOMIN GARAT", "ABANDO", "ESTRADA CALEROS", "EPALZA", "IRALA", "S.ARANA", "C.MARIA"]
+# list_of_stations = ["PLAZA LEVANTE", "IRUÑA", "AYUNTAMIENTO","PLAZA ARRIAGA", "SANTIAGO COMPOSTELA", "PLAZA REKALDE", "DR. AREILZA", "ZUNZUNEGI", "ASTILLERO"] #, "EGUILLOR", "S.  CORAZON", "PLAZA INDAUTXU", "LEHENDAKARI LEIZAOLA", "CAMPA IBAIZABAL", "POLID. ATXURI", "SAN PEDRO", "KARMELO", "BOLUETA", "OTXARKOAGA", "OLABEAGA", "SARRIKO", "HEROS", "EGAÑA", "P.ETXEBARRIA", "TXOMIN GARAT", "ABANDO", "ESTRADA CALEROS", "EPALZA", "IRALA", "S.ARANA", "C.MARIA"]
+
+list_of_stations = ["PLAZA ARRIAGA", "AYUNTAMIENTO", "ABANDO", "EGUILLOR", "C.MARIA"]
 
 list_hours = ['00:00', '00:05', '00:10', '00:15', '00:20', '00:25', '00:30', '00:35', '00:40',
  '00:45', '00:50', '00:55', '01:00', '01:05', '01:10', '01:15',
@@ -172,8 +175,8 @@ def one_plot(xlabel, ylabel, plot_1, plot_2, name, dia):
 	ax.get_xaxis().tick_bottom()
 	ax.get_yaxis().tick_left()
 
-	plt.xlabel(xlabel, color = 'silver', fontsize = 14)
-	plt.ylabel(ylabel, color = 'silver', fontsize = 14)
+	plt.xlabel(xlabel, color = 'silver', fontsize = 17)
+	plt.ylabel(ylabel, color = 'silver', fontsize = 17)
 
 	lines  = plt.plot(plot_1, plot_2, label = 'train', color = '#458DE1')
 
@@ -181,9 +184,9 @@ def one_plot(xlabel, ylabel, plot_1, plot_2, name, dia):
 
 	plt.setp(lines, linewidth=2)
 
-	texto = "Batch size of " + str(batch_size) + ", " + str(epochs) + " epochs " + str(lstm_neurons) + " LSTM neurons, " + str(int(n_in/288)) + " previous and " + str(int(n_out/288)) + " posterior time-steps"
-	plt.title(texto,color="black") #, alpha=0.3)
-	plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on") #, colors = 'silver')
+	texto = stationToRead + " Batch size of " + str(batch_size) + ", " + str(epochs) + " epochs " + str(lstm_neurons) + " LSTM neurons, " + str(int(n_in/288)) + " previous and " + str(int(n_out/288)) + " posterior time-steps"
+	plt.title(texto,color="black", alpha=0.3)
+	plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
 
 	# plt.show()
 	plt.savefig("plots/" + name + ".png", bbox_inches="tight")
@@ -253,8 +256,8 @@ def plot_availability(xlabel, ylabel, plot_1, plot_2, name, label1, label2):
 	ax.get_xaxis().tick_bottom()
 	ax.get_yaxis().tick_left()
 
-	plt.xlabel(xlabel, color = 'silver', fontsize = 17)
-	plt.ylabel(ylabel, color = 'silver', fontsize = 17)
+	plt.xlabel(xlabel, color = 'black', fontsize = 14)
+	plt.ylabel(ylabel, color = 'black', fontsize = 14)
 
 	lines  = plt.plot(plot_1,  linestyle = '--', label = 'train', color = '#458DE1')
 	lines += plt.plot(plot_2, label = 'test', color = '#80C797')
@@ -278,7 +281,7 @@ def plot_availability(xlabel, ylabel, plot_1, plot_2, name, label1, label2):
 		 label2, color = '#80C797')
 
 	texto = "Batch size of" + str(batch_size) + ", " + str(epochs) + " epochs " + str(lstm_neurons) + " LSTM neurons, " + str(int(n_in/288)) + " previous and " + str(int(n_out/288)) + " posterior time-steps"
-	plt.title(texto,color="black", alpha=0.3)
+	plt.title(texto,color="black") #, alpha=0.3)
 	plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on", colors = 'silver')
 
 	# plt.show()
@@ -302,7 +305,9 @@ def save_file_to(directory, fileName, data):
 # Convert series to supervised learning
 # Arguments
 #  * [Columns]> Array of strings to name the supervised transformation
-def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
+def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=False):
+
+	print("COLUMNAS " + str(columns))
 
 	n_vars = 1 if type(data) is list else data.shape[1]
 	dataset = DataFrame(data)
@@ -324,6 +329,13 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 	agg = concat(cols, axis=1)
 	agg.columns = names
 	# drop rows with NaN values
+
+	del dataset
+	del cols
+	gc.collect()
+
+	print("Droppin NAN")
+
 	if dropnan:
 		agg.dropna(inplace=True)
 
@@ -331,7 +343,6 @@ def series_to_supervised(columns, data, n_in=1, n_out=1, dropnan=True):
 
 	return agg
 	
-
 # Create the model, used two times
 #  (1) Batch training the model (batch size = specified as input)
 #  (2) Making online predictions (batch size = 1)
@@ -342,9 +353,9 @@ def create_model(batch_sizee, statefulness):
 	model.add(LSTM(lstm_neurons, input_shape=(train_x.shape[1], train_x.shape[2]), stateful=statefulness, return_sequences=True))
 	model.add(LSTM(lstm_neurons, return_sequences = True))
 	model.add(LSTM(lstm_neurons))
-	model.add(Dense(21 * n_out))
-	model.add(Activation('softmax'))
-	model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics = ['mse', 'acc'])
+	model.add(Dense(n_out))
+	# model.add(Activation('softmax'))
+	model.compile(loss='mae', optimizer='adam', metrics = ['mse', 'acc'])
 
 	return model
 
@@ -381,7 +392,7 @@ def calculate_average_for(values):
 
 		selected = values[numpy.where(values[:,1] == i)]
 
-		average_availability.append(int(sum(selected[:,3]) / len(selected[:,3])))
+		average_availability.append(int(sum(selected[:,4]) / len(selected[:,4])))
 
 	return average_availability
 
@@ -408,23 +419,26 @@ print(col.HEADER + "Data reading and preparation" + col.ENDC)
 dataset         = pandas.read_csv('data/Bilbao.txt')
 dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_docks', 'free_bikes'] 
 
+dataset = dataset.drop(dataset.index[range(400000)])
+
 
 print_array("Read dataset", dataset)
 
-dataset         = dataset[dataset['station'].isin([stationToRead])]
+# dataset         = dataset[dataset['station'].isin([stationToRead])]
 
-# dataset         = dataset[dataset['station'].isin(hours_encoder)]
 
 print(col.HEADER, "> Data from " + dataset['datetime'].iloc[0], " to ", dataset['datetime'].iloc[len(dataset) - 1], col.ENDC)
 
 print_array("Read dataset", dataset.head())
 print_array("Read dataset", dataset)
 
-dataset.drop(dataset.columns[[2,3,4]], axis = 1, inplace = True) # Remove ID of the sation and free docks
+dataset.drop(dataset.columns[[2,4]], axis = 1, inplace = True) # Remove ID of the sation and free docks
+dataset = dataset.reset_index(drop = True)
+
 
 print_array("Read dataset", dataset)
 
-dataset = dataset.reset_index(drop = True)
+
 values  = dataset.values
 
 #--------------------------------------------------------------------------------
@@ -441,15 +455,54 @@ dataset.insert(loc = 1, column = 'time', value = times)
 
 print_array("Dataset with unwanted columns removed", dataset.head(15))
 
-
 dataset = dataset[dataset['time'].isin(list_hours)]
-og_dataset = dataset
+
+# Get the last n_in samples to predict
+today        = datetime.datetime.now().timetuple().tm_yday - 1
+oldest_day_to_search = today - int(n_in/288)
+
+list_days_to_save = []
+
+for i in range(int(n_in/288)):
+	list_days_to_save.append(oldest_day_to_search + i)
+
+print("Recogiendo los dias " + str(list_days_to_save) + " y los de hoy (" + str(today) + ")")
+
+
+
+# TODO: Tener en cuenta más días
+datos = dataset[dataset['datetime'].isin(list_days_to_save)][dataset['station'].isin([stationToRead])]
+dia_hoy = dataset[dataset['datetime'].isin([today])][dataset['station'].isin([stationToRead])]
+
+print_array("DATOS", datos)
+
+print_array("DIA HOY", dia_hoy)
 
 print_array("Dataset with unwanted columns removed 2", dataset.head(15))
 
+print_smth("JAVO PAYASO", dataset[dataset['station'].isin([stationToRead])].values)
+
+datos_media = dataset[dataset['station'].isin([stationToRead])].values
+
+# average = calculate_average_for()
+
 values  = dataset.values
 
+separated_stations = []
+
+for station_to in list_of_stations:
+
+	print(station_to)
+
+	print_smth("ESTACION " + str(station_to), dataset[dataset['station'].isin([station_to])].values)
+
+	separated_stations.append(dataset[dataset['station'].isin([station_to])].values)
+
+print_smth("HEY TIENES YA LA LISTA", separated_stations)
+
 misDatos =  dataset[dataset['datetime'].isin([datetime.datetime.now().timetuple().tm_yday])].values
+
+
 
 #--------------------------------------------------------------------------------
 #-- Data encoding ---------------------------------------------------------------
@@ -460,152 +513,229 @@ misDatos =  dataset[dataset['datetime'].isin([datetime.datetime.now().timetuple(
 #--------------------------------------------------------------------------------
 
 hour_encoder    = LabelEncoder() # Encode columns that are not numbers
+hour_encoder.fit(list_hours)
 weekday_encoder = LabelEncoder() # Encode columns that are not numbers
-
-values[:,1] = hour_encoder.fit_transform(values[:,1])    # Encode HOUR as an integer value
-values[:,2] = weekday_encoder.fit_transform(values[:,2]) # Encode HOUR as int
-
+weekday_encoder.fit(weekdays)
+station_encoder = LabelEncoder() # Encode columns that are not numbers
+station_encoder.fit(list_of_stations)
 
 print_smth("HOUR ENCODER", hour_encoder.classes_)
 print(len(hour_encoder.classes_))
 
-print_array("JAVO MIRA ESTO", values)
+print_smth("WEEKDAY ENCODER", weekday_encoder.classes_)
+print(len(weekday_encoder.classes_))
 
-average = calculate_average_for(values)
-
-for i in range(0,30):
-	print(values[i])
-
-
-day = -1
-hora = -1
-counter = 0
+print_smth("STATION ENCODER", station_encoder.classes_)
+print(len(station_encoder.classes_))
 
 
-for i in range(0, len(values)):
+max_bikes = int(max(values[:,4])) # Maximum number of bikes a station holds
 
-	if values[i][1] == 0:
-		day = values[i][0]
-		hora = values[i][1]
-	else:
+del dataset
+del values
+print("Deleted from memory dataset")
 
-		if day == values[i][0]:
-			
-			if values[i][1] != (hora + 1):
-				
+for sta in separated_stations:
 
-				element_aux = values[i]
-				element_aux[1] = element_aux[1] - 1
+	sta[:,1] = hour_encoder.transform(sta[:,1])    # Encode HOUR as an integer value
+	sta[:,2] = weekday_encoder.transform(sta[:,2]) # Encode HOUR as int
+	sta[:,3] = station_encoder.transform(sta[:,3])
+	sta = sta.astype('float')
 
-				# print("\tInsertado>>>> " + str(element_aux))
 
-				hora = element_aux[1] + 1
+datos_media[:,1] = hour_encoder.transform(datos_media[:,1])
+datos_media[:,2] = weekday_encoder.transform(datos_media[:,2])
+datos_media[:,3] = station_encoder.transform(datos_media[:,3])
 
-				numpy.insert(values, counter, numpy.array(element_aux), 0)
+print_smth("JAVO DANDOLE ESTO", datos_media)
 
-			else:
-				hora = values[i][1]
-			# print("SET HORA " + str(hora))
+average = calculate_average_for(datos_media)
 
-# print_smth("HEY", dataset.loc [ dataset [ 'datetime' ] == 273 ].values[:,3])
-# one_plot('time', 'bikes', dataset.loc [ dataset [ 'datetime' ] == 273 ].values[:,1], dataset.loc [ dataset [ 'datetime' ] == 273 ].values[:,3], 'usage_septiembre', 273)
-# one_plot('time', 'bikes', dataset.loc [ dataset [ 'datetime' ] == 20 ].values[:,1], dataset.loc [ dataset [ 'datetime' ] == 20 ].values[:,3], 'usage_enero', 20)
+max_day  = float(max(sta[:,0]))
+max_hour = float(max(sta[:,1]))
+max_wday = float(max(sta[:,2]))
 
-weekday_encoder.classes_ = numpy.array(weekdays)
+# Comprobar que no quedan huecos en el dataset, si hay recrearlos
+#------------------------------------------------------------------------------------
 
-hour_encoder.classes_.tofile('encoders/hour_encoder.txt', sep='\n')
-weekday_encoder.classes_.tofile('encoders/weekday_encoder.txt', sep='\n')
+# for estacion in separated_stations:
 
-values = values.astype('float')
+# 	# print(">>> " + str(estacion))
 
-oneHot = to_categorical(values[:,3])
+# 	for i in range(288):
 
-max_day  = max(values[:,0])
-max_hour = max(values[:,1])
-max_wday = max(values[:,2])
+# 		print(">> " + str(estacion[i]))
 
-max_bikes = int(max(values[:,3])) # Maximum number of bikes a station holds
+# 		# Si no esta en el final
+# 		if estacion[i][1] != 287:
 
-# +---------+---------+----------+----------+-------------+-------------+-------+
-# |         |         |          |          |             |             |       |
-# | day_sin | day_cos | time_sin | time_cos | weekday_sin | weekday_cos | bikes |
-# |         |         |          |          |             |             |       |
-# +---------+---------+----------+----------+-------------+-------------+-------+
+# 			print(">> [" + str(i) + "] " + str(estacion[i][1]) + " - " + str(estacion[i+1][1]))
 
-new_dataset = DataFrame()
-# new_dataset['time_sin'] = numpy.sin(2. * numpy.pi * values[:,0].astype('float') / (max_day + 1))
-# new_dataset['time_cos'] = numpy.cos(2. * numpy.pi * values[:,0].astype('float') / (max_day + 1))
-new_dataset['hour_sin'] = numpy.sin(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
-new_dataset['hour_cos'] = numpy.cos(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
-new_dataset['wday_sin'] = numpy.sin(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
-new_dataset['wday_cos'] = numpy.cos(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
-# new_dataset['bikes']    = oneHot # values[:,3]
+# 			if estacion[i][1] != (estacion[i+1][1] - 1):
+# 				print(">>>> No coincide")
 
-bikes_data = DataFrame(oneHot)
 
-new_dataset = new_dataset.join(bikes_data)
+#------------------------------------------------------------------------------------
 
-print_array("FINAL DATASET", new_dataset)
 
-# Plot the columns representing the sine and cosine
-
-plt.plot(numpy.arange(0, len(new_dataset['hour_sin'].values[0:500]), 1), new_dataset['hour_sin'].values[0:500])
-plt.axis('off')
-plt.savefig("plots/cyclic_encoding_sin.png", bbox_inches="tight")
-plt.close()
-
-plt.plot(numpy.arange(0, len(new_dataset['hour_cos'].values[0:500]), 1), new_dataset['hour_cos'].values[0:500])
-plt.axis('off')
-plt.savefig("plots/cyclic_encoding_cos.png", bbox_inches="tight")
-plt.close()
-
-plt.scatter(new_dataset['hour_sin'].values[0:500], new_dataset['hour_cos'].values[0:500], alpha = 0.5)
-plt.axes().set_aspect('equal')
-plt.axis('off')
-plt.savefig("plots/cyclic_encoding.png", bbox_inches="tight")
-plt.close()
-
-values = new_dataset.values
-
-values    = values.astype('float32') # Convert al values to floats
-
-print_array("Prescaled values", values)
+print("MAX BIKES " + str(max_bikes))
 
 scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
-scaled = scaler.fit_transform(values)
+scaler.data_max_ = [1.0, 1.0, 1.0, 1.0, 31.0, 35.0]
 
-print_array("Dataset with normalized values", scaled)
+for i in range(len(separated_stations)):
+
+	print_smth("A VER", separated_stations[i][:,4])
+	print(len(separated_stations[i][:,4]))
+
+	new_dataset = DataFrame()
+	new_dataset['hour_sin'] = numpy.sin(2. * numpy.pi * separated_stations[i][:,1].astype('float') / (max_hour + 1))
+	new_dataset['hour_cos'] = numpy.cos(2. * numpy.pi * separated_stations[i][:,1].astype('float') / (max_hour + 1))
+	new_dataset['wday_sin'] = numpy.sin(2. * numpy.pi * separated_stations[i][:,2].astype('float') / (max_wday + 1))
+	new_dataset['wday_cos'] = numpy.cos(2. * numpy.pi * separated_stations[i][:,2].astype('float') / (max_wday + 1))
+	new_dataset['station'] = separated_stations[i][:,3]
+	new_dataset['free_bikes'] = separated_stations[i][:,4]
+
+	print("->", str(scaler.data_max_))
+
+	new_dataset = scaler.fit_transform(new_dataset)
+
+	scaler.data_max_ = [1.0, 1.0, 1.0, 1.0, 31.0, 35.0]
+
+	print("--->", str(scaler.data_max_))
+
+	print_smth("NEW DATASET", new_dataset)
+
+	# print_smth("APPENDED", new_dataset)
+
+	# final_stations.append(new_dataset)
+
+	separated_stations[i] = new_dataset
+
+	del new_dataset
+	gc.collect()
+
+print("Removed from memory separated_stations")
+gc.collect()
+
+print_smth("FINAL DATASET", separated_stations)
+
+
+separated_stations = [ scaler.fit_transform(x) for x in separated_stations ]
+
+print_smth("Dataset with normalized values", separated_stations)
 
 #--------------------------------------------------------------------------------
 # Generate the columns list for the supervised transformation
 #--------------------------------------------------------------------------------
-columns = generate_column_array(['hour_sin', 'hour_cos', 'wday_sin', 'wday_cos'], int(max_bikes))
+# columns = generate_column_array(['hour_sin', 'hour_cos', 'wday_sin', 'wday_cos', 'station'], int(max_bikes))
+columns = ['hour_sin', 'hour_cos', 'wday_sin', 'wday_cos', 'station', 'free_bikes']
 
 print("COLUMNS", columns)
+print("Len columns " + str(len(columns)))
 
 # Transform a time series into a supervised learning problem
-reframed = series_to_supervised(columns, scaled, n_in, n_out)
+# reframed = series_to_supervised(columns, scaled, n_in, n_out)
+
+print("Preparando series to supervised")
+
+
+
+# final_stations_2 = [ series_to_supervised(columns, x, n_in, n_out) for x in scaled ]
+
+
+for i in range(len(separated_stations)):
+
+	print_smth("pre appending " + str(i), separated_stations[i])
+
+	separated_stations[i] = series_to_supervised(columns, separated_stations[i], n_in, n_out, True)
+
+	print_smth("Appending", separated_stations[i])
+
+	gc.collect()
+
+# for i in range(len(separated_stations)):
+# 	separated_stations[i].dropnan(inplace = True)
+# 	print("DROPPED NAN", separated_stations[i])
+
+
+for i in separated_stations:
+	print_smth("HEY PROBANDO CABRON", i)
+	print(len(i))
 
 final_drop = []
 
 for i in range(0,n_out):
 
-	position = len(columns) * (n_in + i)
-	to_drop = range(position, position + 4)
-	# print(str(i) + " RANGE " + str(to_drop))
-	final_drop.append(reframed.columns[to_drop].tolist())
+	position = (len(columns)) * (n_in + i)
+
+	print("Position " + str(position))
+
+
+	to_drop = range(position, position + 5)
+	print(str(i) + " RANGE " + str(to_drop))
+
+	print_smth("AQUI FALLA ", separated_stations[0].columns)
+
+	final_drop.append(separated_stations[0].columns[to_drop].tolist())
+
+	print_smth("FINAL DROP ", final_drop)	
 
 
 final_drop = [val for sublist in final_drop for val in sublist]
 
 print_smth("Lista columnas a eliminar", final_drop)
 
-reframed.drop(final_drop, axis=1, inplace=True)
+for i in range(len(separated_stations)):
 
-values = reframed.values
+	separated_stations[i].drop(final_drop, axis=1, inplace=True)
 
-print_array("Reframed dataset without columns that are not going to be predicted", reframed.head())
-print(reframed.columns)
+	separated_stations[i] = separated_stations[i].values
+
+print_smth("IBON", separated_stations)
+
+print_array("HEY PROBANDO DIMENSIONES ", separated_stations[0])
+
+lon = 0
+
+for i in separated_stations:
+
+	lon += i.shape[0]
+
+print("LON LON " + str(lon))
+
+
+result = separated_stations[0]
+
+for i in range(1,len(separated_stations)):
+
+	result = numpy.append(result, separated_stations[i], axis = 0)
+
+	print_array("APPENDED " + str(i), result)
+
+	gc.collect()
+
+print_array("FINAL APPEND ", result)
+
+shapo = result.shape[1]
+
+values = result
+
+values = values.reshape((lon,shapo))
+
+print_array("VALUES FINAL", values)
+
+
+
+# shuffle
+numpy.random.shuffle(values)
+
+
+print_array("VALUES SHUFFLED", values)
+
+
+# print_array("Reframed dataset without columns that are not going to be predicted", reframed.head())
+# print(reframed.columns)
 
 # print("AFTER DROP")
 # for i in range(0,len(reframed.columns)):
@@ -615,7 +745,7 @@ print(reframed.columns)
 # -- Calculate the number of samples for each set
 # --------------------------------------------------------------------------------------------------------------
 
-train_size, test_size, prediction_size = int(len(values) * 0.7) , int(len(values) * 0.3), int(len(values) * 0.0)
+train_size, test_size, prediction_size = int(len(values) * 0.65) , int(len(values) * 0.3), int(len(values) * 0.0)
 
 train_size      = int(int(train_size / new_batch_size) * new_batch_size) 
 test_size       = int(int(test_size / new_batch_size) * new_batch_size) 
@@ -733,7 +863,10 @@ if os.path.isfile("model/" + model_name + ".h5") == False:
 	list_loss = []
 	list_mse  = []
 
-	history = model.fit(train_x, train_y, batch_size=int(new_batch_size/n_in), epochs=epochs, validation_data=(test_x, test_y), verbose=1, shuffle = True)
+
+
+
+	history = model.fit(train_x, train_y, batch_size=int(new_batch_size / n_in), epochs=epochs, validation_data=(test_x, test_y), verbose=2, shuffle = True)
 
 	save_file_to("data_gen/acc/", file_name, history.history['acc'])
 	save_file_to("data_gen/acc/", file_name + "_validation", history.history['val_acc'])
@@ -793,7 +926,7 @@ check_directory("/data_gen/prediction")
 
 # print_array("PREDICTED FINAL 2", predicted)
 
-# predicted = [argmax(x) for x in predicted] # Rescale back the real data
+# # predicted = [argmax(x) for x in predicted] # Rescale back the real data
 
 # print_smth("PREDICTED FINAL 3", predicted)
 
@@ -817,25 +950,13 @@ check_directory("/data_gen/prediction")
 #
 #################################################################################################################################
 
-# Get the last n_in samples to predict
-today        = datetime.datetime.now().timetuple().tm_yday -10
-oldest_day_to_search = today - int(n_in/288)
-
-list_days_to_save = []
-
-for i in range(int(n_in/288)):
-	list_days_to_save.append(oldest_day_to_search + i)
-
-print("Recogiendo los dias " + str(list_days_to_save) + " y los de hoy (" + str(today) + ")")
-
-# TODO: Tener en cuenta más días
-datos = og_dataset[og_dataset['datetime'].isin(list_days_to_save)]
 
 
 values = datos.values
 
-values[:,1] = hour_encoder.fit_transform(values[:,1])    # Encode HOUR as an integer value
-values[:,2] = weekday_encoder.fit_transform(values[:,2]) # Encode HOUR as int
+values[:,1] = hour_encoder.transform(values[:,1])    # Encode HOUR as an integer value
+values[:,2] = weekday_encoder.transform(values[:,2]) # Encode HOUR as int
+values[:,3] = station_encoder.transform(values[:,3]) # Encode HOUR as int
 
 print_array("DATOS A GUARDAR", values)
 
@@ -867,10 +988,6 @@ for i in range(0, int(n_in/288)):
 
 print_array("RECREADOS DATOS QUE FALTAN", values)
 
-oneHot = to_categorical(values[:,3], max_bikes+1)
-
-print_smth("JAVO EL ONE HOT", oneHot)
-
 
 # +---------+---------+----------+----------+-------------+-------------+-------+
 # |         |         |          |          |             |             |       |
@@ -878,15 +995,20 @@ print_smth("JAVO EL ONE HOT", oneHot)
 # |         |         |          |          |             |             |       |
 # +---------+---------+----------+----------+-------------+-------------+-------+
 
+# new_dataset = DataFrame()
+# new_dataset['hour_sin'] = numpy.sin(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
+# new_dataset['hour_cos'] = numpy.cos(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
+# new_dataset['wday_sin'] = numpy.sin(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
+# new_dataset['wday_cos'] = numpy.cos(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
+
 new_dataset = DataFrame()
 new_dataset['hour_sin'] = numpy.sin(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
 new_dataset['hour_cos'] = numpy.cos(2. * numpy.pi * values[:,1].astype('float') / (max_hour + 1))
 new_dataset['wday_sin'] = numpy.sin(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
 new_dataset['wday_cos'] = numpy.cos(2. * numpy.pi * values[:,2].astype('float') / (max_wday + 1))
+new_dataset['station'] = values[:,3]
+new_dataset['free_bikes'] = values[:,4]
 
-bikes_data = DataFrame(oneHot)
-
-new_dataset = new_dataset.join(bikes_data)
 
 print_array("FINAL DATASET", new_dataset)
 
@@ -897,8 +1019,8 @@ values    = values.astype('float32') # Convert al values to floats
 
 print_array("Prescaled values", values)
 
-scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
-scaled = scaler.fit_transform(values)
+# scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
+scaled = scaler.transform(values)
 
 print_array("Dataset with normalized values", scaled)
 
@@ -906,22 +1028,24 @@ scaled = scaled.reshape((1, n_in, len(columns))) # (...,n_in,4)
 
 print_array("SCALED RESHAPED", scaled)
 
-predicted = model.predict(scaled)
-predicted = predicted.reshape(predicted.shape[1])
-predicted = predicted.reshape(n_out, 21)
-predicted = [argmax(x) for x in predicted] # Rescale back the real data
+predicted = model.predict(scaled)[0]
+
+predicted = [int(x * 35.0) for x in predicted]
+
+print_smth("PREDICHOOOO", predicted)
+
 
 print_smth("PREDICTED FINAL 2", predicted)
 
-dia_hoy = datos = og_dataset[og_dataset['datetime'].isin([today])]
+
 
 print_smth("REAL BIKES AS OF TODAY", dia_hoy)
 
-bicis_hoy = dia_hoy.values[:,3]
+bicis_hoy = dia_hoy.values[:,4]
 
 print_smth("REAL BIKES AS OF TODAY", bicis_hoy)
 
-plot_availability('time of the day', 'bikes', predicted ,bicis_hoy , 'real_prediction_' + file_name, "Predicción", "Valor real")
+plot_availability('time of the day', 'bikes', predicted, bicis_hoy , 'real_prediction_' + file_name, "Predicción", "Valor real")
 
 plot_availability('time of the day', 'bikes', average ,bicis_hoy , 'real_vs_average_' + file_name, "Media", "Valor real")
 
