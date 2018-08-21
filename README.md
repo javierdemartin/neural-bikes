@@ -1,5 +1,7 @@
 <img src="resources/neural-bikes_logo.png" width=35% align="right" />
 
+**Project is almost finished, doing some final tests. It will be deployed on the app in the final quarter of this year**
+
 # ML predictions for Bike sharing services
 
 Trainign a ML model to predict availability for each station.
