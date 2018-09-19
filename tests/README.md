@@ -1,5 +1,3 @@
 # Tests
 
-# Test 1
-
-Gimme a sec...
+Different tests and their results
