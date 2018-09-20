@@ -528,12 +528,17 @@ class Data_mgmt:
 		if train_model == True:
 
 			list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+			list_of_stations = ["IRALA"]
 
 			for station in list_of_stations:
 
 				print("Reading station " + str(station))
 
 				station_read = np.load("debug/encoded_data/" + station + ".npy")
+
+
+
+				station_read = station_read[1240:3270]
 
 				no_missing_samples, missing_days = self.find_holes(station_read)
 				self.fill_holes(station_read, no_missing_samples)
@@ -582,7 +587,9 @@ class Data_mgmt:
 		return no_missing_samples, missing_days
 
 	def fill_holes(self, array, no_missing_samples):
-		print("TODO")
+
+		# for i in range(array.shape[0]):
+		# 	print(str(i) + " " + str(array[i]))
 
 		# Create the array with the final size
 		rows = array.shape[0] + no_missing_samples
@@ -600,20 +607,40 @@ class Data_mgmt:
 
 			# Both samples are of the same day
 			if current_row[0] == array[i][0]:
-				if (current_row[1] + 1) != array[i][1]:
-					print("Missing hour")
-					index += 1
+
+				if (current_row[1]) != (array[i][1]-1):
+					print("\t" + str(i + index) + " Missing hour " + str(current_row[0]) + " " + str(current_row) + " and " + str(array[i]) + " " + str(array[i][1] - current_row[1]))
+					
+					for j in range(0, array[i][1] - current_row[1] - 1):
+						# print("Insertando " + str(current_row) + " entre " + str(filled_array[i + index]) + " y " + str(filled_array[i + index + 1]))
+
+						# filled_array[i + index] = [-1,-1,-1,-1,-1,-1] #current_row
+						filled_array[i + index] = current_row  #[-1,-1,-1,-1,-1,-1] #current_row
+						filled_array[i + index][1] += 1 + j
+						# print(str(filled_array[i + index]) + ("*"))
+
+						index += 1
+
+
+						# filled_array[i + index] = array[i]  #[-1,-1,-1,-1,-1,-1] #current_row
+
+					filled_array[i + index] = array[i]  #[-1,-1,-1,-1,-1,-1] #current_row
+					# filled_array[i + index][1] += 1
+
+					# index += 1
+					
 				else:
+					
 					filled_array[i + index] = array[i]
+					# print(str(filled_array[i + index]))
 			# Diferentes dias
-			elif current_row[0] != array[i][0]:
+			# elif current_row[0] != array[i][0]:
 
-				if current_row[1] != 287 and array[i][1] != 0:
-					print("diforontos " + str(current_row[0]) + " " + str(current_row) + " and " + str(array[i]) + str(287 - current_row[1] + array[i][1]))
-					index += 287 - current_row[1] + array[i][1]
-				elif current_row[1] == 287 and array[i][1] != 0:
-					print("mal dia " + str(current_row[0]) + " " + str(current_row) + " and " + str(array[i]))
-
+			# 	if current_row[1] != 287 and array[i][1] != 0:
+			# 		print("diforontos " + str(current_row[0]) + " " + str(current_row) + " and " + str(array[i]) + str(287 - current_row[1] + array[i][1]))
+			# 		index += 287 - current_row[1] + array[i][1]
+			# 	elif current_row[1] == 287 and array[i][1] != 0:
+			# 		print("mal dia " + str(current_row[0]) + " " + str(current_row) + " and " + str(array[i]))
 
 			current_row = array[i]
 
