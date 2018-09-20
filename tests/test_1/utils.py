@@ -522,6 +522,7 @@ class Data_mgmt:
 
 		return agg
 
+	# Iterates through every station file looking for holes
 	def iterate(self):
 
 		if train_model == True:
@@ -534,47 +535,96 @@ class Data_mgmt:
 
 				station_read = np.load("debug/encoded_data/" + station + ".npy")
 
-				print(station_read)
-
-				print("SHAPED " + str(station_read.shape))
-
-				# Detect and count holes
-				# ------------------------------------------------------------------------------------------
-				current_row = station_read[0]
-
-				no_missing_samples = 0
-
-				for i in range(1,station_read.shape[0]):
-
-					# Both samples are of the same day
-					if current_row[0] == station_read[i][0]:
-						if (current_row[1] + 1) != station_read[i][1]:
-
-							no_missing_samples += station_read[i][1] - current_row[1] - 1
-
-							print("No hora " + str(current_row) + " and " + str(station_read[i]) + " (" + str(no_missing_samples) + ")") 
+				no_missing_samples, missing_days = self.find_holes(station_read)
+				self.fill_holes(station_read, no_missing_samples)
+				
 
 
+	def find_holes(self, station_read):
 
-					# Días diferentes
-					elif current_row[0] != station_read[i][0]:
-						if current_row[1] != 287 or station_read[i][1] != 0:
-							
+		# Read saved data for each station
+		
 
-							no_missing_samples += 287 - current_row[1]
-							no_missing_samples += station_read[i][1]
+		# Detect and count holes
+		# ------------------------------------------------------------------------------------------
+		current_row = station_read[0]
 
-							print("DIFFERENT " + str(current_row) + " and " + str(station_read[i]) + " (" + str(no_missing_samples) + ")") 
+		no_missing_samples = 0
+		missing_days = 0
 
-							if (current_row[0]+1) != station_read[i][0]:
-								# Comprobar si empieza en 0
+		for i in range(1,station_read.shape[0]):
 
-								print("\tMas de un dia")
+			# Both samples are of the same day
+			if current_row[0] == station_read[i][0]:
+				if (current_row[1] + 1) != station_read[i][1]:
 
+					no_missing_samples += station_read[i][1] - current_row[1] - 1
 
+					print("No hora " + str(current_row) + " and " + str(station_read[i]) + " (" + str(no_missing_samples) + ")") 
+
+			# Días diferentes
+			elif current_row[0] != station_read[i][0]:
+				if current_row[1] != 287 or station_read[i][1] != 0:
+
+					no_missing_samples += 287 - current_row[1] + station_read[i][1]
 					
+					print("Diferentes dias " + str(current_row) + " and " + str(station_read[i]) + " (" + str(no_missing_samples) + ")") 
 
-					current_row = station_read[i]
+					# Si faltan muestras de más de un día no rellenar, se han perdido datos
+					if (current_row[0]+1) != station_read[i][0]:
+						# Comprobar si empieza en 0
+
+						missing_days += 1
+						print("\tMas de un dia " + str(missing_days))					
+
+			current_row = station_read[i]
+
+		return no_missing_samples, missing_days
+
+	def fill_holes(self, array, no_missing_samples):
+		print("TODO")
+
+		# Create the array with the final size
+		rows = array.shape[0] + no_missing_samples
+		columns = array.shape[1]
+
+		print("Original shape is " + str(array.shape) + " filled array will be (" + str(rows) + ", "  + str(columns) + ") " + str(no_missing_samples) + " rows will be added")
+
+		filled_array = np.zeros((rows, columns))
+
+		index = 0
+
+		current_row = array[0]
+
+		for i in range(1, array.shape[0]):
+
+			# Both samples are of the same day
+			if current_row[0] == array[i][0]:
+				if (current_row[1] + 1) != array[i][1]:
+					print("Missing hour")
+					index += 1
+				else:
+					filled_array[i + index] = array[i]
+			# Diferentes dias
+			elif current_row[0] != array[i][0]:
+
+				if current_row[1] != 287 and array[i][1] != 0:
+					print("diforontos " + str(current_row[0]) + " " + str(current_row) + " and " + str(array[i]) + str(287 - current_row[1] + array[i][1]))
+					index += 287 - current_row[1] + array[i][1]
+				elif current_row[1] == 287 and array[i][1] != 0:
+					print("mal dia " + str(current_row[0]) + " " + str(current_row) + " and " + str(array[i]))
+
+
+			current_row = array[i]
+
+		print("JAVO EL FINAL")
+
+		for i in range(filled_array.shape[0]):
+			print(str(i) + " " + str(filled_array[i]))
+
+
+
+		# Iterar fila por fila pasando al array final las filas que no necesitan ser rellenadas
 
 
 			# for station in list_of_stations:
@@ -665,10 +715,10 @@ class Data_mgmt:
 				# self.utils.save_array_txt("debug/holes/" + str(station) + "/holes_filled_" + str(station), new_values)
 
 
-			for st in list_of_processed_stations:
-				print("ESTACION NUMERO " + str(st))
+			# for st in list_of_processed_stations:
+			# 	print("ESTACION NUMERO " + str(st))
 
-		return list_of_processed_stations
+		# return list_of_processed_stations
 
 	def scale_dataset(self, dataset):
 
