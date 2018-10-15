@@ -481,26 +481,22 @@ class Data_mgmt:
 
 			# Diferentes dias
 			elif current_row[0] != array[i][0]:
-				
+
 				if current_row[1] != 287 or array[i][1] != 0:
-					if print_debug: print("Missing samples " + str(array[i]) + " - " + str(current_row) + " (" + str(missing_samples) + ")")
 
-			# 		# Obviamente 31-DEC & 1-JAN están separados más de un dia...
-			# 		if current_row[0] != 365 and array[i][0] != 1:
+					print("Missing samples " + str(array[i]) + " - " + str(current_row) + " (" + str(missing_samples) + ")")
 
-			# 			# Nalta más de un dia
-			# 			if (current_row[0]+1) == array[i][0]:
+					filled_array[i + index] = array[i]
+					filled_array[i + index][1] -= 1 
 
-			# 				if current_row[1] != 287 or array[i][1] != 0:
-			# 					if print_debug: print("Diferentes dias " + str(current_row) + " - " + str(array[i]) + " (" + str(288 - current_row[1] - array[i][1]) + ")")
-			# 				else:
-			# 					if print_debug: filled_array[i + index] = array[i]  # Inserta la hora 00:00
+					index += 1
 
-			# 			else:
-			# 				if print_debug: print("Mas de un dia " + str(current_row[0]) + " y " + str(array[i][0]))
+					filled_array[i + index] = array[i]
 
+				# Insertar las muestras a las 00:00 de forma normal
 				else: 
 					filled_array[i + index] = array[i]
+					# index += 1
 
 
 			current_row = array[i]
