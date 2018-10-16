@@ -2,7 +2,7 @@
 
 ## Data gathering
 
-Every five minutes a 
+Every five minutes a script is run in my server and fetches data from the XML feed.
 
 ## Steps
 
