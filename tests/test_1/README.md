@@ -14,4 +14,13 @@ Every five minutes a
 	2. Save each station data as a NumPy array to debug/encoded_data/XXX.npy
 3. **Stats**
 	1. Save and plot the average availability for each station
-4. **Fill holes**
+4. **Fill holes** (Open the array for each station)
+	1. Check if each sample has been gathered in five minutes intervals
+		* Check if samplpes for the same day are separated one unit
+		* Check if days are complete
+5. **Scale dataset** (currently working on this)
+	1. Get maximum values for all the dataset for the `MinMaxScaler`
+
+## Tests
+
+Working on it!
