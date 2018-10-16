@@ -378,7 +378,8 @@ class Data_mgmt:
 					if (current_row[0]+1) != array[i][0]:
 
 						missing_days += array[i][0] - current_row[0]
-						if print_debug: print(color.HEADER + "➜ " + str(array[i][0] - current_row[0]) + " dias perdidos " + str(current_row) + " y " + str(array[i]) + " added " + str(missing_days) + color.ENDC)					
+						no_missing_samples += (288 - current_row[1]) + array[i][1]
+						if print_debug: print(color.HEADER + "➜ " + str(array[i][0] - current_row[0]) + " dias perdidos " + str(current_row) + " y " + str(array[i]) + " added " + str((288 - current_row[1]) + array[i][1]) + color.ENDC)					
 
 					else:
 						no_missing_samples += 287 - current_row[1] + array[i][1]
@@ -462,13 +463,9 @@ class Data_mgmt:
 
 						for j in range(abs(array[i][1] - current_row[1] - 1)):
 
-							
 							filled_array[i + index] = current_row
 							index -= 1
-
-
-						# index -= array[i][1] - current_row[1] - 1
-						# filled_array[i + index] = array[i]
+							
 
 						# TODO: MIRA ESTO HOSTIA JAVI
 					
@@ -482,16 +479,57 @@ class Data_mgmt:
 			# Diferentes dias
 			elif current_row[0] != array[i][0]:
 
-				if current_row[1] != 287 or array[i][1] != 0:
+				# Inserta posibles muestras perdidas a las 00:00, sólo probado con una, faltaría si existe más de una pérdida
+				if array[i][1] != 0 or current_row[1] != 287:
 
-					print("Missing samples " + str(array[i]) + " - " + str(current_row) + " (" + str(missing_samples) + ")")
+					# Comprobar que son días seguidos, no rellenar más de un día
+					if array[i][0] == (current_row[0] + 1):
 
-					filled_array[i + index] = array[i]
-					filled_array[i + index][1] -= 1 
+						print("Missing samples " + str(array[i]) + " - " + str(current_row) + " (" + str(missing_samples) + ")")
 
-					index += 1
+						filled_array[i + index] = array[i]
+						filled_array[i + index][1] -= 1 
 
-					filled_array[i + index] = array[i]
+						index += 1
+
+						filled_array[i + index] = array[i]
+
+					# Hay diferencia de más de un dia incompleto, eliminar tanto el inicial como el final ya que los dos estan incompletos
+					else: 
+						
+
+						missing_samples = (288 - current_row[1]) + array[i][1]
+
+						# index += missing_samples
+
+						print("Incomplete days INITIAL " + str(current_row) + " - " + str(array[i]) + " (" + str(missing_samples) + ")")
+
+						# Rellenar muestras trailing que faltan
+						for j in range(0,288 - current_row[1] - 1):
+
+							if print_debug: print(color.yellow + "  ↳ " + str(j+1) + color.ENDC)
+
+							filled_array[i + index] = current_row 
+							filled_array[i + index][1] += 1 + j
+
+							index += 1
+
+
+
+						# Rellenar muestras iniciales que falten
+
+						for j in range(0, array[i][1]):
+
+							if print_debug: print(color.yellow + "  ↳ " + str(j+1) + color.ENDC)
+
+							filled_array[i + index] = array[i] 
+							filled_array[i + index][1] = j
+
+							index += 1
+
+						filled_array[i + index] = array[i]
+						filled_array[i + index][1] = array[i][1]
+
 
 				# Insertar las muestras a las 00:00 de forma normal
 				else: 
