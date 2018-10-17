@@ -1,3 +1,5 @@
+# TODO: PROLLLY REVISAR EL SCALER LOCO get_maximums_pre_scaling
+
 from utils import Utils
 from Plotter import Plotter
 import pandas.core.frame # read_csv
@@ -5,17 +7,23 @@ import datetime
 from color import color
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+import pickle # Saving MinMaxScaler
+
 
 import numpy as np
 
 train_model = True
 statistics_enabled = False
+print_debug = True
 
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
 hour_encoder    = LabelEncoder() # Encode columns that are not numbers
 weekday_encoder = LabelEncoder() # Encode columns that are not numbers
 station_encoder = LabelEncoder() # Encode columns that are not numbers
+
+scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
 
 
 class Data_mgmt:
@@ -31,6 +39,7 @@ class Data_mgmt:
 		self.utils.check_and_create("debug/encoders")
 		self.utils.check_and_create("debug/encoded_data")
 		self.utils.check_and_create("debug/filled")
+		self.utils.check_and_create("debug/scaled")
 		self.utils.check_and_create("debug/supervised")
 		self.utils.check_and_create("stats/stations")
 		self.utils.check_and_create("plots/")
@@ -312,7 +321,7 @@ class Data_mgmt:
 		if train_model == True:
 
 			list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
-			list_of_stations = ["ZUNZUNEGI"]
+			# list_of_stations = ["ZUNZUNEGI"]
 
 			for station in list_of_stations:
 
@@ -329,15 +338,10 @@ class Data_mgmt:
 
 				np.save('debug/filled/' + station + '_filled.npy', filled_array)				
 
-
 	def find_holes(self, array):
-
-		print_debug = True
 
 		print("Find holes in " + str(array.shape))
 		print("##################################################################")
-
-		
 
 		# Detect and count holes
 		# ------------------------------------------------------------------------------------------
@@ -396,8 +400,6 @@ class Data_mgmt:
 			# no_missing_samples -= array[array.shape[0] - 1][1] 
 
 			print("Restado " + str(no_missing_samples))
-
-
 
 		print("Final missing " + str(no_missing_samples) + " samples")
 		print("First sample was " + str(array[0]) + " and last " + str(array[array.shape[0] - 1]))
@@ -500,8 +502,6 @@ class Data_mgmt:
 
 						missing_samples = (288 - current_row[1]) + array[i][1]
 
-						# index += missing_samples
-
 						print("Incomplete days INITIAL " + str(current_row) + " - " + str(array[i]) + " (" + str(missing_samples) + ")")
 
 						# Rellenar muestras trailing que faltan
@@ -514,10 +514,7 @@ class Data_mgmt:
 
 							index += 1
 
-
-
 						# Rellenar muestras iniciales que falten
-
 						for j in range(0, array[i][1]):
 
 							if print_debug: print(color.yellow + "  ↳ " + str(j+1) + color.ENDC)
@@ -527,72 +524,105 @@ class Data_mgmt:
 
 							index += 1
 
+						# Añadir la última muestra que se quedaría como [0. 0. 0. 0. 0.]
 						filled_array[i + index] = array[i]
 						filled_array[i + index][1] = array[i][1]
-
 
 				# Insertar las muestras a las 00:00 de forma normal
 				else: 
 					filled_array[i + index] = array[i]
-					# index += 1
-
 
 			current_row = array[i]
 
-		aux = 0
+		# aux = 0
 
-		for i in range(len(filled_array)):
+		# for i in range(len(filled_array)):
 
-			print(str(aux) + " " + str(filled_array[i]))
-			aux += 1
+		# 	print(str(aux) + " " + str(filled_array[i]))
+		# 	aux += 1
 
-			if aux == 288:
-				aux = 0
-
+		# 	if aux == 288:
+		# 		aux = 0
 
 		return filled_array
 
+	# Read all the files and set the maximum values for each column,
+	# RETURNS:
+	#	· The scaler object
+	def get_maximums_pre_scaling(self):
 
-	def scale_dataset(self, dataset):
+		list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
 
-		if train_model == True:
-			# print("Scaled dataset pre shape" + str(dataset.shape))
-			aux_array = dataset[0]
+		# Get the maximum values for
+		scaler_aux = MinMaxScaler(feature_range=(0,1))
 
-			print("AUX ARRAY")
-			print(aux_array)
+		dataset = np.load('debug/filled/' + list_of_stations[0] + '_filled.npy')
 
-			for i in range(1, len(dataset)):
-				aux_array = np.concatenate((aux_array, dataset[i]))
+		scaler.fit(dataset)
 
-			print("Apepnded array final " + str(aux_array.shape))
-			print(aux_array)
+		for i in range(1, len(list_of_stations)):
 
-			scaler.fit_transform(aux_array)
+			dataset = np.load('debug/filled/' + list_of_stations[i] + '_filled.npy')
 
-			print("Scaler data ")		
-			print("min " + str(scaler.min_))
-			print("scale " + str(scaler.scale_))
-			print("data_min_ " + str(scaler.data_min_))
-			print("data_max_ " + str(scaler.data_max_))
-			print("data_range_ " + str(scaler.data_range_))
+			scaler_aux.fit_transform(dataset)
 
-			print("RECEIVED DATASET ")
-			print(dataset)
+			for i in range(0, 6):
 
-			for i in range(len(dataset)):
-				dataset[i] = scaler.transform(dataset[i])
-				# print("SCALED ")
-				# print(dataset[i])
+				if scaler_aux.data_max_[i] > scaler.data_max_[i]:
 
-			pickle.dump(scaler, open("MinMaxScaler.sav", 'wb'))
+					scaler.data_max_[i] = scaler_aux.data_max_[i]
 
-			return dataset
+			# print(str(scaler_aux.data_min_) + " - " + str(scaler_aux.data_max_) + " - " + str(scaler_aux.scale_) + " - " + list_of_stations[i])
+			if print_debug: print(str(scaler.data_min_) + " - " + str(scaler.data_max_) + " - " + str(scaler.scale_) + " - " + list_of_stations[i])
 
-		elif train_model == False:
-			return None
+		# print("Scaler values pre reading the data ")
+		# print("Scaler range " + str(scaler.feature_range))
+		# print("Max vals " + str(scaler.data_max_))
+		# print("Min vals " + str(scaler.data_min_))
+		# print("Scale " + str(scaler.scale_))
+
+		print("-----------------------------------------------------------------------------------------")
+		print(str(scaler.data_min_) + " - " + str(scaler.data_max_) + " - " + str(scaler.scale_))
 
 
+		return scaler
+
+	def scale_dataset(self):
+
+		list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+
+		print("CABRON LA LISTA " + str(list_of_stations))
+
+		self.scaler = self.get_maximums_pre_scaling()
+
+		# Get the maximum values for
+
+		for station in list_of_stations:
+
+				print("Scaling station " + str(station))
+
+				dataset = np.load('debug/filled/' + station + '_filled.npy')
+
+				# print("LOADED ARRAY ", dataset)
+
+				if train_model == True:
+
+					print("ORIGINAL DATASET " + str(dataset.shape))
+					print(dataset)
+
+					dataset = scaler.transform(dataset)
+
+					# for i in range(len(dataset)):
+					# 	dataset[i] = scaler.transform(dataset[i])
+					# 	# print("SCALED ")
+					# 	# print(dataset[i])
+
+					print("SCALED DATASET " + str(dataset.shape))
+					print(dataset)
+
+					np.save('debug/scaled/' + str(station) + ".npy", dataset)
+
+		pickle.dump(scaler, open("MinMaxScaler.sav", 'wb'))
 
 	def split_input_output(self, dataset):
 
