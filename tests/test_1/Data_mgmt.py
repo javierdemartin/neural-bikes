@@ -1,5 +1,8 @@
 # TODO: PROLLLY REVISAR EL SCALER LOCO get_maximums_pre_scaling
 
+# LIBRARIES
+# ------------------------------------------------------------------
+
 from utils import Utils
 from Plotter import Plotter
 import pandas.core.frame # read_csv
@@ -9,9 +12,14 @@ from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import pickle # Saving MinMaxScaler
-
+from pandas import concat,DataFrame
 
 import numpy as np
+
+# Global Configuration Variables
+# ------------------------------------------------------------------
+# They might speed up the script as they do non-vital things such as recollecting
+# statistics
 
 train_model = True
 statistics_enabled = False
@@ -24,6 +32,9 @@ weekday_encoder = LabelEncoder() # Encode columns that are not numbers
 station_encoder = LabelEncoder() # Encode columns that are not numbers
 
 scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
+
+n_in = 4 # Number of previous samples used to feed the Neural Network
+n_out = 5
 
 
 class Data_mgmt:
@@ -185,82 +196,138 @@ class Data_mgmt:
 				self.plotter.plot(averaged_data, "Time", "Average Bike Availability", str(station) + "_average_availability", "stats/stations/")
 				self.utils.save_array_txt("stats/stations/" + str(station) + "_average_availability", averaged_data)
 
-
-
 	# Calls `series_to_supervised` and then returns a list of arrays, in each one are the values for each station
-	def supervised_learning(self, data):
+	def supervised_learning(self):
 
-		if train_model == True:
+		columns = ['datetime', 'time', 'weekday', 'station', 'free_docks', 'free_bikes']
 
-			index = 0
+		list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
 
-			columns = ['datetime', 'time', 'weekday', 'station', 'free_docks', 'free_bikes']
+		dont_predict = ['datetime', 'time', 'weekday', 'station', 'free_docks']
 
-			columns_to_drop = []
+		# Encontrar los índices de las columnas a borrar
+		#################################################
 
-			# Deleting columns that are not going to be predicted, tener en cuenta eliminar los time-steps posteriores enteros
-			for time_step in range(n_out):
+		list_of_indexes = []
 
-				position = (len(columns)) * (n_in + time_step)
+		for to_delete in dont_predict:
+			indices = [i for i, x in enumerate(columns) if x == to_delete]	
 
-				for j in range(position, position + len(columns) - 1):
-					columns_to_drop.append(j)
+			list_of_indexes.append(indices[0])
 
-			rows_to_drop = []
+		# Generar los índices para todas las muestras que están a la salida
 
-			print(data[0])
+		final_list_indexes = []
 
-			left = int(288 - data[0][data[0].shape[0]-1][1])
+		for out in range(n_out):
 
-			print("LEEFFFFT " + str(left) + " -- - - " + str(data[0][data[0].shape[0]-1][1]))
+			print(out)
 
-			for i in range(int((len(data[0]))/n_in)-2):
-				for j in range(i*n_in + 1, (i+1)*n_in):
-					rows_to_drop.append(j)
+			final_list_indexes.append([x+ len(columns)*out for x in list_of_indexes])
 
-			supervised_data = []
+		import itertools
+
+		# Lista `final_list_indexes` es una lista dentro de una lista [[a,b],[c,d]...], flatten para obtener una unica lista
+		final_list_indexes = list(itertools.chain.from_iterable(final_list_indexes))
+
+		# Añadir las muestras que faltan de los valores de entrada, esta desplazado hacia la derecha por eso
+		final_list_indexes = [x+ len(columns)*n_in for x in final_list_indexes]
+
+		print("INDICES PARA BORRAR " + str(list_of_indexes))
+		print("FINAL LIST INDEXES " + str(type(final_list_indexes)) + " " + str(final_list_indexes))
+
+		
+
+		for station in list_of_stations:
+
+			dataset = np.load('debug/filled/' + station + '_filled.npy')
+
+			dataframe = pd.DataFrame(data=dataset, columns=columns)
+
+			print("SUPERVISED FOR " + str(station))
+			supervised = self.series_to_supervised(columns, dataframe, n_in, n_out)
+
+
+			print("COLOLUMNAS DESPUES " + str(len(supervised.columns)))
+			for i in range(len(supervised.columns)): print(str(i) + " - " + supervised.columns[i])
+
+			supervised = supervised.drop(supervised.columns[final_list_indexes], axis=1)
+
+			print("COLOLUMNAS DESPUES " + str(len(supervised.columns)))
+			for i in range(len(supervised.columns)): print(str(i) + " - " + supervised.columns[i])
+
+
+		# if train_model == True:
+
+		# 	index = 0
+
+		# 	columns = ['datetime', 'time', 'weekday', 'station', 'free_docks', 'free_bikes']
+
+		# 	columns_to_drop = []
+
+		# 	# Deleting columns that are not going to be predicted, tener en cuenta eliminar los time-steps posteriores enteros
+		# 	for time_step in range(n_out):
+
+		# 		position = (len(columns)) * (n_in + time_step)
+
+		# 		for j in range(position, position + len(columns) - 1):
+		# 			columns_to_drop.append(j)
+
+		# 	rows_to_drop = []
+
+		# 	print(data[0])
+
+		# 	left = int(288 - data[0][data[0].shape[0]-1][1])
+
+		# 	print("LEEFFFFT " + str(left) + " -- - - " + str(data[0][data[0].shape[0]-1][1]))
+
+		# 	for i in range(int((len(data[0]))/n_in)-2):
+		# 		for j in range(i*n_in + 1, (i+1)*n_in):
+		# 			rows_to_drop.append(j)
+
+		# 	supervised_data = []
 			
-			for st in data:
+		# 	for st in data:
 
-				print("Calling series to supervised for station " + str(st.shape))
-				print(st)
-				print("---------------------------------------------------------------")
+		# 		print("Calling series to supervised for station " + str(st.shape))
+		# 		print(st)
+		# 		print("---------------------------------------------------------------")
 
-				a = self.series_to_supervised(columns, st, n_in, n_out)
+		# 		a = self.series_to_supervised(columns, st, n_in, n_out)
 
-				# a = a.drop(columns_to_drop, axis=1, inplace=True)
+		# 		# a = a.drop(columns_to_drop, axis=1, inplace=True)
 
-				# Eliminar las columnas que no se quieren
-				a.drop(a.columns[columns_to_drop], axis=1, inplace = True)  # df.columns is zero-based pd.Index 
-				a = a.reset_index(drop = True)
+		# 		# Eliminar las columnas que no se quieren
+		# 		a.drop(a.columns[columns_to_drop], axis=1, inplace = True)  # df.columns is zero-based pd.Index 
+		# 		a = a.reset_index(drop = True)
 
-				print("Shape before drop rows " + str(a.shape))
-				# Eliminar cada n_in filas asi no se repiten los datos
-				a.drop(a.index[rows_to_drop], inplace = True)
+		# 		print("Shape before drop rows " + str(a.shape))
+		# 		# Eliminar cada n_in filas asi no se repiten los datos
+		# 		a.drop(a.index[rows_to_drop], inplace = True)
 
-				n = 288 - left + 2
+		# 		n = 288 - left + 2
 
-				a.drop(a.tail(n).index,inplace=True)
+		# 		a.drop(a.tail(n).index,inplace=True)
 
-				a = a.reset_index(drop = True)
+		# 		a = a.reset_index(drop = True)
 
-				print("DROPPPED " + str(a.columns) + " shaped " + str(a.values.shape))
-				print(a.values)
+		# 		print("DROPPPED " + str(a.columns) + " shaped " + str(a.values.shape))
+		# 		print(a.values)
 
-				self.utils.save_array_txt("debug/supervised/supervised_for " + str(index), a)
+		# 		self.utils.save_array_txt("debug/supervised/supervised_for " + str(index), a)
 
-				supervised_data.append(a)
+		# 		supervised_data.append(a)
 
-				index+=1
+		# 		index+=1
 
-			# Hasta aqui SUPERVISED_DATA es una lista con arrays dentro
-			flattened = self.flatten_list_supervised(supervised_data)
+		# 	# Hasta aqui SUPERVISED_DATA es una lista con arrays dentro
+		# 	flattened = self.flatten_list_supervised(supervised_data)
 
-			return flattened
+		# 	return flattened
 
-		elif train_model == False:
+		# elif train_model == False:
 
-			return None
+		# 	return None
 
 	def flatten_list_supervised(self, data):
 
@@ -301,10 +368,6 @@ class Data_mgmt:
 		agg = concat(cols, axis=1)
 		agg.columns = names
 		# drop rows with NaN values
-
-		del dataset
-		del cols
-		gc.collect()
 
 		print("Droppin NAN")
 
@@ -611,11 +674,6 @@ class Data_mgmt:
 					print(dataset)
 
 					dataset = scaler.transform(dataset)
-
-					# for i in range(len(dataset)):
-					# 	dataset[i] = scaler.transform(dataset[i])
-					# 	# print("SCALED ")
-					# 	# print(dataset[i])
 
 					print("SCALED DATASET " + str(dataset.shape))
 					print(dataset)
