@@ -4,7 +4,12 @@
 
 # ML predictions for Bike sharing services
 
-Trainign a ML model to predict availability for each station.
+Bike sharing can be useful for the citizens but can lead to a lot of headaches due to unforeseen complications.
+
+Not all the users have the same riding patterns and planning a service doesn't improve the result. These services have to be load balanced to avoid empty stations and keeping up to the balance.
+
+Trying to solve those imbalance by predicting station availability with neural networks. This experiment will be done for Bilbao, will try later to do this for more cities.
+
 
 ## Tests
 
