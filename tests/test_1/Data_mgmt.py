@@ -33,8 +33,8 @@ station_encoder = LabelEncoder() # Encode columns that are not numbers
 
 scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
 
-n_in = 4 # Number of previous samples used to feed the Neural Network
-n_out = 5
+n_in = 288 # Number of previous samples used to feed the Neural Network
+n_out = 3
 
 
 class Data_mgmt:
@@ -202,6 +202,7 @@ class Data_mgmt:
 		columns = ['datetime', 'time', 'weekday', 'station', 'free_docks', 'free_bikes']
 
 		list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+		list_of_stations = ["ZUNZUNEGI", "AYUNTAMIENTO"]
 
 		dont_predict = ['datetime', 'time', 'weekday', 'station', 'free_docks']
 
@@ -221,7 +222,7 @@ class Data_mgmt:
 
 		for out in range(n_out):
 
-			print(out)
+			# print(out)
 
 			final_list_indexes.append([x+ len(columns)*out for x in list_of_indexes])
 
@@ -236,8 +237,6 @@ class Data_mgmt:
 		print("INDICES PARA BORRAR " + str(list_of_indexes))
 		print("FINAL LIST INDEXES " + str(type(final_list_indexes)) + " " + str(final_list_indexes))
 
-		
-
 		for station in list_of_stations:
 
 			dataset = np.load('debug/filled/' + station + '_filled.npy')
@@ -247,87 +246,45 @@ class Data_mgmt:
 			print("SUPERVISED FOR " + str(station))
 			supervised = self.series_to_supervised(columns, dataframe, n_in, n_out)
 
-
-			print("COLOLUMNAS DESPUES " + str(len(supervised.columns)))
+			# print("COLOLUMNAS DESPUES " + str(len(supervised.columns)))
 			for i in range(len(supervised.columns)): print(str(i) + " - " + supervised.columns[i])
 
 			supervised = supervised.drop(supervised.columns[final_list_indexes], axis=1)
 
-			print("COLOLUMNAS DESPUES " + str(len(supervised.columns)))
+			# print("COLOLUMNAS DESPUES " + str(len(supervised.columns)))
 			for i in range(len(supervised.columns)): print(str(i) + " - " + supervised.columns[i])
 
+			# Eliminar cada N lineas para  no tener las muestras desplazadas
+			# self.utils.print_array("Array sin eliminar", supervised)
 
-		# if train_model == True:
+			rows_to_delete = []
 
-		# 	index = 0
+			for j in range(supervised.shape[0]):
 
-		# 	columns = ['datetime', 'time', 'weekday', 'station', 'free_docks', 'free_bikes']
+				if j % n_in != 0:
+					rows_to_delete.append(j)
 
-		# 	columns_to_drop = []
+			supervised = supervised.drop(supervised.index[rows_to_delete])
 
-		# 	# Deleting columns that are not going to be predicted, tener en cuenta eliminar los time-steps posteriores enteros
-		# 	for time_step in range(n_out):
+			self.utils.save_array_txt("debug/supervised/" + station, supervised.values)
+			np.save("debug/supervised/" + station + '.npy', supervised.values)
 
-		# 		position = (len(columns)) * (n_in + time_step)
+			self.utils.print_array("Array ELIMINADO", supervised)
 
-		# 		for j in range(position, position + len(columns) - 1):
-		# 			columns_to_drop.append(j)
 
-		# 	rows_to_drop = []
+		final_data = np.load("debug/supervised/" + list_of_stations[0] + ".npy")
 
-		# 	print(data[0])
+		# Hacerlo con todas las estaciones
+		for i in range(1,len(list_of_stations)):
 
-		# 	left = int(288 - data[0][data[0].shape[0]-1][1])
+			data_read = np.load("debug/supervised/" + list_of_stations[i] + ".npy")
+			final_data = np.append(final_data, data_read, 0)
 
-		# 	print("LEEFFFFT " + str(left) + " -- - - " + str(data[0][data[0].shape[0]-1][1]))
+		self.utils.save_array_txt("debug/supervised/FINAL", final_data)
+		np.save("debug/supervised/FINAL.npy", final_data)
 
-		# 	for i in range(int((len(data[0]))/n_in)-2):
-		# 		for j in range(i*n_in + 1, (i+1)*n_in):
-		# 			rows_to_drop.append(j)
+		self.utils.print_array("LOCO", final_data)		
 
-		# 	supervised_data = []
-			
-		# 	for st in data:
-
-		# 		print("Calling series to supervised for station " + str(st.shape))
-		# 		print(st)
-		# 		print("---------------------------------------------------------------")
-
-		# 		a = self.series_to_supervised(columns, st, n_in, n_out)
-
-		# 		# a = a.drop(columns_to_drop, axis=1, inplace=True)
-
-		# 		# Eliminar las columnas que no se quieren
-		# 		a.drop(a.columns[columns_to_drop], axis=1, inplace = True)  # df.columns is zero-based pd.Index 
-		# 		a = a.reset_index(drop = True)
-
-		# 		print("Shape before drop rows " + str(a.shape))
-		# 		# Eliminar cada n_in filas asi no se repiten los datos
-		# 		a.drop(a.index[rows_to_drop], inplace = True)
-
-		# 		n = 288 - left + 2
-
-		# 		a.drop(a.tail(n).index,inplace=True)
-
-		# 		a = a.reset_index(drop = True)
-
-		# 		print("DROPPPED " + str(a.columns) + " shaped " + str(a.values.shape))
-		# 		print(a.values)
-
-		# 		self.utils.save_array_txt("debug/supervised/supervised_for " + str(index), a)
-
-		# 		supervised_data.append(a)
-
-		# 		index+=1
-
-		# 	# Hasta aqui SUPERVISED_DATA es una lista con arrays dentro
-		# 	flattened = self.flatten_list_supervised(supervised_data)
-
-		# 	return flattened
-
-		# elif train_model == False:
-
-		# 	return None
 
 	def flatten_list_supervised(self, data):
 
