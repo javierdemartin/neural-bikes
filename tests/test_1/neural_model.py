@@ -1,25 +1,30 @@
 import numpy as np
+from keras.models import Sequential
+from keras.layers import Dense, LSTM, Dropout, Activation
+import pickle # Saving MinMaxScaler
+from utils import Utils
+from Plotter import Plotter
+from sklearn.preprocessing import LabelEncoder
+
+train_model = True
 
 class Neural_Model:
 
 	def __init__(self, epochs, batch_size):
 
 		print("Inited NeuralModel class")
-		self.train_x = np.load('train_x.npy', train_x)
-		self.train_y = np.load('train_y.npy', train_y)
-		
-		self.test_x = np.load('test_x.npy', test_x)
-		self.test_y = np.load('test_y.npy', test_y)
+		self.train_x = np.load('train_x.npy')
+		self.train_y = np.load('train_y.npy')
 
-		self.validation_x = np.load('validation_x.npy', validation_x)
-		self.validation_y = np.load('validation_y.npy', validation_y)
+		self.test_x = np.load('test_x.npy')
+		self.test_y = np.load('test_y.npy')
+
+		self.validation_x = np.load('validation_x.npy')
+		self.validation_y = np.load('validation_y.npy')
 
 		self.batch_size = batch_size
 		self.epochs = epochs
 		self.model = self.create_model()
-
-		self.validation_x = validation_x
-		self.validation_y = validation_y
 
 		print("Array shapes")
 		print("Train X " + str(self.train_x.shape))

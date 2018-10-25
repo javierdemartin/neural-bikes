@@ -34,7 +34,7 @@ station_encoder = LabelEncoder() # Encode columns that are not numbers
 scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
 
 n_in = 288 # Number of previous samples used to feed the Neural Network
-n_out = 3
+n_out = 288
 
 
 class Data_mgmt:
@@ -202,7 +202,7 @@ class Data_mgmt:
 		columns = ['datetime', 'time', 'weekday', 'station', 'free_docks', 'free_bikes']
 
 		list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
-		list_of_stations = ["ZUNZUNEGI", "AYUNTAMIENTO"]
+		# list_of_stations = ["ZUNZUNEGI", "AYUNTAMIENTO"]
 
 		dont_predict = ['datetime', 'time', 'weekday', 'station', 'free_docks']
 
@@ -246,13 +246,7 @@ class Data_mgmt:
 			print("SUPERVISED FOR " + str(station))
 			supervised = self.series_to_supervised(columns, dataframe, n_in, n_out)
 
-			# print("COLOLUMNAS DESPUES " + str(len(supervised.columns)))
-			for i in range(len(supervised.columns)): print(str(i) + " - " + supervised.columns[i])
-
 			supervised = supervised.drop(supervised.columns[final_list_indexes], axis=1)
-
-			# print("COLOLUMNAS DESPUES " + str(len(supervised.columns)))
-			for i in range(len(supervised.columns)): print(str(i) + " - " + supervised.columns[i])
 
 			# Eliminar cada N lineas para  no tener las muestras desplazadas
 			# self.utils.print_array("Array sin eliminar", supervised)
@@ -282,8 +276,6 @@ class Data_mgmt:
 
 		self.utils.save_array_txt("debug/supervised/FINAL", final_data)
 		np.save("debug/supervised/FINAL.npy", final_data)
-
-		self.utils.print_array("LOCO", final_data)		
 
 
 	def flatten_list_supervised(self, data):
@@ -668,7 +660,9 @@ class Data_mgmt:
 	#	* [Train] Empleado para establecer los pesos de la red neuronal en el entrenamiento
 	#	* [Validation] this data set is used to minimize overfitting. You're not adjusting the weights of the network with this data set, you're just verifying that any increase in accuracy over the training data set actually yields an increase in accuracy over a data set that has not been shown to the network before, or at least the network hasn't trained on it (i.e. validation data set). If the accuracy over the training data set increases, but the accuracy over then validation data set stays the same or decreases, then you're overfitting your neural network and you should stop training.
 	#	* [Test] Used only for testing the final solution in order to confirm the actual predictive power of the network.
-	def split_sets(self, values, training_size, validation_size, test_size):
+	def split_sets(self, training_size, validation_size, test_size):
+
+		values = np.load("debug/supervised/FINAL.npy")
 
 
 		if train_model == True:
@@ -703,18 +697,12 @@ class Data_mgmt:
 			validation_x, validation_y = self.split_input_output(validation)
 			test_x, test_y             = self.split_input_output(test)
 
-			np.save('train_x', train_x)
-			np.save('train_y', train_y)
-			np.save('test_x', test_x)
-			np.save('test_y', test_y)
-			np.save('validation_x', validation_x)
-			np.save('validation_y', validation_y)
-
-		else:
-			train_x, train_y, validation_x, validation_y, test_x, test_y = self.load_datasets()
-
-
-		return train_x, train_y, validation_x, validation_y, test_x, test_y
+			np.save('train_x.npy', train_x)
+			np.save('train_y.npy', train_y)
+			np.save('test_x.npy', test_x)
+			np.save('test_y.npy', test_y)
+			np.save('validation_x.npy', validation_x)
+			np.save('validation_y.npy', validation_y)
 
 	
 
