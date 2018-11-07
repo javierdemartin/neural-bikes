@@ -5,8 +5,10 @@ import pickle # Saving MinMaxScaler
 from utils import Utils
 from Plotter import Plotter
 from sklearn.preprocessing import LabelEncoder
+from numpy import concatenate	
 
 train_model = True
+len_day = 144
 
 class Neural_Model:
 
@@ -38,6 +40,7 @@ class Neural_Model:
 
 
 		self.batch_size = batch_size
+		# self.batch_size = int(self.train_x.shape[0])
 
 		self.utils = Utils()
 		self.p = Plotter()
@@ -59,7 +62,7 @@ class Neural_Model:
 		model.add(LSTM(lstm_neurons, input_shape=(self.train_x.shape[1], self.train_x.shape[2]), stateful=False, return_sequences=True))
 		model.add(LSTM(lstm_neurons, return_sequences = True))
 		model.add(LSTM(lstm_neurons))
-		model.add(Dense(288))
+		model.add(Dense(len_day))
 		# model.add(Activation('softmax'))
 		model.compile(loss='mae', optimizer='adam', metrics = ['mse', 'acc'])
 
@@ -92,24 +95,69 @@ class Neural_Model:
 			self.utils.save_array_txt("plots/data/metrics/loss", history.history['loss'])
 			self.utils.save_array_txt("plots/data/metrics/val_loss", history.history['val_loss'])
 
-			predicted = self.model.predict(self.test_x)[0]
-
-			print("PREDICTED 1 SHAPE "+ " VALUES " + str(predicted))
-
-			predicted = [x * 35 for x in predicted]
-			predicted = [int(x) for x in predicted]
-
-			self.p.plot(predicted, "xlabel", "ylabel", "Predicted_" + str(self.batch_size), "plots/")
-
-			print("PREDICTED 1 SHAPE " + " VALUES " + str(predicted))
-
-			print("SCALER MAXXX " + str(self.scaler.data_max_))
+			
 		else:
 
+			self.model = self.create_model()
 			self.model.load_weights("model/model.h5")
 			print("Loaded model from disk")
 
-		self.predict_test_set()
+		predicted_x = np.asarray([self.model.predict(self.test_x)])[0]
+
+		print("CAPULLO VALUES" + str(predicted_x.shape) + "\n" + str(predicted_x))
+
+
+		print("DIMENSIA " + str(self.test_x.shape))
+
+		for i in range(0, self.test_x.shape[0]):
+
+			predicted = np.array([predicted_x[i]])
+
+			print("CAPULLO VALUES" + str(predicted.shape) + "\n" + str(predicted))
+
+			predicted = predicted.reshape(predicted.shape[1],1)
+
+			self.test_xx = self.test_x[i]
+
+			print("PREDICTEDDD " + str(predicted))
+
+			print("RESHAPING TEST_X " + str(self.test_xx.shape))
+			print(self.test_xx)
+			
+
+			print("Shape TEST_X pre inverse_transform " + str(self.test_xx.shape) + "\n VALUES " + str(self.test_xx))
+			print("Shape PREDICTED pre inverse_transform " + str(predicted.shape) + "\n VALUES " + str(predicted))
+
+			# # invert scaling for forecast
+			# inv_yhat = concatenate((self.test_x[:, 1:], predicted), axis=1)
+			inv_yhat = concatenate((self.test_xx[:,: self.test_xx.shape[1] - 1], predicted), axis=1)
+
+			# print("RESHAPING TEST_X FINAL " + str(self.test_x.shape))
+			# print(self.test_x)
+
+			inv_yhat = self.scaler.inverse_transform(inv_yhat)
+
+			print("PREDICTED 1 SHAPE " + str(inv_yhat.shape) + " VALUES " + str(inv_yhat))
+
+			inv_y = self.scaler.inverse_transform(self.test_xx)
+
+			print("RESHAPING TEST_X FINAL " + str(inv_y.shape))
+			print(inv_y)
+
+			print(inv_y[:,4].tolist())
+
+			self.p.two_plot(inv_y[:,4].tolist(), inv_yhat[:,4].tolist(), "xlabel", "ylabel", str(i) + "_availability", "plots/" + str(i), "note")
+
+
+		# predicted = [int(x) for x in predicted]
+
+		# self.p.plot(predicted, "xlabel", "ylabel", "Predicted_" + str(self.batch_size), "plots/")
+
+		# print("PREDICTED 1 SHAPE " + " VALUES " + str(predicted))
+
+		# print("SCALER MAXXX " + str(self.scaler.data_max_))
+
+		# self.predict_test_set()
 
 	def multiple_runs(self):
 
@@ -123,7 +171,6 @@ class Neural_Model:
 		val_acc = DataFrame()
 
 		pred = DataFrame()
-
 
 		title = "Multiple runs with " + str(self.epochs) + " epochs and batch size of " + str(self.batch_size)
 
@@ -143,7 +190,7 @@ class Neural_Model:
 			val_acc[str(i)] = history.history['val_acc']			
 
 			predicted = self.model.predict(self.test_x)[0]
-			predicted = [x * 35 for x in predicted]
+			# predicted = [x * 35 for x in predicted]
 			predicted = [int(x) for x in predicted]
 
 			pred[str(i)] = predicted
@@ -163,8 +210,8 @@ class Neural_Model:
 
 		print("Original test shape " + str(self.test_x.shape))
 
-		average_error = np.zeros((288, len(self.test_x)))
-		mierda = np.zeros((288, len(self.test_x)))
+		average_error = np.zeros((len_day, len(self.test_x)))
+		mierda = np.zeros((len_day, len(self.test_x)))
 
 		print("DIMENSION AV " + str(len(self.test_x)))
 
@@ -182,10 +229,18 @@ class Neural_Model:
 			print(inv_yhat)
 			predicted = inv_yhat[:,-1:].reshape((1, len(inv_yhat[:,-1:])))[0]
 
-			print("Predicted values " + str(predicted.shape))
+			# predicted = [x / 35 for x in predicted]
+
+			print("Predicted values " ) #+ str(predicted.shape))
 			print(str(predicted))
 
 			inv_y = self.get_bikes_from_array(sample, out)
+
+			print("JAVOOO")
+			print(self.scaler.inverse_transform(inv_y))
+
+			print("INVERSE PROBLEMA")
+			print(inv_y[0])
 
 			dia = str(int(inv_y[0][0]))
 			weekday = str(self.weekday_encoder.inverse_transform([int(inv_y[0][2])])[0])
@@ -209,11 +264,12 @@ class Neural_Model:
 			self.utils.save_array_txt("plots/test_set_predictions/" + str(station) + "/predicted_" + title_path, predicted)
 
 
+			
 
-			for j in range(288):
+			for j in range(len_day):
 
 				diff = abs(real[j] - predicted[j])
-				diff2 = abs(real[j] - final_availability[j])
+				diff2 = abs(real[j] - predicted[j])
 
 
 				average_error[j][i] = diff # diff
@@ -231,7 +287,7 @@ class Neural_Model:
 		for i in average_error:
 			print(i)
 
-		for i in range(288):
+		for i in range(len_day):
 
 			print(str(i) + " >>>>>" + str(average_error[i]))
 

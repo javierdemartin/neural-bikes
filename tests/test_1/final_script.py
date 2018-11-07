@@ -8,7 +8,7 @@ utils = Utils()
 
 dataset = data.read_dataset()
 
-dataset, list_of_stations = data.encode_data(dataset)
+data.encode_data(dataset)
 data.stats_for_station()
 
 data.iterate()
@@ -17,7 +17,7 @@ data.scale_dataset()
 
 dato = data.supervised_learning()
 
-data.split_sets(0.8, 0.19, 0.01)
+data.split_sets(0.7, 0.28, 0.02)
 
-m = Neural_Model(2, 1000)
+m = Neural_Model(50, 300)
 m.fit_model()	
