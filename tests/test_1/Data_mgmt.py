@@ -13,7 +13,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import pickle # Saving MinMaxScaler
 from pandas import concat,DataFrame
-
+import itertools
 import numpy as np
 
 # Global Configuration Variables
@@ -24,6 +24,8 @@ import numpy as np
 train_model = True
 statistics_enabled = False
 print_debug = True
+low_memory_mode = True
+enable_scale = True
 
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 
@@ -33,8 +35,11 @@ station_encoder = LabelEncoder() # Encode columns that are not numbers
 
 scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
 
-n_in = 288 # Number of previous samples used to feed the Neural Network
-n_out = 288
+len_day = 144
+
+n_in  = len_day # Number of previous samples used to feed the Neural Network
+n_out = len_day
+
 
 
 class Data_mgmt:
@@ -59,7 +64,20 @@ class Data_mgmt:
 
 		self.plotter = Plotter()
 		
-		self.list_hours = self.utils.read_csv_as_list('list_hours.txt')
+		# Leer los intervalos de 10 en 10'
+		if low_memory_mode == True:
+			p = "..:.5"
+			self.list_hours = self.utils.read_csv_as_list('list_hours.txt')
+
+			a = pd.DataFrame(self.list_hours)
+			a = a[~a[0].str.contains(p)]
+
+
+			self.list_hours = [i[0] for i in a.values.tolist()]
+
+		# Leer los intervalos de 5 en 5', en mi ordenador no se puede eso pero bueno, para el servidor
+		else:
+			self.list_hours = self.utils.read_csv_as_list('list_hours.txt')
 
 
 	def read_dataset(self):
@@ -70,7 +88,7 @@ class Data_mgmt:
 
 			dataset = pandas.read_csv('data/Bilbao.txt')
 			dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_docks', 'free_bikes'] # Insert correct column names
-			dataset.drop(dataset.columns[[2]], axis = 1, inplace = True) # Remove ID of the sation and free docks
+			dataset.drop(dataset.columns[[2,4]], axis = 1, inplace = True) # Remove ID of the sation and free docks
 
 			values = dataset.values
 
@@ -83,10 +101,22 @@ class Data_mgmt:
 			# Delete incorrectly sampled hours that don't match five minute intervals
 			dataset = dataset[dataset['time'].isin(self.list_hours)]
 
+			#b[~b[0].str.contains('a')]
+
+			print(dataset)
+
+			# Eliminar muestras cada 5' para que solo sean a y *0 minutos
+			if low_memory_mode == True:
+				p = "..:.5"
+				dataset = dataset[~dataset['time'].str.contains(p)]
+
 			# dataset = dataset[dataset['station'].isin(["ZUNZUNEGI"])] # TODO: Debugging
 
 			dataset = dataset.reset_index(drop = True) # Reset indexes, so they match the current row
-			# dataset = dataset.head(180000)
+
+			size = int(len(dataset.index) * 0.4)
+
+			dataset = dataset.head(size)
 
 			print("Read dataset (" + str(dataset.shape[0]) + " lines and " + str(dataset.shape[1]) + " columns)")
 			self.utils.print_array("Dataset with unwanted columns removed", dataset.head(15))
@@ -101,8 +131,6 @@ class Data_mgmt:
 		if array is not None:
 
 			array = np.asarray(array)
-
-			print(list(np.unique(array)))
 
 			self.utils.save_array_txt('debug/utils/list_of_stations', list(np.unique(array)))
 
@@ -143,7 +171,7 @@ class Data_mgmt:
 			values[:,2] = weekday_encoder.transform(values[:,2])  # Encode WEEKDAY as an integer value
 			values[:,3] = station_encoder.transform(values[:,3])  # Encode STATION as an integer value
 
-			dataset = pd.DataFrame(data=values, columns=['datetime', 'time', 'weekday', 'station', 'free_docks', 'free_bikes'])
+			dataset = pd.DataFrame(data=values, columns=['datetime', 'time', 'weekday', 'station', 'free_bikes'])
 
 			# Save encoded data for each station to an independent file as a .npy file
 			for st in list_of_stations:
@@ -170,7 +198,7 @@ class Data_mgmt:
 
 			list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
 
-			global_average = np.empty([31,288])
+			global_average = np.empty([31,len_day])
 
 			print("GLOBAL SHAPE " + str(global_average.shape))
 
@@ -181,12 +209,12 @@ class Data_mgmt:
 				# print("Read station " + station)
 				# print(station_read)
 
-				station_read = pd.DataFrame(station_read, columns = ['datetime', 'time', 'weekday', 'station', 'free_docks', 'free_bikes'])
+				station_read = pd.DataFrame(station_read, columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes'])
 
 				averaged_data = []
 
 				# AVERAGE TOTAL
-				for i in range(288):
+				for i in range(len_day):
 
 					# print("La media de las " + str(i))
 					filtered_by_hour = station_read[station_read['time'].isin([i])].values
@@ -199,12 +227,11 @@ class Data_mgmt:
 	# Calls `series_to_supervised` and then returns a list of arrays, in each one are the values for each station
 	def supervised_learning(self):
 
-		columns = ['datetime', 'time', 'weekday', 'station', 'free_docks', 'free_bikes']
+		columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 
 		list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
-		# list_of_stations = ["ZUNZUNEGI", "AYUNTAMIENTO"]
 
-		dont_predict = ['datetime', 'time', 'weekday', 'station', 'free_docks']
+		dont_predict = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 
 		# Encontrar los índices de las columnas a borrar
 		#################################################
@@ -222,11 +249,7 @@ class Data_mgmt:
 
 		for out in range(n_out):
 
-			# print(out)
-
 			final_list_indexes.append([x+ len(columns)*out for x in list_of_indexes])
-
-		import itertools
 
 		# Lista `final_list_indexes` es una lista dentro de una lista [[a,b],[c,d]...], flatten para obtener una unica lista
 		final_list_indexes = list(itertools.chain.from_iterable(final_list_indexes))
@@ -234,23 +257,20 @@ class Data_mgmt:
 		# Añadir las muestras que faltan de los valores de entrada, esta desplazado hacia la derecha por eso
 		final_list_indexes = [x+ len(columns)*n_in for x in final_list_indexes]
 
-		print("INDICES PARA BORRAR " + str(list_of_indexes))
-		print("FINAL LIST INDEXES " + str(type(final_list_indexes)) + " " + str(final_list_indexes))
-
 		for station in list_of_stations:
 
-			dataset = np.load('debug/filled/' + station + '_filled.npy')
+			# np.save('debug/scaled/' + str(station) + ".npy", dataset)
+			dataset = np.load('debug/scaled/' + str(station) + ".npy")
 
 			dataframe = pd.DataFrame(data=dataset, columns=columns)
 
-			print("SUPERVISED FOR " + str(station))
+			self.utils.print_array("LOADED TO SUPERVISE " + str(station), dataset)
+
 			supervised = self.series_to_supervised(columns, dataframe, n_in, n_out)
 
 			supervised = supervised.drop(supervised.columns[final_list_indexes], axis=1)
 
 			# Eliminar cada N lineas para  no tener las muestras desplazadas
-			# self.utils.print_array("Array sin eliminar", supervised)
-
 			rows_to_delete = []
 
 			for j in range(supervised.shape[0]):
@@ -263,7 +283,7 @@ class Data_mgmt:
 			self.utils.save_array_txt("debug/supervised/" + station, supervised.values)
 			np.save("debug/supervised/" + station + '.npy', supervised.values)
 
-			self.utils.print_array("Array ELIMINADO", supervised)
+			if print_debug: self.utils.print_array("Deleted rows from " + station + " after framing to a supervised learning problem", supervised)
 
 
 		final_data = np.load("debug/supervised/" + list_of_stations[0] + ".npy")
@@ -271,6 +291,7 @@ class Data_mgmt:
 		# Hacerlo con todas las estaciones
 		for i in range(1,len(list_of_stations)):
 
+			print("Series to supervised for " + list_of_stations[i])
 			data_read = np.load("debug/supervised/" + list_of_stations[i] + ".npy")
 			final_data = np.append(final_data, data_read, 0)
 
@@ -295,8 +316,6 @@ class Data_mgmt:
 
 	def series_to_supervised(self, columns, data, n_in=1, n_out=1, dropnan=True):
 
-		print("COLUMNAS " + str(columns))
-
 		n_vars = 1 if type(data) is list else data.shape[1]
 		dataset = DataFrame(data)
 		cols, names = list(), list()
@@ -318,12 +337,10 @@ class Data_mgmt:
 		agg.columns = names
 		# drop rows with NaN values
 
-		print("Droppin NAN")
-
 		if dropnan:
 			agg.dropna(inplace=True)
 
-		self.utils.print_array("Reframed dataset after converting series to supervised", agg.head())
+		if print_debug: self.utils.print_array("Reframed dataset after converting series to supervised", agg.head())
 
 		return agg
 
@@ -333,18 +350,34 @@ class Data_mgmt:
 		if train_model == True:
 
 			list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
-			# list_of_stations = ["ZUNZUNEGI"]
 
 			for station in list_of_stations:
-
-				print("Reading station " + str(station))
 
 				station_read = np.load("debug/encoded_data/" + station + ".npy")
 
 				no_missing_samples, missing_days = self.find_holes(station_read)
 				filled_array = self.fill_holes(station_read, no_missing_samples)
 
-				# self.utils.check_and_create("debug/filled")
+				self.utils.check_and_create("debug/filled")
+
+				# filled_array = filled_array[np.all(filled_array != 0, axis=1)]
+
+				to_del = []
+				i = 0
+
+				# Delete rows that are zerossss
+				for r in filled_array:
+					if (r == np.array([0.0,0.0,0.0,0.0,0.0])).all() == True:
+						print("DELETO")
+						print(r)
+						to_del.append(i)
+
+					i += 1
+
+				filled_array = np.delete(filled_array,to_del,0)
+
+
+				self.utils.print_array("FILLED ARRAY AFTER ITERATE", filled_array)
 
 				self.utils.save_array_txt("debug/filled/" + station + "_filled", filled_array)
 
@@ -381,40 +414,33 @@ class Data_mgmt:
 
 						no_missing_samples -= array[i][1] - current_row[1] - 1
 
-					# print("No hora " + str(current_row) + " and " + str(station_read[i]) + " (" + str(no_missing_samples) + ")") 
-
 			# Días diferentes
 			elif current_row[0] != array[i][0]:
 
-				if current_row[1] != 287 or array[i][1] != 0:
+				if current_row[1] != (len_day - 1) or array[i][1] != 0:
 					
-					# print("Diferentes dias " + str(current_row) + " and " + str(station_read[i]) + " (" + str(no_missing_samples) + ")") 
-
 					# Si faltan muestras de más de un día no rellenar, se han perdido datos
 					if (current_row[0]+1) != array[i][0]:
 
 						missing_days += array[i][0] - current_row[0]
-						no_missing_samples += (288 - current_row[1]) + array[i][1]
-						if print_debug: print(color.HEADER + "➜ " + str(array[i][0] - current_row[0]) + " dias perdidos " + str(current_row) + " y " + str(array[i]) + " added " + str((288 - current_row[1]) + array[i][1]) + color.ENDC)					
+						no_missing_samples += (len_day - current_row[1]) + array[i][1]
+						if print_debug: print(color.HEADER + "➜ " + str(array[i][0] - current_row[0]) + " dias perdidos " + str(current_row) + " y " + str(array[i]) + " added " + str((len_day - current_row[1]) + array[i][1]) + color.ENDC)					
 
 					else:
-						no_missing_samples += 287 - current_row[1] + array[i][1]
+						no_missing_samples += (len_day - 1) - current_row[1] + array[i][1]
 
-						if print_debug: print(color.green + "↳ (" + str(287 - current_row[1] + array[i][1]) + ") ⟶ " + str(current_row) + " ⟷ " + str(array[i]) + color.ENDC)
+						if print_debug: print(color.green + "↳ (" + str((len_day - 1) - current_row[1] + array[i][1]) + ") ⟶ " + str(current_row) + " ⟷ " + str(array[i]) + color.ENDC)
 
 			current_row = array[i]
 
-		print("##################################################################")
-
-		if array[array.shape[0] - 1][1] != 287:
+		if array[array.shape[0] - 1][1] != (len_day - 1):
 			print("ORIG " + str(no_missing_samples))
 
 			# no_missing_samples -= array[array.shape[0] - 1][1] 
 
 			print("Restado " + str(no_missing_samples))
 
-		print("Final missing " + str(no_missing_samples) + " samples")
-		print("First sample was " + str(array[0]) + " and last " + str(array[array.shape[0] - 1]))
+		# print("First sample was " + str(array[0]) + " and last " + str(array[array.shape[0] - 1]))
 
 		return no_missing_samples, missing_days
 
@@ -494,12 +520,12 @@ class Data_mgmt:
 			elif current_row[0] != array[i][0]:
 
 				# Inserta posibles muestras perdidas a las 00:00, sólo probado con una, faltaría si existe más de una pérdida
-				if array[i][1] != 0 or current_row[1] != 287:
+				if array[i][1] != 0 or current_row[1] != (len_day - 1):
 
 					# Comprobar que son días seguidos, no rellenar más de un día
 					if array[i][0] == (current_row[0] + 1):
 
-						print("Missing samples " + str(array[i]) + " - " + str(current_row) + " (" + str(missing_samples) + ")")
+						# print("Missing samples " + str(array[i]) + " - " + str(current_row) + " (" + str(missing_samples) + ")")
 
 						filled_array[i + index] = array[i]
 						filled_array[i + index][1] -= 1 
@@ -512,12 +538,12 @@ class Data_mgmt:
 					else: 
 						
 
-						missing_samples = (288 - current_row[1]) + array[i][1]
+						missing_samples = (len_day - current_row[1]) + array[i][1]
 
-						print("Incomplete days INITIAL " + str(current_row) + " - " + str(array[i]) + " (" + str(missing_samples) + ")")
+						# print("Incomplete days INITIAL " + str(current_row) + " - " + str(array[i]) + " (" + str(missing_samples) + ")")
 
 						# Rellenar muestras trailing que faltan
-						for j in range(0,288 - current_row[1] - 1):
+						for j in range(0,len_day - current_row[1] - 1):
 
 							if print_debug: print(color.yellow + "  ↳ " + str(j+1) + color.ENDC)
 
@@ -570,28 +596,25 @@ class Data_mgmt:
 
 		dataset = np.load('debug/filled/' + list_of_stations[0] + '_filled.npy')
 
-		scaler.fit(dataset)
+
+		a = dataset
 
 		for i in range(1, len(list_of_stations)):
 
 			dataset = np.load('debug/filled/' + list_of_stations[i] + '_filled.npy')
+			
+			a = np.concatenate((a,dataset), axis = 0)
 
-			scaler_aux.fit_transform(dataset)
 
-			for i in range(0, 6):
+		print("SCALER MEH " + str(a.shape))
+		scaler.fit_transform(a)
 
-				if scaler_aux.data_max_[i] > scaler.data_max_[i]:
 
-					scaler.data_max_[i] = scaler_aux.data_max_[i]
-
-			# print(str(scaler_aux.data_min_) + " - " + str(scaler_aux.data_max_) + " - " + str(scaler_aux.scale_) + " - " + list_of_stations[i])
-			if print_debug: print(str(scaler.data_min_) + " - " + str(scaler.data_max_) + " - " + str(scaler.scale_) + " - " + list_of_stations[i])
-
-		# print("Scaler values pre reading the data ")
-		# print("Scaler range " + str(scaler.feature_range))
-		# print("Max vals " + str(scaler.data_max_))
-		# print("Min vals " + str(scaler.data_min_))
-		# print("Scale " + str(scaler.scale_))
+		print("Final MinMaxScaler values pre reading the data ")
+		print("  · Scaler range " + str(scaler.feature_range))
+		print("  · Max vals " + str(scaler.data_max_))
+		print("  · Min vals " + str(scaler.data_min_))
+		print("  · Scale " + str(scaler.scale_))
 
 		print("-----------------------------------------------------------------------------------------")
 		print(str(scaler.data_min_) + " - " + str(scaler.data_max_) + " - " + str(scaler.scale_))
@@ -603,45 +626,39 @@ class Data_mgmt:
 
 		list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
 
-		print("CABRON LA LISTA " + str(list_of_stations))
-
+		# Coger primero todos los máximos valores para luego escalar todos los datos poco a poco
 		self.scaler = self.get_maximums_pre_scaling()
 
-		# Get the maximum values for
 
 		for station in list_of_stations:
 
-				print("Scaling station " + str(station))
-
 				dataset = np.load('debug/filled/' + station + '_filled.npy')
-
-				# print("LOADED ARRAY ", dataset)
 
 				if train_model == True:
 
-					print("ORIGINAL DATASET " + str(dataset.shape))
-					print(dataset)
+					if enable_scale: dataset = scaler.transform(dataset)
 
-					dataset = scaler.transform(dataset)
-
-					print("SCALED DATASET " + str(dataset.shape))
-					print(dataset)
+					if print_debug: 
+						print("Scaling station " + str(station))
+						print("\t" + str(dataset.shape))
+						print(dataset)
 
 					np.save('debug/scaled/' + str(station) + ".npy", dataset)
+					self.utils.save_array_txt('debug/scaled/' + str(station), dataset)
 
 		pickle.dump(scaler, open("MinMaxScaler.sav", 'wb'))
 
 	def split_input_output(self, dataset):
 
-		columns = ['datetime', 'time', 'weekday', 'station', 'free_docks', 'free_bikes']
+		columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 		print("Initial dataset shape " + str(dataset.shape))
 
 		x, y           = dataset[:,range(0,len(columns) * n_in)], dataset[:,-n_out:] #dataset[:,n_out]
 
-		self.utils.save_array_txt("debug/x", x)
-		self.utils.save_array_txt("debug/y", y)
+		# self.utils.save_array_txt("debug/x", x)
+		# self.utils.save_array_txt("debug/y", y)
 
-		x       = x.reshape((x.shape[0], n_in, len(columns))) # (...,n_in,4)	
+		x = x.reshape((x.shape[0], n_in, len(columns))) # (...,n_in,4)	
 
 		return x,y
 
@@ -678,9 +695,7 @@ class Data_mgmt:
 			# the datasets every station is spreaded across the array
 			np.random.shuffle(values)
 
-			print("RANDOM VALUES ")
-
-			print(values)
+			print("Shuffled dataset " + str(values.shape))
 
 			# self.utils.save_array_txt("debug/supervised/final_shuffled", values)
 
@@ -689,9 +704,9 @@ class Data_mgmt:
 			print("\t Validation Size (" + str(validation_size) + "%) is " + str(validation_size_samples) + " samples")
 			print("\t Test Size (" + str(test_size) + "%) is " + str(test_size_samples) + " samples")
 
-			train = values[0:train_size_samples,:]
+			train      = values[0:train_size_samples,:]
 			validation = values[train_size_samples:train_size_samples + validation_size_samples, :]
-			test = values[train_size_samples + validation_size_samples:train_size_samples + validation_size_samples + test_size_samples, :]
+			test       = values[train_size_samples + validation_size_samples:train_size_samples + validation_size_samples + test_size_samples, :]
 
 			train_x, train_y           = self.split_input_output(train)
 			validation_x, validation_y = self.split_input_output(validation)
