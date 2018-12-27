@@ -454,3 +454,15 @@ Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo dí
 Faltaban 113 muestras y 0 días
 
 
+## # Scaling dataset
+
+
+| Values | datetime | time | weekday | station | free_bikes |
+
+
+| --- | --- | --- | --- | --- | --- |
+
+
+| Minimum Values | -17.421052631578945 | 0.0 | 0.0 | 0.0 | 0.0 | 
+
+
