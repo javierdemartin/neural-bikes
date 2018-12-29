@@ -1,8 +1,6 @@
 # Steps
 
 Pasos realizados para entrenar la red neuronal
-
-
 ## Reading Dataset
 
 
@@ -52,19 +50,15 @@ Reading dataset, data gathered every ten minutes.
 39       331  15:50  TUESDAY           EGUILLOR          16
 ```
 
-
 ## Encoding Data
 
 
 Encode each column as integers
-
-
 Got list of 31 stations before encoding
 
 ```
 ['ABANDO', 'AMETZOLA', 'ANSELMO CLAVE', 'AREILTZA', 'ARRIAGA', 'ASKATASUNA', 'ASTILLERO', 'AYUNTAMIENTO', 'BLAS OTERO', 'BOLUETA', 'CORAZÓN MARIA', 'EGAÑA', 'EGUILLOR', 'EPALZA', 'ESTRADA CALEROS', 'ETXEBARRIA', 'GABRIEL ARESTI', 'HEROS', 'IBAIZABAL', 'INDAUTXU', 'KARMELO', 'LEIZAOLA', 'LEVANTE', 'OLABEAGA', 'OTXARKOAGA', 'PLAZA ENCARNACIÓN', 'REKALDE', 'SABINO ARANA', 'SAN PEDRO', 'SARRIKO', 'TERMIBUS']
 ```
-
 
 ## Creating Label Encoders and then encoding the previously read dataset
 
@@ -90,13 +84,11 @@ Hour Encoder
  '22:30' '22:40' '22:50' '23:00' '23:10' '23:20' '23:30' '23:40' '23:50']
 ```
 
-
 Weekday Encoder
 
 ```
 ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 ```
-
 
 Station Encoder
 
@@ -104,13 +96,11 @@ Station Encoder
 ['ABANDO', 'AMETZOLA', 'ANSELMO CLAVE', 'AREILTZA', 'ARRIAGA', 'ASKATASUNA', 'ASTILLERO', 'AYUNTAMIENTO', 'BLAS OTERO', 'BOLUETA', 'CORAZÓN MARIA', 'EGAÑA', 'EGUILLOR', 'EPALZA', 'ESTRADA CALEROS', 'ETXEBARRIA', 'GABRIEL ARESTI', 'HEROS', 'IBAIZABAL', 'INDAUTXU', 'KARMELO', 'LEIZAOLA', 'LEVANTE', 'OLABEAGA', 'OTXARKOAGA', 'PLAZA ENCARNACIÓN', 'REKALDE', 'SABINO ARANA', 'SAN PEDRO', 'SARRIKO', 'TERMIBUS']
 ```
 
-
 columns used in the training set
 
 ```
 ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 ```
-
 
 Encoded dataset
 
@@ -168,301 +158,105 @@ Encoded dataset
 49      331   95       7      29         16
 ```
 
-
 ## Finding holes in dataset
 
 
 Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no funcione correctamente y se queden huecos, arreglarlo inventando datos en esos huecos.
 
-
-## Holes for ABANDO
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for AMETZOLA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for ANSELMO CLAVE
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for AREILTZA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for ARRIAGA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for ASKATASUNA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for ASTILLERO
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for AYUNTAMIENTO
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for BLAS OTERO
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for BOLUETA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for CORAZÓN MARIA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for EGAÑA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for EGUILLOR
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for EPALZA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for ESTRADA CALEROS
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for ETXEBARRIA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for GABRIEL ARESTI
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for HEROS
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for IBAIZABAL
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for INDAUTXU
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for KARMELO
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for LEIZAOLA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for LEVANTE
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for OLABEAGA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for OTXARKOAGA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for PLAZA ENCARNACIÓN
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for REKALDE
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for SABINO ARANA
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for SAN PEDRO
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for SARRIKO
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## Holes for TERMIBUS
-
-
-Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes
-
-
-Faltaban 113 muestras y 0 días
-
-
-## # Scaling dataset
+| Estación | Missing Samples | Missing Whole Days
+| --- | --- | --- |
+ | ABANDO | 113 | 0 | 
+ | AMETZOLA | 113 | 0 | 
+ | ANSELMO CLAVE | 113 | 0 | 
+ | AREILTZA | 113 | 0 | 
+ | ARRIAGA | 113 | 0 | 
+ | ASKATASUNA | 113 | 0 | 
+ | ASTILLERO | 113 | 0 | 
+ | AYUNTAMIENTO | 113 | 0 | 
+ | BLAS OTERO | 113 | 0 | 
+ | BOLUETA | 113 | 0 | 
+ | CORAZÓN MARIA | 113 | 0 | 
+ | EGAÑA | 113 | 0 | 
+ | EGUILLOR | 113 | 0 | 
+ | EPALZA | 113 | 0 | 
+ | ESTRADA CALEROS | 113 | 0 | 
+ | ETXEBARRIA | 113 | 0 | 
+ | GABRIEL ARESTI | 113 | 0 | 
+ | HEROS | 113 | 0 | 
+ | IBAIZABAL | 113 | 0 | 
+ | INDAUTXU | 113 | 0 | 
+ | KARMELO | 113 | 0 | 
+ | LEIZAOLA | 113 | 0 | 
+ | LEVANTE | 113 | 0 | 
+ | OLABEAGA | 113 | 0 | 
+ | OTXARKOAGA | 113 | 0 | 
+ | PLAZA ENCARNACIÓN | 113 | 0 | 
+ | REKALDE | 113 | 0 | 
+ | SABINO ARANA | 113 | 0 | 
+ | SAN PEDRO | 113 | 0 | 
+ | SARRIKO | 113 | 0 | 
+ | TERMIBUS | 113 | 0 | 
+
+
+
+## Scaling dataset
 
 
 | Values | datetime | time | weekday | station | free_bikes |
-
-
 | --- | --- | --- | --- | --- | --- |
-
-
 | Minimum Values | -17.421052631578945 | 0.0 | 0.0 | 0.0 | 0.0 | 
+| Data Max | 350.0 | 143.0 | 7.0 | 30.0 | 42.0 | 
+| Data Min | 331.0 | 0.0 | 0.0 | 0.0 | 0.0 | 
+| Data Range | 19.0 | 143.0 | 7.0 | 30.0 | 42.0 | 
+| Scale | 0.05263157894736842 | 0.006993006993006993 | 0.14285714285714285 | 0.03333333333333333 | 0.023809523809523808 | 
+
+
+## Supervised Learning
+
+
+| Station | Days | 
+| --- | --- |
+| ABANDO | 18 | 
+| AMETZOLA | 18 | 
+| ANSELMO CLAVE | 18 | 
+| AREILTZA | 18 | 
+| ARRIAGA | 18 | 
+| ASKATASUNA | 18 | 
+| ASTILLERO | 18 | 
+| AYUNTAMIENTO | 18 | 
+| BLAS OTERO | 18 | 
+| BOLUETA | 18 | 
+| CORAZÓN MARIA | 18 | 
+| EGAÑA | 18 | 
+| EGUILLOR | 18 | 
+| EPALZA | 18 | 
+| ESTRADA CALEROS | 18 | 
+| ETXEBARRIA | 18 | 
+| GABRIEL ARESTI | 18 | 
+| HEROS | 18 | 
+| IBAIZABAL | 18 | 
+| INDAUTXU | 18 | 
+| KARMELO | 18 | 
+| LEIZAOLA | 18 | 
+| LEVANTE | 18 | 
+| OLABEAGA | 18 | 
+| OTXARKOAGA | 18 | 
+| PLAZA ENCARNACIÓN | 18 | 
+| REKALDE | 18 | 
+| SABINO ARANA | 18 | 
+| SAN PEDRO | 18 | 
+| SARRIKO | 18 | 
+| TERMIBUS | 18 | 
+
+
+## Split datasets
+
+
+
+| Dataset | Percentage | Samples |
+| --- | --- | --- |
+| Training | 60.0 | 334 | 
+| Validation | 39.0 | 217 | 
+| Test | 1.0 | 5 | 
 
 
