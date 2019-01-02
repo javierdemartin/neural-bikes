@@ -165,37 +165,37 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 | Estación | Missing Samples | Missing Whole Days
 | --- | --- | --- |
- | ABANDO | 113 | 0 | 
- | AMETZOLA | 113 | 0 | 
- | ANSELMO CLAVE | 113 | 0 | 
- | AREILTZA | 113 | 0 | 
- | ARRIAGA | 113 | 0 | 
- | ASKATASUNA | 113 | 0 | 
- | ASTILLERO | 113 | 0 | 
- | AYUNTAMIENTO | 113 | 0 | 
- | BLAS OTERO | 113 | 0 | 
- | BOLUETA | 113 | 0 | 
- | CORAZÓN MARIA | 113 | 0 | 
- | EGAÑA | 113 | 0 | 
- | EGUILLOR | 113 | 0 | 
- | EPALZA | 113 | 0 | 
- | ESTRADA CALEROS | 113 | 0 | 
- | ETXEBARRIA | 113 | 0 | 
- | GABRIEL ARESTI | 113 | 0 | 
- | HEROS | 113 | 0 | 
- | IBAIZABAL | 113 | 0 | 
- | INDAUTXU | 113 | 0 | 
- | KARMELO | 113 | 0 | 
- | LEIZAOLA | 113 | 0 | 
- | LEVANTE | 113 | 0 | 
- | OLABEAGA | 113 | 0 | 
- | OTXARKOAGA | 113 | 0 | 
- | PLAZA ENCARNACIÓN | 113 | 0 | 
- | REKALDE | 113 | 0 | 
- | SABINO ARANA | 113 | 0 | 
- | SAN PEDRO | 113 | 0 | 
- | SARRIKO | 113 | 0 | 
- | TERMIBUS | 113 | 0 | 
+ | ABANDO | 189 | 0 | 
+ | AMETZOLA | 189 | 0 | 
+ | ANSELMO CLAVE | 189 | 0 | 
+ | AREILTZA | 189 | 0 | 
+ | ARRIAGA | 189 | 0 | 
+ | ASKATASUNA | 189 | 0 | 
+ | ASTILLERO | 189 | 0 | 
+ | AYUNTAMIENTO | 189 | 0 | 
+ | BLAS OTERO | 189 | 0 | 
+ | BOLUETA | 189 | 0 | 
+ | CORAZÓN MARIA | 189 | 0 | 
+ | EGAÑA | 189 | 0 | 
+ | EGUILLOR | 189 | 0 | 
+ | EPALZA | 189 | 0 | 
+ | ESTRADA CALEROS | 189 | 0 | 
+ | ETXEBARRIA | 189 | 0 | 
+ | GABRIEL ARESTI | 189 | 0 | 
+ | HEROS | 189 | 0 | 
+ | IBAIZABAL | 189 | 0 | 
+ | INDAUTXU | 189 | 0 | 
+ | KARMELO | 189 | 0 | 
+ | LEIZAOLA | 189 | 0 | 
+ | LEVANTE | 189 | 0 | 
+ | OLABEAGA | 189 | 0 | 
+ | OTXARKOAGA | 189 | 0 | 
+ | PLAZA ENCARNACIÓN | 189 | 0 | 
+ | REKALDE | 189 | 0 | 
+ | SABINO ARANA | 189 | 0 | 
+ | SAN PEDRO | 189 | 0 | 
+ | SARRIKO | 189 | 0 | 
+ | TERMIBUS | 189 | 0 | 
 
 
 
@@ -204,11 +204,11 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 | Values | datetime | time | weekday | station | free_bikes |
 | --- | --- | --- | --- | --- | --- |
-| Minimum Values | -17.421052631578945 | 0.0 | 0.0 | 0.0 | 0.0 | 
-| Data Max | 350.0 | 143.0 | 7.0 | 30.0 | 42.0 | 
-| Data Min | 331.0 | 0.0 | 0.0 | 0.0 | 0.0 | 
-| Data Range | 19.0 | 143.0 | 7.0 | 30.0 | 42.0 | 
-| Scale | 0.05263157894736842 | 0.006993006993006993 | 0.14285714285714285 | 0.03333333333333333 | 0.023809523809523808 | 
+| Minimum Values | -0.0027472527472527475 | 0.0 | 0.0 | 0.0 | 0.0 | 
+| Data Max | 365.0 | 143.0 | 7.0 | 30.0 | 42.0 | 
+| Data Min | 1.0 | 0.0 | 0.0 | 0.0 | 0.0 | 
+| Data Range | 364.0 | 143.0 | 7.0 | 30.0 | 42.0 | 
+| Scale | 0.0027472527472527475 | 0.006993006993006993 | 0.14285714285714285 | 0.03333333333333333 | 0.023809523809523808 | 
 
 
 ## Supervised Learning
@@ -216,37 +216,37 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 | Station | Days | 
 | --- | --- |
-| ABANDO | 18 | 
-| AMETZOLA | 18 | 
-| ANSELMO CLAVE | 18 | 
-| AREILTZA | 18 | 
-| ARRIAGA | 18 | 
-| ASKATASUNA | 18 | 
-| ASTILLERO | 18 | 
-| AYUNTAMIENTO | 18 | 
-| BLAS OTERO | 18 | 
-| BOLUETA | 18 | 
-| CORAZÓN MARIA | 18 | 
-| EGAÑA | 18 | 
-| EGUILLOR | 18 | 
-| EPALZA | 18 | 
-| ESTRADA CALEROS | 18 | 
-| ETXEBARRIA | 18 | 
-| GABRIEL ARESTI | 18 | 
-| HEROS | 18 | 
-| IBAIZABAL | 18 | 
-| INDAUTXU | 18 | 
-| KARMELO | 18 | 
-| LEIZAOLA | 18 | 
-| LEVANTE | 18 | 
-| OLABEAGA | 18 | 
-| OTXARKOAGA | 18 | 
-| PLAZA ENCARNACIÓN | 18 | 
-| REKALDE | 18 | 
-| SABINO ARANA | 18 | 
-| SAN PEDRO | 18 | 
-| SARRIKO | 18 | 
-| TERMIBUS | 18 | 
+| ABANDO | 34 | 
+| AMETZOLA | 34 | 
+| ANSELMO CLAVE | 34 | 
+| AREILTZA | 34 | 
+| ARRIAGA | 34 | 
+| ASKATASUNA | 34 | 
+| ASTILLERO | 34 | 
+| AYUNTAMIENTO | 34 | 
+| BLAS OTERO | 34 | 
+| BOLUETA | 34 | 
+| CORAZÓN MARIA | 34 | 
+| EGAÑA | 34 | 
+| EGUILLOR | 34 | 
+| EPALZA | 34 | 
+| ESTRADA CALEROS | 34 | 
+| ETXEBARRIA | 34 | 
+| GABRIEL ARESTI | 34 | 
+| HEROS | 34 | 
+| IBAIZABAL | 34 | 
+| INDAUTXU | 34 | 
+| KARMELO | 34 | 
+| LEIZAOLA | 34 | 
+| LEVANTE | 34 | 
+| OLABEAGA | 34 | 
+| OTXARKOAGA | 34 | 
+| PLAZA ENCARNACIÓN | 34 | 
+| REKALDE | 34 | 
+| SABINO ARANA | 34 | 
+| SAN PEDRO | 34 | 
+| SARRIKO | 34 | 
+| TERMIBUS | 34 | 
 
 
 ## Split datasets
@@ -255,9 +255,9 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 | Dataset | Percentage | Samples |
 | --- | --- | --- |
-| Training | 60.0 | 334 | 
-| Validation | 38.0 | 212 | 
-| Test | 2.0 | 11 | 
+| Training | 60.0 | 632 | 
+| Validation | 38.0 | 400 | 
+| Test | 2.0 | 21 | 
 
 
 ## Neural Network Training
@@ -265,8 +265,8 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 ![Model Shape](model/model.png)
 
-* 50 epochs
-* 100 batch size
+* 100 epochs
+* 40 batch size
 
 ![Training Acc](plots/training_acc.png)
 
@@ -274,9 +274,12 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 ![Training MAPE](plots/training_mape.png)
 
+![Training MSE](plots/training_mse.png)
+
 ![Prediction Sample 1](plots/1.png)
 
 ![Prediction Sample 2](plots/2.png)
 
 ![Prediction Sample 3](plots/3.png)
 
+More prediction samples in [plots/](https://github.com/javierdemartin/neural-bikes/tree/master/plots).

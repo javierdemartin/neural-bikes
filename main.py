@@ -20,9 +20,7 @@ dato = data.supervised_learning()
 
 data.split_sets(0.6, 0.38, 0.02)
 
-m = Neural_Model(50, 100)
-m.fit_model()	
-
-# print("\a")
+m = Neural_Model(100, 40)
+m.fit_model()
 
 os.system("clear; mdv README.md")
