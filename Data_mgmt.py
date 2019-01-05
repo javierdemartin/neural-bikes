@@ -1,5 +1,3 @@
-# TODO: PROLLLY REVISAR EL SCALER LOCO get_maximums_pre_scaling
-
 # LIBRARIES
 # ------------------------------------------------------------------
 
@@ -24,7 +22,7 @@ import os
 
 train_model = True
 statistics_enabled = False
-print_debug = True
+print_debug = False
 low_memory_mode = True
 enable_scale = True
 
@@ -51,6 +49,7 @@ class Data_mgmt:
 	def __init__(self):
 		
 		self.utils = Utils()
+		self.utils.init_tutorial()
 
 		# os.system("rm -rf debug/") # Delete previous debug records
 		self.utils.check_and_create("debug/encoders")
@@ -99,8 +98,6 @@ class Data_mgmt:
 
 			values = dataset.values
 
-			print("VALOOOS")
-			print(values)
 			self.list_of_stations = self.get_list_of_stations(values[:,2])
 
 			times = [x.split(" ")[1] for x in values[:,0]]
@@ -149,10 +146,12 @@ class Data_mgmt:
 			array = np.asarray(array)
 
 			self.utils.save_array_txt('debug/utils/list_of_stations', list(np.unique(array)))
+			# self.utils.save_array_txt('debug/utils/list_of_stations', ["AMETZOLA"])
 
 			print(list(np.unique(array)))
 
 			return list(np.unique(array))
+			# return ["AMETZOLA"]
 
 		elif array is None:
 			return None
@@ -166,7 +165,6 @@ class Data_mgmt:
 
 		if train_model == True:
 
-			# list_of_stations = self.get_list_of_stations(dataset.values[:,3])
 			print("GOT LIST O FSTATIONS")
 			print(self.list_of_stations)
 
@@ -265,11 +263,14 @@ class Data_mgmt:
 	# Calls `series_to_supervised` and then returns a list of arrays, in each one are the values for each station
 	def supervised_learning(self):
 
+		self.utils.append_tutorial_title("Supervised Learning")
+
 		columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 
-		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+		# self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
 
-		dont_predict = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
+		# dont_predict = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
+		dont_predict = ['datetime', 'time', 'weekday', 'station']
 
 		# Encontrar los índices de las columnas a borrar
 		#################################################
@@ -295,14 +296,17 @@ class Data_mgmt:
 		# Añadir las muestras que faltan de los valores de entrada, esta desplazado hacia la derecha por eso
 		final_list_indexes = [x+ len(columns)*n_in for x in final_list_indexes]
 
-		for station in list_of_stations:
+		self.utils.append_tutorial_text("| Station | Days | ")
+		self.utils.append_tutorial_text("| --- | --- |")
+
+		for station in self.list_of_stations:
 
 			# np.save('debug/scaled/' + str(station) + ".npy", dataset)
 			dataset = np.load('debug/scaled/' + str(station) + ".npy")
 
 			dataframe = pd.DataFrame(data=dataset, columns=columns)
 
-			self.utils.print_array("LOADED TO SUPERVISE " + str(station), dataset)
+			# self.utils.print_array("LOADED TO SUPERVISE " + str(station), dataset)
 
 			supervised = self.series_to_supervised(columns, dataframe, n_in, n_out)
 
@@ -317,20 +321,24 @@ class Data_mgmt:
 					rows_to_delete.append(j)
 
 			supervised = supervised.drop(supervised.index[rows_to_delete])
+			supervised = supervised.reset_index(drop = True)
+
+			self.utils.append_tutorial_text("| " + station + " | " + str(supervised.shape[0]) + " | ")
 
 			self.utils.save_array_txt("debug/supervised/" + station, supervised.values)
 			np.save("debug/supervised/" + station + '.npy', supervised.values)
 
 			if print_debug: self.utils.print_array("Deleted rows from " + station + " after framing to a supervised learning problem", supervised)
 
+		self.utils.append_tutorial_text("\n")
 
-		final_data = np.load("debug/supervised/" + list_of_stations[0] + ".npy")
+		final_data = np.load("debug/supervised/" + self.list_of_stations[0] + ".npy")
 
 		# Hacerlo con todas las estaciones
-		for i in range(1,len(list_of_stations)):
+		for i in range(1,len(self.list_of_stations)):
 
-			print("Series to supervised for " + list_of_stations[i])
-			data_read = np.load("debug/supervised/" + list_of_stations[i] + ".npy")
+			print("Series to supervised for " + self.list_of_stations[i])
+			data_read = np.load("debug/supervised/" + self.list_of_stations[i] + ".npy")
 			final_data = np.append(final_data, data_read, 0)
 
 		self.utils.save_array_txt("debug/supervised/FINAL", final_data)
@@ -378,7 +386,7 @@ class Data_mgmt:
 		if dropnan:
 			agg.dropna(inplace=True)
 
-		if print_debug: self.utils.print_array("Reframed dataset after converting series to supervised", agg.head())
+		# if print_debug: self.utils.print_array("Reframed dataset after converting series to supervised", agg.head())
 
 		return agg
 
@@ -386,24 +394,25 @@ class Data_mgmt:
 	def iterate(self):
 
 		self.utils.append_tutorial_title("Finding holes in dataset")
-		self.utils.append_tutorial_text("Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no funcione correctamente y se queden huecos, arreglarlo inventando datos en esos huecos.")
+		self.utils.append_tutorial_text("Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no funcione correctamente y se queden huecos, arreglarlo inventando datos en esos huecos.\n")
 
 		if train_model == True:
 
 			list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
 
+			self.utils.append_tutorial_text("| Estación | Missing Samples | Missing Whole Days")
+			self.utils.append_tutorial_text("| --- | --- | --- |")
+
+
 			for station in list_of_stations:
 
-				self.utils.append_tutorial_title("Holes for " + station)
 
 				station_read = np.load("debug/encoded_data/" + station + ".npy")
-
-				self.utils.append_tutorial_text("Encontrando agujeros en los dias, pueden ser muestras que falten en el mismo día o diferentes")
 
 				no_missing_samples, missing_days = self.find_holes(station_read)
 				filled_array = self.fill_holes(station_read, no_missing_samples)
 
-				self.utils.append_tutorial_text("Faltaban " + str(no_missing_samples) + " muestras y " + str(missing_days) + " días")
+				self.utils.append_tutorial_text(" | " + station +  " | " + str(no_missing_samples) + " | " + str(missing_days) + " | ")
 
 				# filled_array = filled_array[np.all(filled_array != 0, axis=1)]
 
@@ -421,11 +430,16 @@ class Data_mgmt:
 
 				filled_array = np.delete(filled_array,to_del,0)
 
-				self.utils.print_array("FILLED ARRAY AFTER ITERATE", filled_array)
+				# Borrar para que empiecen en dia completo las muestras
+				filled_array = np.delete(filled_array, (range(len_day - int(filled_array[0][1]))), axis=0)
+				# Borrar las muestras finales que hacen que el día no esté completo
+				filled_array = filled_array[:- (int(filled_array[filled_array.shape[0]-1][1])+1) ,:]
 
 				self.utils.save_array_txt("debug/filled/" + station + "_filled", filled_array)
 
 				np.save('debug/filled/' + station + '_filled.npy', filled_array)				
+
+			self.utils.append_tutorial_text("\n\n")
 
 	def find_holes(self, array):
 
@@ -681,6 +695,8 @@ class Data_mgmt:
 
 	def scale_dataset(self):
 
+		self.utils.append_tutorial_title("Scaling dataset")
+
 		list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
 
 		# Coger primero todos los máximos valores para luego escalar todos los datos poco a poco
@@ -704,6 +720,14 @@ class Data_mgmt:
 					self.utils.save_array_txt('debug/scaled/' + str(station), dataset)
 
 		pickle.dump(scaler, open("MinMaxScaler.sav", 'wb'))
+
+		self.utils.append_tutorial_text("| Values | datetime | time | weekday | station | free_bikes |")
+		self.utils.append_tutorial_text("| --- | --- | --- | --- | --- | --- |")
+		self.utils.append_tutorial_text("| Minimum Values | " + str(scaler.min_[0]) + " | " + str(scaler.min_[1]) + " | " + str(scaler.min_[2]) + " | " + str(scaler.min_[3]) + " | " + str(scaler.min_[4]) + " | ")
+		self.utils.append_tutorial_text("| Data Max | " + str(scaler.data_max_[0]) + " | " + str(scaler.data_max_[1]) + " | " + str(scaler.data_max_[2]) + " | " + str(scaler.data_max_[3]) + " | " + str(scaler.data_max_[4]) + " | ")
+		self.utils.append_tutorial_text("| Data Min | " + str(scaler.data_min_[0]) + " | " + str(scaler.data_min_[1]) + " | " + str(scaler.data_min_[2]) + " | " + str(scaler.data_min_[3]) + " | " + str(scaler.data_min_[4]) + " | ")
+		self.utils.append_tutorial_text("| Data Range | " + str(scaler.data_range_[0]) + " | " + str(scaler.data_range_[1]) + " | " + str(scaler.data_range_[2]) + " | " + str(scaler.data_range_[3]) + " | " + str(scaler.data_range_[4]) + " | ")
+		self.utils.append_tutorial_text("| Scale | " + str(scaler.scale_[0]) + " | " + str(scaler.scale_[1]) + " | " + str(scaler.scale_[2]) + " | " + str(scaler.scale_[3]) + " | " + str(scaler.scale_[4]) + " | \n\n")
 
 	def split_input_output(self, dataset):
 
@@ -732,6 +756,13 @@ class Data_mgmt:
 	#	* [Validation] this data set is used to minimize overfitting. You're not adjusting the weights of the network with this data set, you're just verifying that any increase in accuracy over the training data set actually yields an increase in accuracy over a data set that has not been shown to the network before, or at least the network hasn't trained on it (i.e. validation data set). If the accuracy over the training data set increases, but the accuracy over then validation data set stays the same or decreases, then you're overfitting your neural network and you should stop training.
 	#	* [Test] Used only for testing the final solution in order to confirm the actual predictive power of the network.
 	def split_sets(self, training_size, validation_size, test_size):
+
+		self.utils.append_tutorial_title("Split datasets")
+		# self.utils.append_tutorial_text("Dividing whole dataset into training " + str(training_size*100) + "%, validation " + str(validation_size*100) + "% & test " + str(test_size*100) + "%")
+
+		
+
+
 
 		values = np.load("debug/supervised/FINAL.npy")
 
@@ -772,6 +803,13 @@ class Data_mgmt:
 			np.save('data/test_y.npy', test_y)
 			np.save('data/validation_x.npy', validation_x)
 			np.save('data/validation_y.npy', validation_y)
+
+
+			self.utils.append_tutorial_text("\n| Dataset | Percentage | Samples |")
+			self.utils.append_tutorial_text("| --- | --- | --- |")
+			self.utils.append_tutorial_text("| Training | " + str(training_size*100) + " | " + str(train_size_samples) + " | ")
+			self.utils.append_tutorial_text("| Validation | " + str(validation_size*100) + " | " + str(validation_size_samples) + " | ")
+			self.utils.append_tutorial_text("| Test | " + str(test_size*100) + " | " + str(test_size_samples) + " | \n\n")
 
 	
 
