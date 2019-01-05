@@ -676,8 +676,6 @@ class Data_mgmt:
 			
 			a = np.concatenate((a,dataset), axis = 0)
 
-
-		print("SCALER MEH " + str(a.shape))
 		scaler.fit_transform(a)
 
 
