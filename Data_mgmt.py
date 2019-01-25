@@ -301,8 +301,14 @@ class Data_mgmt:
 
 		for station in self.list_of_stations:
 
+			try:
+				dataset = np.load('debug/scaled/' + str(station) + ".npy")
+				break
+			except (FileNotFoundError, IOError):
+				print("Wrong file or file path")
+
 			# np.save('debug/scaled/' + str(station) + ".npy", dataset)
-			dataset = np.load('debug/scaled/' + str(station) + ".npy")
+			
 
 			dataframe = pd.DataFrame(data=dataset, columns=columns)
 
@@ -338,8 +344,16 @@ class Data_mgmt:
 		for i in range(1,len(self.list_of_stations)):
 
 			print("Series to supervised for " + self.list_of_stations[i])
-			data_read = np.load("debug/supervised/" + self.list_of_stations[i] + ".npy")
-			final_data = np.append(final_data, data_read, 0)
+
+			try:
+				data_read = np.load("debug/supervised/" + self.list_of_stations[i] + ".npy")
+				final_data = np.append(final_data, data_read, 0)
+				break
+			except (FileNotFoundError, IOError):
+				print("Wrong file or file path")
+
+
+			
 
 		self.utils.save_array_txt("debug/supervised/FINAL", final_data)
 		np.save("debug/supervised/FINAL.npy", final_data)
@@ -406,38 +420,46 @@ class Data_mgmt:
 
 			for station in list_of_stations:
 
-
 				station_read = np.load("debug/encoded_data/" + station + ".npy")
 
-				no_missing_samples, missing_days = self.find_holes(station_read)
-				filled_array = self.fill_holes(station_read, no_missing_samples)
+				print("Iterating through " + str(station) + " " + str(station_read.shape))
 
-				self.utils.append_tutorial_text(" | " + station +  " | " + str(no_missing_samples) + " | " + str(missing_days) + " | ")
+				# Problema cuadno aparece una estación nueva y se entrena el modelo con menos de un día de datos, no iterar si es nueva
+				if station_read.shape[0] > len_day:
 
-				# filled_array = filled_array[np.all(filled_array != 0, axis=1)]
+					no_missing_samples, missing_days = self.find_holes(station_read)
+					filled_array = self.fill_holes(station_read, no_missing_samples)
 
-				to_del = []
-				i = 0
+					self.utils.append_tutorial_text(" | " + station +  " | " + str(no_missing_samples) + " | " + str(missing_days) + " | ")
 
-				# Delete rows that are zerossss
-				for r in filled_array:
-					if (r == np.array([0.0,0.0,0.0,0.0,0.0])).all() == True:
-						print("DELETO")
-						print(r)
-						to_del.append(i)
+					# filled_array = filled_array[np.all(filled_array != 0, axis=1)]
 
-					i += 1
+					to_del = []
+					i = 0
 
-				filled_array = np.delete(filled_array,to_del,0)
+					# Delete rows that are zerossss
+					for r in filled_array:
+						if (r == np.array([0.0,0.0,0.0,0.0,0.0])).all() == True:
+							print("DELETO")
+							print(r)
+							to_del.append(i)
 
-				# Borrar para que empiecen en dia completo las muestras
-				filled_array = np.delete(filled_array, (range(len_day - int(filled_array[0][1]))), axis=0)
-				# Borrar las muestras finales que hacen que el día no esté completo
-				filled_array = filled_array[:- (int(filled_array[filled_array.shape[0]-1][1])+1) ,:]
+						i += 1
 
-				self.utils.save_array_txt("debug/filled/" + station + "_filled", filled_array)
+					filled_array = np.delete(filled_array,to_del,0)
 
-				np.save('debug/filled/' + station + '_filled.npy', filled_array)				
+					# Borrar para que empiecen en dia completo las muestras
+					filled_array = np.delete(filled_array, (range(len_day - int(filled_array[0][1]))), axis=0)
+					# Borrar las muestras finales que hacen que el día no esté completo
+					filled_array = filled_array[:- (int(filled_array[filled_array.shape[0]-1][1])+1) ,:]
+
+					self.utils.save_array_txt("debug/filled/" + station + "_filled", filled_array)
+
+					np.save('debug/filled/' + station + '_filled.npy', filled_array)				
+
+				else: 
+					list_of_stations.remove(station)
+					self.utils.save_array_txt('debug/utils/list_of_stations', list_of_stations)
 
 			self.utils.append_tutorial_text("\n\n")
 
@@ -758,11 +780,11 @@ class Data_mgmt:
 		self.utils.append_tutorial_title("Split datasets")
 		# self.utils.append_tutorial_text("Dividing whole dataset into training " + str(training_size*100) + "%, validation " + str(validation_size*100) + "% & test " + str(test_size*100) + "%")
 
-		
-
 
 
 		values = np.load("debug/supervised/FINAL.npy")
+
+		np.random.shuffle(values)
 
 
 		if train_model == True:
@@ -776,6 +798,8 @@ class Data_mgmt:
 
 			# As previously the data was stored in an array the stations were contiguous, shuffle them so when splitting
 			# the datasets every station is spreaded across the array
+
+			print("Shuffled dataset " + str(values.shape))
 			np.random.shuffle(values)
 
 			print("Shuffled dataset " + str(values.shape))
