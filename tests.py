@@ -7,6 +7,8 @@ import numpy as np
 
 class TestHolesInArray(unittest.TestCase):
 
+
+	# Comprueba si cada 
 	def test_findHoles(self):
 		
 		d  = Data_mgmt()
@@ -17,9 +19,15 @@ class TestHolesInArray(unittest.TestCase):
 		for station in list_of_stations:
 			station_read = np.load("debug/filled/" + station + "_filled.npy")
 
+			print(station)
 			no_missing_samples, missing_days = d.find_holes(station_read)
 
 			self.assertEqual(no_missing_samples, 0)
+
+	def scaling(self):
+
+		print("HALO")
+		self.assertEqual(0, 0)
 
 if __name__ == '__main__':
 	unittest.main()

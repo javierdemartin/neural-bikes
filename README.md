@@ -54,10 +54,10 @@ Reading dataset, data gathered every ten minutes.
 
 
 Encode each column as integers
-Got list of 31 stations before encoding
+Got list of 35 stations before encoding
 
 ```
-['ABANDO', 'AMETZOLA', 'ANSELMO CLAVE', 'AREILTZA', 'ARRIAGA', 'ASKATASUNA', 'ASTILLERO', 'AYUNTAMIENTO', 'BLAS OTERO', 'BOLUETA', 'CORAZÓN MARIA', 'EGAÑA', 'EGUILLOR', 'EPALZA', 'ESTRADA CALEROS', 'ETXEBARRIA', 'GABRIEL ARESTI', 'HEROS', 'IBAIZABAL', 'INDAUTXU', 'KARMELO', 'LEIZAOLA', 'LEVANTE', 'OLABEAGA', 'OTXARKOAGA', 'PLAZA ENCARNACIÓN', 'REKALDE', 'SABINO ARANA', 'SAN PEDRO', 'SARRIKO', 'TERMIBUS']
+['ABANDO', 'AMETZOLA', 'ANSELMO CLAVE', 'ARANGOITI', 'AREILTZA', 'ARRIAGA', 'ASKATASUNA', 'ASTILLERO', 'AYUNTAMIENTO', 'BLAS OTERO', 'BOLUETA', 'CORAZÓN MARIA', 'EGAÑA', 'EGUILLOR', 'EPALZA', 'ESKURTZE', 'ESTRADA CALEROS', 'ETXEBARRIA', 'GABRIEL ARESTI', 'HEROS', 'IBAIZABAL', 'INDAUTXU', 'KARMELO', 'LEIZAOLA', 'LEVANTE', 'MERCADO RIBERA', 'OLABEAGA', 'OTXARKOAGA', 'PLAZA ENCARNACIÓN', 'POLIDEPORTIVO ZORROZA', 'REKALDE', 'SABINO ARANA', 'SAN PEDRO', 'SARRIKO', 'TERMIBUS']
 ```
 
 ## Creating Label Encoders and then encoding the previously read dataset
@@ -93,7 +93,7 @@ Weekday Encoder
 Station Encoder
 
 ```
-['ABANDO', 'AMETZOLA', 'ANSELMO CLAVE', 'AREILTZA', 'ARRIAGA', 'ASKATASUNA', 'ASTILLERO', 'AYUNTAMIENTO', 'BLAS OTERO', 'BOLUETA', 'CORAZÓN MARIA', 'EGAÑA', 'EGUILLOR', 'EPALZA', 'ESTRADA CALEROS', 'ETXEBARRIA', 'GABRIEL ARESTI', 'HEROS', 'IBAIZABAL', 'INDAUTXU', 'KARMELO', 'LEIZAOLA', 'LEVANTE', 'OLABEAGA', 'OTXARKOAGA', 'PLAZA ENCARNACIÓN', 'REKALDE', 'SABINO ARANA', 'SAN PEDRO', 'SARRIKO', 'TERMIBUS']
+['ABANDO', 'AMETZOLA', 'ANSELMO CLAVE', 'ARANGOITI', 'AREILTZA', 'ARRIAGA', 'ASKATASUNA', 'ASTILLERO', 'AYUNTAMIENTO', 'BLAS OTERO', 'BOLUETA', 'CORAZÓN MARIA', 'EGAÑA', 'EGUILLOR', 'EPALZA', 'ESKURTZE', 'ESTRADA CALEROS', 'ETXEBARRIA', 'GABRIEL ARESTI', 'HEROS', 'IBAIZABAL', 'INDAUTXU', 'KARMELO', 'LEIZAOLA', 'LEVANTE', 'MERCADO RIBERA', 'OLABEAGA', 'OTXARKOAGA', 'PLAZA ENCARNACIÓN', 'POLIDEPORTIVO ZORROZA', 'REKALDE', 'SABINO ARANA', 'SAN PEDRO', 'SARRIKO', 'TERMIBUS']
 ```
 
 columns used in the training set
@@ -106,56 +106,56 @@ Encoded dataset
 
 ```
    datetime time weekday station free_bikes
-0       331   94       7       8         27
-1       331   94       7       7         20
-2       331   94       7       4         30
-3       331   94       7       5         13
-4       331   94       7      26         19
-5       331   94       7       3         14
-6       331   94       7      30         21
-7       331   94       7       6         11
-8       331   94       7      12         16
+0       331   94       7       9         27
+1       331   94       7       8         20
+2       331   94       7       5         30
+3       331   94       7       6         13
+4       331   94       7      30         19
+5       331   94       7       4         14
+6       331   94       7      34         21
+7       331   94       7       7         11
+8       331   94       7      13         16
 9       331   94       7       2         14
-10      331   94       7      19         23
-11      331   94       7      21         29
-12      331   94       7      18          7
-13      331   94       7      25         12
-14      331   94       7      28         15
-15      331   94       7       9         19
-16      331   94       7      24         10
-17      331   94       7      23         17
-18      331   94       7      29         20
-19      331   94       7      17         16
-20      331   94       7      11         20
-21      331   94       7      15         12
-22      331   94       7      16         17
+10      331   94       7      21         23
+11      331   94       7      23         29
+12      331   94       7      20          7
+13      331   94       7      28         12
+14      331   94       7      32         15
+15      331   94       7      10         19
+16      331   94       7      27         10
+17      331   94       7      26         17
+18      331   94       7      33         20
+19      331   94       7      19         16
+20      331   94       7      12         20
+21      331   94       7      17         12
+22      331   94       7      18         17
 23      331   94       7       0         20
-24      331   94       7      14         18
-25      331   94       7      13         25
+24      331   94       7      16         18
+25      331   94       7      14         25
 26      331   94       7       1         14
-27      331   94       7      27         18
-28      331   94       7      10         19
-29      331   94       7      20         12
-30      331   95       7      22         19
-31      331   95       7       8         27
-32      331   95       7       7         20
-33      331   95       7       4         28
-34      331   95       7       5         15
-35      331   95       7      26         20
-36      331   95       7       3         13
-37      331   95       7      30         22
-38      331   95       7       6         11
-39      331   95       7      12         16
+27      331   94       7      31         18
+28      331   94       7      11         19
+29      331   94       7      22         12
+30      331   95       7      24         19
+31      331   95       7       9         27
+32      331   95       7       8         20
+33      331   95       7       5         28
+34      331   95       7       6         15
+35      331   95       7      30         20
+36      331   95       7       4         13
+37      331   95       7      34         22
+38      331   95       7       7         11
+39      331   95       7      13         16
 40      331   95       7       2         16
-41      331   95       7      19         25
-42      331   95       7      21         29
-43      331   95       7      18          7
-44      331   95       7      25         15
-45      331   95       7      28         15
-46      331   95       7       9         20
-47      331   95       7      24         10
-48      331   95       7      23         17
-49      331   95       7      29         16
+41      331   95       7      21         25
+42      331   95       7      23         29
+43      331   95       7      20          7
+44      331   95       7      28         15
+45      331   95       7      32         15
+46      331   95       7      10         20
+47      331   95       7      27         10
+48      331   95       7      26         17
+49      331   95       7      33         16
 ```
 
 ## Finding holes in dataset
@@ -165,37 +165,33 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 | Estación | Missing Samples | Missing Whole Days
 | --- | --- | --- |
- | ABANDO | 205 | 0 | 
- | AMETZOLA | 205 | 0 | 
- | ANSELMO CLAVE | 205 | 0 | 
- | AREILTZA | 205 | 0 | 
- | ARRIAGA | 205 | 0 | 
- | ASKATASUNA | 205 | 0 | 
- | ASTILLERO | 205 | 0 | 
- | AYUNTAMIENTO | 205 | 0 | 
- | BLAS OTERO | 205 | 0 | 
- | BOLUETA | 205 | 0 | 
- | CORAZÓN MARIA | 205 | 0 | 
- | EGAÑA | 205 | 0 | 
- | EGUILLOR | 205 | 0 | 
- | EPALZA | 205 | 0 | 
- | ESTRADA CALEROS | 205 | 0 | 
- | ETXEBARRIA | 205 | 0 | 
- | GABRIEL ARESTI | 205 | 0 | 
- | HEROS | 205 | 0 | 
- | IBAIZABAL | 205 | 0 | 
- | INDAUTXU | 205 | 0 | 
- | KARMELO | 205 | 0 | 
- | LEIZAOLA | 205 | 0 | 
- | LEVANTE | 205 | 0 | 
- | OLABEAGA | 205 | 0 | 
- | OTXARKOAGA | 205 | 0 | 
- | PLAZA ENCARNACIÓN | 205 | 0 | 
- | REKALDE | 205 | 0 | 
- | SABINO ARANA | 205 | 0 | 
- | SAN PEDRO | 205 | 0 | 
- | SARRIKO | 205 | 0 | 
- | TERMIBUS | 205 | 0 | 
+ | ABANDO | 463 | 0 | 
+ | AMETZOLA | 463 | 0 | 
+ | ANSELMO CLAVE | 463 | 0 | 
+ | ARRIAGA | 463 | 0 | 
+ | ASKATASUNA | 463 | 0 | 
+ | ASTILLERO | 463 | 0 | 
+ | AYUNTAMIENTO | 463 | 0 | 
+ | BLAS OTERO | 463 | 0 | 
+ | BOLUETA | 463 | 0 | 
+ | CORAZÓN MARIA | 463 | 0 | 
+ | EGAÑA | 463 | 0 | 
+ | EGUILLOR | 463 | 0 | 
+ | EPALZA | 463 | 0 | 
+ | ETXEBARRIA | 463 | 0 | 
+ | GABRIEL ARESTI | 463 | 0 | 
+ | HEROS | 463 | 0 | 
+ | IBAIZABAL | 463 | 0 | 
+ | INDAUTXU | 463 | 0 | 
+ | KARMELO | 463 | 0 | 
+ | LEIZAOLA | 463 | 0 | 
+ | LEVANTE | 463 | 0 | 
+ | OTXARKOAGA | 463 | 0 | 
+ | PLAZA ENCARNACIÓN | 463 | 0 | 
+ | SABINO ARANA | 463 | 0 | 
+ | SAN PEDRO | 463 | 0 | 
+ | SARRIKO | 463 | 0 | 
+ | TERMIBUS | 463 | 0 | 
 
 
 
@@ -205,10 +201,10 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 | Values | datetime | time | weekday | station | free_bikes |
 | --- | --- | --- | --- | --- | --- |
 | Minimum Values | -0.0027472527472527475 | 0.0 | 0.0 | 0.0 | 0.0 | 
-| Data Max | 365.0 | 143.0 | 7.0 | 30.0 | 42.0 | 
+| Data Max | 365.0 | 143.0 | 7.0 | 34.0 | 42.0 | 
 | Data Min | 1.0 | 0.0 | 0.0 | 0.0 | 0.0 | 
-| Data Range | 364.0 | 143.0 | 7.0 | 30.0 | 42.0 | 
-| Scale | 0.0027472527472527475 | 0.006993006993006993 | 0.14285714285714285 | 0.03333333333333333 | 0.023809523809523808 | 
+| Data Range | 364.0 | 143.0 | 7.0 | 34.0 | 42.0 | 
+| Scale | 0.0027472527472527475 | 0.006993006993006993 | 0.14285714285714285 | 0.029411764705882353 | 0.023809523809523808 | 
 
 
 ## Supervised Learning
@@ -216,70 +212,31 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 | Station | Days | 
 | --- | --- |
-| ABANDO | 37 | 
-| AMETZOLA | 37 | 
-| ANSELMO CLAVE | 37 | 
-| AREILTZA | 37 | 
-| ARRIAGA | 37 | 
-| ASKATASUNA | 37 | 
-| ASTILLERO | 37 | 
-| AYUNTAMIENTO | 37 | 
-| BLAS OTERO | 37 | 
-| BOLUETA | 37 | 
-| CORAZÓN MARIA | 37 | 
-| EGAÑA | 37 | 
-| EGUILLOR | 37 | 
-| EPALZA | 37 | 
-| ESTRADA CALEROS | 37 | 
-| ETXEBARRIA | 37 | 
-| GABRIEL ARESTI | 37 | 
-| HEROS | 37 | 
-| IBAIZABAL | 37 | 
-| INDAUTXU | 37 | 
-| KARMELO | 37 | 
-| LEIZAOLA | 37 | 
-| LEVANTE | 37 | 
-| OLABEAGA | 37 | 
-| OTXARKOAGA | 37 | 
-| PLAZA ENCARNACIÓN | 37 | 
-| REKALDE | 37 | 
-| SABINO ARANA | 37 | 
-| SAN PEDRO | 37 | 
-| SARRIKO | 37 | 
-| TERMIBUS | 37 | 
-
-
-## Split datasets
-
-
-
-| Dataset | Percentage | Samples |
-| --- | --- | --- |
-| Training | 60.0 | 688 | 
-| Validation | 38.0 | 435 | 
-| Test | 2.0 | 22 | 
-
-
-## Neural Network Training
-
-
-![Model Shape](model/model.png)
-
-* 50 epochs
-* 30 batch size
-
-![Training Acc](plots/training_acc.png)
-
-![Training Loss](plots/training_loss.png)
-
-![Training MAPE](plots/training_mape.png)
-
-![Training MSE](plots/training_mse.png)
-
-![Prediction Sample 1](plots/1.png)
-
-![Prediction Sample 2](plots/2.png)
-
-![Prediction Sample 3](plots/3.png)
-
-More prediction samples in [plots/](https://github.com/javierdemartin/neural-bikes/tree/master/plots).
+| ABANDO | 57 | 
+| AMETZOLA | 57 | 
+| ANSELMO CLAVE | 57 | 
+| ARANGOITI | 57 | 
+| AREILTZA | 57 | 
+| ARRIAGA | 57 | 
+| ASKATASUNA | 57 | 
+| ASTILLERO | 57 | 
+| AYUNTAMIENTO | 57 | 
+| BLAS OTERO | 57 | 
+| BOLUETA | 57 | 
+| CORAZÓN MARIA | 57 | 
+| EGAÑA | 57 | 
+| EGUILLOR | 57 | 
+| EPALZA | 57 | 
+| ESKURTZE | 57 | 
+| ESTRADA CALEROS | 57 | 
+| ETXEBARRIA | 57 | 
+| GABRIEL ARESTI | 57 | 
+| HEROS | 57 | 
+| IBAIZABAL | 57 | 
+| INDAUTXU | 57 | 
+| KARMELO | 57 | 
+| LEIZAOLA | 57 | 
+| LEVANTE | 57 | 
+| MERCADO RIBERA | 57 | 
+| OLABEAGA | 57 | 
+| OTXARKOAGA | 57 | 

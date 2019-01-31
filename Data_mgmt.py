@@ -260,6 +260,44 @@ class Data_mgmt:
 				self.plotter.plot(averaged_data, "Time", "Average Bike Availability", str(station) + "_average_availability", "stats/stations/")
 				self.utils.save_array_txt("stats/stations/" + str(station) + "_average_availability", averaged_data)
 
+	def load_encoders(self):
+		print("> Loaded encoders ")
+		return np.load('debug/encoders/hour_encoder.npy'), np.load('debug/encoders/weekday_encoder.npy'), np.load('debug/encoders/station_encoder.npy')
+
+	def prepare_tomorrow(self):
+
+		self.utils.check_and_create("debug/tomorrow")
+		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+
+		we = LabelEncoder()
+
+		he, we.classes_, se = self.load_encoders()
+
+		scaler = MinMaxScaler()
+		scaler = pickle.load(open("MinMaxScaler.sav", 'rb'))
+
+		print("SCALER " + str(scaler.scale_))
+		print("SCALER " + str(scaler.data_max_))
+
+		for station in self.list_of_stations:
+
+			try:
+
+				dataset = np.load('debug/scaled/' + str(station) + ".npy")[-144:]
+				dataset = dataset.reshape(1,144,5)
+
+				print("---------------------------- " + str(dataset.shape))
+
+				print(dataset)
+
+				np.save("debug/tomorrow/" + station + '.npy', dataset)
+				
+				
+			except (FileNotFoundError, IOError):
+				print("Wrong file or file path")
+
+
+
 	# Calls `series_to_supervised` and then returns a list of arrays, in each one are the values for each station
 	def supervised_learning(self):
 
@@ -303,16 +341,14 @@ class Data_mgmt:
 
 			try:
 				dataset = np.load('debug/scaled/' + str(station) + ".npy")
-				break
+				
 			except (FileNotFoundError, IOError):
 				print("Wrong file or file path")
 
 			# np.save('debug/scaled/' + str(station) + ".npy", dataset)
-			
 
 			dataframe = pd.DataFrame(data=dataset, columns=columns)
 
-			# self.utils.print_array("LOADED TO SUPERVISE " + str(station), dataset)
 
 			supervised = self.series_to_supervised(columns, dataframe, n_in, n_out)
 
@@ -333,6 +369,7 @@ class Data_mgmt:
 
 			self.utils.save_array_txt("debug/supervised/" + station, supervised.values)
 			np.save("debug/supervised/" + station + '.npy', supervised.values)
+			print("SAVED TO " + "debug/supervised/" + station + '.npy')
 
 			if print_debug: self.utils.print_array("Deleted rows from " + station + " after framing to a supervised learning problem", supervised)
 
@@ -348,7 +385,8 @@ class Data_mgmt:
 			try:
 				data_read = np.load("debug/supervised/" + self.list_of_stations[i] + ".npy")
 				final_data = np.append(final_data, data_read, 0)
-				break
+				np.save("debug/supervised/" + str(self.list_of_stations[i]) + ".npy", final_data)
+				
 			except (FileNotFoundError, IOError):
 				print("Wrong file or file path")
 

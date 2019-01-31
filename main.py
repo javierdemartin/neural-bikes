@@ -7,7 +7,6 @@ import os
 data  = Data_mgmt()
 utils = Utils()
 
-
 dataset = data.read_dataset()
 
 data.encode_data(dataset)
@@ -20,7 +19,7 @@ dato = data.supervised_learning()
 
 data.split_sets(0.6, 0.38, 0.02)
 
-m = Neural_Model(100, 40)
+m = Neural_Model()
 m.fit_model()
 
 os.system("clear; mdv README.md")
