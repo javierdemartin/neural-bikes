@@ -11,8 +11,6 @@ import warnings
 warnings.filterwarnings(action='ignore', category=DeprecationWarning)
 from keras.utils.vis_utils import plot_model
 
-import eli5
-from eli5.sklearn import PermutationImportance
 from keras.wrappers.scikit_learn import KerasClassifier, KerasRegressor
 
 
@@ -25,7 +23,7 @@ momentum = 0.8
 
 class Neural_Model:
 
-	def __init__(self, epochs, batch_size):
+	def __init__(self):
 
 		print("Inited NeuralModel class")
 
@@ -45,7 +43,7 @@ class Neural_Model:
 		self.validation_x = np.load('data/validation_x.npy')
 		self.validation_y = np.load('data/validation_y.npy')
 
-		self.epochs = epochs
+		
 
 		print("Array shapes")
 		print("Train X " + str(self.train_x.shape))
@@ -56,14 +54,17 @@ class Neural_Model:
 		print("Validation Y " + str(self.validation_y.shape))
 
 		self.scaler = pickle.load(open("MinMaxScaler.sav", 'rb'))
+	
+		self.batch_size = self.utils.read("batch_size")	
+		self.epochs = self.utils.read("epochs")	
 
-		# Train on batch size
-		if batch_size == 'b' :
-			self.batch_size = self.train_x.shape[0]
-		elif batch_size == 'hb':
-			self.batch_size = int(self.train_x.shape[0]/2)
-		else :
-			self.batch_size = batch_size		
+		self.plot_path = "plots/" + str(self.epochs[0]) + "_" + str(self.batch_size[0]) + "/"
+		self.utils.check_and_create(self.plot_path + "data/metrics/")
+		self.utils.check_and_create(self.plot_path)
+		self.utils.check_and_create("model/" + str(self.epochs[0]) + "_" + str(self.batch_size[0]))
+
+		print("READIN")
+		print(self.batch_size)
 
 		self.hour_encoder.classes_, self.weekday_encoder.classes_, self.station_encoder.classes_ = self.load_encoders()
 		self.model = self.create_model()
@@ -79,9 +80,6 @@ class Neural_Model:
 		return np.load('debug/encoders/hour_encoder.npy'), np.load('debug/encoders/weekday_encoder.npy'), np.load('debug/encoders/station_encoder.npy')
 		
 	def create_model(self):		
-
-
-		decay_rate = learning_rate / self.epochs
 		
 
 		model = Sequential()
@@ -89,6 +87,10 @@ class Neural_Model:
 		# model.add(LSTM(lstm_neurons, return_sequences=True)) # input_shape=(self.train_x.shape[1], self.train_x.shape[2]), stateful=False))
 		model.add(LSTM(lstm_neurons, input_shape=(self.train_x.shape[1], self.train_x.shape[2]), return_sequences = True))
 		model.add(Dropout(0.1))
+		# model.add(LSTM(lstm_neurons, return_sequences = True))
+		# model.add(Dropout(0.1))
+		# model.add(LSTM(lstm_neurons, return_sequences = True))
+		# model.add(Dropout(0.1))
 		model.add(LSTM(lstm_neurons))
 		model.add(Dropout(0.1))
 		model.add(Dense(len_day))
@@ -98,103 +100,178 @@ class Neural_Model:
 
 		model.compile(loss='mae', optimizer='adam', metrics = ['acc', 'mape', 'mse'])
 
-		plot_model(model, to_file='model/model.png', show_shapes=True, show_layer_names=True)
+		plot_model(model, to_file="model/" + str(self.epochs[0]) + "_" + str(self.batch_size[0]) + '/model.png', show_shapes=True, show_layer_names=True)
 
 		return model
 
 	def fit_model(self):
 
-		decay_rate = learning_rate / self.epochs
 
-		note = "Model trained with " + str(self.epochs) + " epochs and batch size of " + str(self.batch_size) #+ "\nLearning Rate " + str(learning_rate) + ", momentum " + str(momentum) + " & decay rate " + str(decay_rate)
-		self.utils.check_and_create("plots/data/metrics")
+		if len(self.batch_size) > 0:
 
-		if train_model == True:
+			for time in range(len(self.batch_size)):				
 
-			# for i in range(0,len(self.train_x[0])):
-			# 	print(str(self.train_x[1][:,4][i]) + " - " + str(self.train_y[0][i]))
+				note = "Model trained with " + str(self.epochs[0]) + " epochs and batch size of " + str(self.batch_size[0])
+				# self.utils.check_and_create(plot_path)
+				
 
+				if train_model == True:
 
-			history = self.model.fit(self.train_x, self.train_y, batch_size=self.batch_size, epochs=self.epochs, validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = True) 
-			
-			self.model.save('model/model.h5')  # creates a HDF5 file 'my_model.h5'
-		
+					history = self.model.fit(self.train_x, self.train_y, batch_size=self.batch_size[0], epochs=self.epochs[0], validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = True) 
+					# history = self.model.fit(self.train_x, self.train_y, batch_size=300, epochs=self.epochs[0], validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = True) 
+					# history = self.model.fit(self.train_x, self.train_y, batch_size=30, epochs=self.epochs[0], validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = True) 
+					
+					self.model.save("model/" + str(self.epochs[0]) + "_" + str(self.batch_size[0]) + "/model.h5")  # creates a HDF5 file 'my_model.h5'
+				
 
-			print("\a Finished model training")
+					print("\a Finished model training")
 
-			title_plot = "Training & Validation Loss"
-			title_path = "training_loss"
-			
+					title_plot = "Training & Validation Loss"
+					title_path = "training_loss"
+					
 
-			self.p.two_plot(history.history['loss'], history.history['val_loss'], "Epoch", "Loss", title_plot, "plots/" + title_path, note, "Loss", "Validation Loss")
+					self.p.two_plot(history.history['loss'], history.history['val_loss'], "Epoch", "Loss", title_plot, self.plot_path + title_path, note, "Loss", "Validation Loss")
 
-			title_plot = "Training & Validation Accuracy"
-			title_path = "training_acc"
+					title_plot = "Training & Validation Accuracy"
+					title_path = "training_acc"
 
-			self.p.two_plot(history.history['acc'], history.history['val_acc'], "Epoch", "accuracy", title_plot, "plots/" + title_path, note, "Accuracy", "Validation Accuracy")		
+					self.p.two_plot(history.history['acc'], history.history['val_acc'], "Epoch", "accuracy", title_plot, self.plot_path + title_path, note, "Accuracy", "Validation Accuracy")		
 
-			title_path = "training_mape"
-			title_plot = "Training & Validation MAPE"
+					title_path = "training_mape"
+					title_plot = "Training & Validation MAPE"
 
-			self.p.two_plot(history.history['mean_absolute_percentage_error'], history.history['val_mean_absolute_percentage_error'], "Epoch", "accuracy", title_plot, "plots/" + title_path, note, "MAPE", "Validation MAPE")		
+					self.p.two_plot(history.history['mean_absolute_percentage_error'], history.history['val_mean_absolute_percentage_error'], "Epoch", "accuracy", title_plot, self.plot_path + title_path, note, "MAPE", "Validation MAPE")		
 
-			title_path = "training_mse"
-			title_plot = "Training & Validation MSE"
+					title_path = "training_mse"
+					title_plot = "Training & Validation MSE"
 
-			self.p.two_plot(history.history['mean_squared_error'], history.history['val_mean_squared_error'], "Epoch", "accuracy", title_plot, "plots/" + title_path, note, "MSE", "Validation MSE")		
+					self.p.two_plot(history.history['mean_squared_error'], history.history['val_mean_squared_error'], "Epoch", "accuracy", title_plot, self.plot_path + title_path, note, "MSE", "Validation MSE")		
 
-			self.utils.save_array_txt("plots/data/metrics/acc", history.history['acc'])
-			self.utils.save_array_txt("plots/data/metrics/val_acc", history.history['val_acc'])
-			self.utils.save_array_txt("plots/data/metrics/loss", history.history['loss'])
-			self.utils.save_array_txt("plots/data/metrics/val_loss", history.history['val_loss'])
+					self.utils.save_array_txt(self.plot_path + "data/metrics/acc", history.history['acc'])
+					self.utils.save_array_txt(self.plot_path + "data/metrics/val_acc", history.history['val_acc'])
+					self.utils.save_array_txt(self.plot_path + "data/metrics/loss", history.history['loss'])
+					self.utils.save_array_txt(self.plot_path + "data/metrics/val_loss", history.history['val_loss'])
 
-			self.utils.append_tutorial_text("![Training Acc](plots/training_acc.png)\n")
-			self.utils.append_tutorial_text("![Training Loss](plots/training_loss.png)\n")
-			self.utils.append_tutorial_text("![Training MAPE](plots/training_mape.png)\n")
-			self.utils.append_tutorial_text("![Training MSE](plots/training_mse.png)\n")
+					self.utils.append_tutorial_text("![Training Acc](plots/training_acc.png)\n")
+					self.utils.append_tutorial_text("![Training Loss](plots/training_loss.png)\n")
+					self.utils.append_tutorial_text("![Training MAPE](plots/training_mape.png)\n")
+					self.utils.append_tutorial_text("![Training MSE](plots/training_mse.png)\n")
 
-		else:
+				else:
 
-			self.model = self.create_model()
-			self.model.load_weights("model/model.h5")
-			print("Loaded model from disk")
+					self.model = self.create_model()
+					self.model.load_weights("model/" + str(self.epochs[0]) + "_" + str(self.batch_size[0]) + "/model.h5")
+					print("Loaded model from disk")
 
-		self.utils.print_warn("Predicting " + str(self.test_x.shape[0]) + " samples with the test set")
+				self.utils.print_warn("Predicting " + str(self.test_x.shape[0]) + " samples with the test set")
 
-		predicted_test_set = np.asarray([self.model.predict(self.test_x)])[0] # Predict on test values
-
-
-		for i in range(0, self.test_x.shape[0] - 1):
-
-			self.test_xx = self.test_x[i] # Get i-th sample
-			next_day = self.test_x[i+1]   # Get i-th sample
-
-			predicted_test_set_i = np.array([predicted_test_set[i]])
-			predicted_test_set_i = predicted_test_set_i.reshape(predicted_test_set_i.shape[1],1)
-
-			inv_yhat = concatenate((self.test_xx[:,: self.test_xx.shape[1] - 1], predicted_test_set_i), axis=1)
-
-			inv_yhat = self.scaler.inverse_transform(inv_yhat)
-
-			station_name = str(self.station_encoder.inverse_transform([int(inv_yhat[0][2])])[0])
-
-			real_data = self.scaler.inverse_transform(self.test_xx)
-			next_day = self.scaler.inverse_transform(next_day)
-
-			self.p.two_plot(real_data[:,4].tolist(), list(map(int, inv_yhat[:,4].tolist())), "Time", "Free Bikes", "Prediction for " + station_name, "plots/" + str(i), note, "Real", "Predicted")
+				predicted_test_set = np.asarray([self.model.predict(self.test_x)])[0] # Predict on test values
 
 
+				for i in range(0, self.test_x.shape[0] - 1):
 
-			# self.p.two_plot(
-			# 	real_data[:,4].tolist() +  list(map(int, inv_yhat[:,4].tolist())), 
-			# 	real_data[:,4].tolist() +  next_day[:,4].tolist(), 
-			# 	"Time", "Free Bikes", "Prediction for " + station_name, "plots/" + str(i) + "_WTF", note, "Real", "Predicted")
+					self.test_xx = self.test_x[i] # Get i-th sample
+					next_day = self.test_x[i+1]   # Get i-th sample
 
-		self.utils.append_tutorial_text("![Prediction Sample 1](plots/1.png)\n")
-		self.utils.append_tutorial_text("![Prediction Sample 2](plots/2.png)\n")
-		self.utils.append_tutorial_text("![Prediction Sample 3](plots/3.png)\n")
-		self.utils.append_tutorial_text("More prediction samples in [plots/](https://github.com/javierdemartin/neural-bikes/tree/master/plots).")
+					predicted_test_set_i = np.array([predicted_test_set[i]])
+					predicted_test_set_i = predicted_test_set_i.reshape(predicted_test_set_i.shape[1],1)
 
+					inv_yhat = concatenate((self.test_xx[:,: self.test_xx.shape[1] - 1], predicted_test_set_i), axis=1)
+
+					inv_yhat = self.scaler.inverse_transform(inv_yhat)
+
+					station_name = str(self.station_encoder.inverse_transform([int(inv_yhat[0][2])])[0])
+
+					real_data = self.scaler.inverse_transform(self.test_xx)
+					next_day = self.scaler.inverse_transform(next_day)
+
+					self.p.two_plot(real_data[:,4].tolist(), list(map(int, inv_yhat[:,4].tolist())), "Time", "Free Bikes", "Prediction for " + station_name, self.plot_path + str(i), note, "Real", "Predicted")
+
+					# self.p.two_plot(
+					# 	real_data[:,4].tolist() +  list(map(int, inv_yhat[:,4].tolist())), 
+					# 	real_data[:,4].tolist() +  next_day[:,4].tolist(), 
+					# 	"Time", "Free Bikes", "Prediction for " + station_name, "plots/" + str(i) + "_WTF", note, "Real", "Predicted")
+
+				self.utils.append_tutorial_text("![Prediction Sample 1](plots/1.png)\n")
+				self.utils.append_tutorial_text("![Prediction Sample 2](plots/2.png)\n")
+				self.utils.append_tutorial_text("![Prediction Sample 3](plots/3.png)\n")
+				self.utils.append_tutorial_text("More prediction samples in [plots/](https://github.com/javierdemartin/neural-bikes/tree/master/plots).")
+
+
+				self.batch_size.pop(0)
+				self.epochs.pop(0)
+
+	def tomorrow(self):
+
+		self.model = self.create_model()
+		self.model.load_weights("model/" + str(self.epochs[0]) + "_" + str(self.batch_size[0]) + "/model.h5")
+		print("Loaded model from disk")
+
+		self.utils.check_and_create("plots/tomorrow")
+		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+
+		for station in self.list_of_stations:
+
+			try:
+				dataset = np.load('debug/tomorrow/' + str(station) + ".npy")
+				print("Loaded " + str(station) + " - " + str(dataset.shape))
+
+				p = self.model.predict(dataset)
+
+				p = p.reshape((144, 1))
+				dataset = dataset.reshape((dataset.shape[1], dataset.shape[2]))
+				dataset = self.scaler.inverse_transform(dataset)
+				
+				print("PREDICTION " + str(p.shape))
+				print(p)
+
+				
+
+				print("DATASET " + str(dataset.shape))
+				print(dataset)
+
+				weekday = int(dataset[0][2])
+
+				if weekday is 6:
+					weekday = 0
+				else:
+					weekday += 1
+
+				weekday = self.weekday_encoder.inverse_transform(weekday)
+
+				print("WDAY " + str(weekday))
+
+
+				inv_yhat = concatenate((dataset[:,: dataset.shape[1] - 1], p), axis=1)
+
+				# print("INV_YHAT " + str(inv_yhat.shape))
+				# print(inv_yhat)
+
+
+				# p = self.scaler.inverse_transform(inv_yhat)
+				# print(p)
+
+				# columns=['datetime', 'time', 'weekday', 'station', 'free_bikes']
+
+				# weekday = ""
+
+				# if int(inv_yhat[:,2][0]) is 6:
+				# 	weekday = self.weekday_encoder.inverse_transform(int(0))
+				# else:
+				# 	weekday = self.weekday_encoder.inverse_transform(int(inv_yhat[:,2][0] + 1))
+
+				print(dataset[:,-1])
+
+
+				self.p.two_plot(dataset[:,-1], [0], "xlabel", "ylabel", str(station + " for " + weekday), "plots/tomorrow/" + station, text = None, line_1 = None, line_2 = None)
+
+
+
+				
+
+				
+			except (FileNotFoundError, IOError):
+				print("Wrong file or file path")
 
 	def multiple_runs(self):
 
@@ -217,7 +294,8 @@ class Neural_Model:
 			self.model = self.create_model()
 
 			# fit model
-			history = self.model.fit(self.train_x, self.train_y, batch_size=self.batch_size, epochs=self.epochs, validation_data=(self.validation_x, self.validation_y), verbose=2, shuffle = False)
+			history = self.model.fit(self.train_x, self.train_y, batch_size=30, epochs=self.epochs, validation_data=(self.validation_x, self.validation_y), verbose=2, shuffle = False)
+			history = self.model.fit(self.train_x, self.train_y, batch_size=300, epochs=self.epochs, validation_data=(self.validation_x, self.validation_y), verbose=2, shuffle = False)
 			self.model.save('model/model.h5')  # creates a HDF5 file 'my_model.h5'
 			# story history
 			train_loss[str(i)] = history.history['loss']
