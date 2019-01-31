@@ -35,7 +35,9 @@ class Utils:
 
 	def __init__(self):
 
-		self.init_tutorial()
+		# self.init_tutorial()
+		print("")
+
 
 
 	def print_smth(self,description, x):
@@ -54,6 +56,15 @@ class Utils:
 		print("----------------------------------------------------------------------------", color.ENDC)
 		print(array)
 		print(color.yellow, "----------------------------------------------------------------------------", color.ENDC)
+
+	def read(self, param):
+		
+
+		with open("config/" + param) as f:
+			content = f.readlines()
+			# you may also want to remove whitespace characters like `\n` at the end of each line
+			content = [int(x.strip()) for x in content] 
+			return content
 
 	# Reads the list in the PATH and returns a LIST
 	def read_csv_as_list(self, path):
@@ -79,34 +90,59 @@ class Utils:
 
 	def init_tutorial(self):
 
-		os.system("rm TUTORIAL.md")
-		os.system("touch TUTORIAL.md")
+		os.system("rm README.md")
+		os.system("touch README.md")
 
 		intro = "# Steps"
 
-		with open("TUTORIAL.md", "a") as myfile:
-			myfile.write(intro + "\n\n")
+		f= open("README.md","a")
+		f.write(intro + "\n\n")
+
+		f.close()
 
 		self.append_tutorial_text("Pasos realizados para entrenar la red neuronal")	
 
+	def code(self, code):
+
+		f= open("README.md","a")
+		f.write("```\n" + str(code) + "\n```\n\n")
+		f.close()
+
 	def append_tutorial_title(self, title):
 
-		with open("TUTORIAL.md", "a") as myfile:
-			myfile.write("## " + str(title) + "\n\n\n")
+		f= open("README.md","a")
+		f.write("## " + str(title) + "\n\n\n")
+		f.close()
 
 	def append_tutorial_text(self, text):
 
-		with open("TUTORIAL.md", "a") as myfile:
-			myfile.write(str(text) + "\n\n\n")
+		with open("README.md", "a") as myfile:
+			myfile.write(str(text) + "\n")
 
 
 	def append_tutorial(self, body, text):
 
-		with open("TUTORIAL.md", "a") as myfile:
-			myfile.write(str(body) + "\n\n")
+		f= open("README.md","a")
+		f.write(str(body) + "\n\n")
+		f.write("```\n" + str(text) + "\n```\n\n")
+		f.close()
 
-			myfile.write("```\n" + str(text) + "\n```")
-			myfile.write("\n\n\n")
+
+	def namestr(obj, namespace = globals()):
+		return [name for name in namespace if namespace[name] is obj]
+
+	def table(self, columns, rows):
+
+		h = "| "
+		r = "| "
+
+		for c in columns:
+			h += c + " | "
+			r += " --- |"
+
+
+
+
 
 	# Save an array/list/... for future debugging
 	def save_array_txt(self, path, array):
