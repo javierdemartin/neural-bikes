@@ -21,8 +21,8 @@ import os
 # statistics
 
 train_model = True
-statistics_enabled = False
-print_debug = False
+statistics_enabled = True
+print_debug = True
 low_memory_mode = True
 enable_scale = True
 
@@ -38,8 +38,6 @@ len_day = 144
 
 n_in  = len_day # Number of previous samples used to feed the Neural Network
 n_out = len_day
-
- #["AMETZOLA"]
 
 class Data_mgmt:
 
@@ -83,82 +81,67 @@ class Data_mgmt:
 		else:
 			self.list_hours = self.utils.read_csv_as_list('list_hours.txt')
 
-
 	def read_dataset(self):
 
 		self.utils.append_tutorial_title("Reading Dataset")
 
-		dataset = None
+		# Read dataset from the CSV file
+		dataset = pandas.read_csv('data/Bilbao.txt')
+		dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_docks', 'free_bikes'] # Insert correct column names
+		
+		# Remove ID of the sation and free docks
+		dataset.drop(dataset.columns[[2,4]], axis = 1, inplace = True) 
 
-		if train_model == True:
+		self.list_of_stations = self.get_list_of_stations(dataset.values[:,2])
 
-			dataset = pandas.read_csv('data/Bilbao.txt')
-			dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_docks', 'free_bikes'] # Insert correct column names
-			dataset.drop(dataset.columns[[2,4]], axis = 1, inplace = True) # Remove ID of the sation and free docks
+		# Separar la columna de tiempos en 
+		times = [x.split(" ")[1] for x in dataset.values[:,0]]
 
-			values = dataset.values
+		dataset['datetime'] = [datetime.datetime.strptime(x, '%Y/%m/%d %H:%M').timetuple().tm_yday for x in dataset.values[:,0]]
 
-			self.list_of_stations = self.get_list_of_stations(values[:,2])
+		dataset.insert(loc = 1, column = 'time', value = times)
 
-			times = [x.split(" ")[1] for x in values[:,0]]
+		# Delete incorrectly sampled hours that don't match five minute intervals
+		dataset = dataset[dataset['time'].isin(self.list_hours)]
 
-			dataset['datetime'] = [datetime.datetime.strptime(x, '%Y/%m/%d %H:%M').timetuple().tm_yday for x in values[:,0]]
+		# Eliminar muestras queno hayan sido recogidas correctamente a horas que no sean intervalos de 10 minutos
+		ps = ["..:.1", "..:.2", "..:.3", "..:.4", "..:.5", "..:.6", "..:.7", "..:.8", "..:.9"]
+		
+		for p in ps:
+			dataset = dataset[~dataset['time'].str.contains(p)]
+			dataset = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
 
-			dataset.insert(loc = 1, column = 'time', value = times)
+			print("read dataset with " + str(len(dataset.values)))
 
-			# Delete incorrectly sampled hours that don't match five minute intervals
-			dataset = dataset[dataset['time'].isin(self.list_hours)]
+		dataset = dataset.reset_index(drop = True) # Reset indexes, so they match the current row
 
-			print(dataset)
+		self.utils.print_array("Dataset with unwanted columns removed", dataset.head(15))
 
-			# Eliminar muestras cada 5' para que solo sean a y *0 minutos
-			if low_memory_mode == True:
-				p = "..:.5"
-				dataset = dataset[~dataset['time'].str.contains(p)]
-				dataset = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
+		text = "Reading dataset, data gathered every ten minutes."
 
-			dataset = dataset.reset_index(drop = True) # Reset indexes, so they match the current row
+		self.utils.append_tutorial(text, dataset.head(40))
 
-			size = int(len(dataset.index))
-
-			dataset = dataset.head(size)
-
-			print("Read dataset (" + str(dataset.shape[0]) + " lines and " + str(dataset.shape[1]) + " columns)")
-			self.utils.print_array("Dataset with unwanted columns removed", dataset.head(15))
-
-			text = "Reading dataset, data gathered every ten minutes."
-
-			self.utils.append_tutorial(text, dataset.head(40))
-
-		else:
-			print("Not reading dataset")
-
-		return dataset
+		# Save the DataFrame to a Pickle file
+		dataset.to_pickle('data/Bilbao.pkl')    #to save the dataframe, df to 123.pkl
 
 	# Gets a list of values and returns the list of stations
 	def get_list_of_stations(self, array):
 
 		if array is not None:
-
-			print("GOT ARRAY " + str(type(array)))
-			print(array)
-
 			array = np.asarray(array)
 
 			self.utils.save_array_txt('debug/utils/list_of_stations', list(np.unique(array)))
-			# self.utils.save_array_txt('debug/utils/list_of_stations', ["AMETZOLA"])
-
-			print(list(np.unique(array)))
 
 			return list(np.unique(array))
-			# return ["AMETZOLA"]
 
 		elif array is None:
 			return None
 
 	# Codificar las columnas seleccionadas con LabelEncoder
-	def encode_data(self, dataset):
+	def encode_data(self):
 
+		dataset = pd.read_pickle('data/Bilbao.pkl')
+		
 		self.utils.append_tutorial_title("Encoding Data")
 
 		self.utils.append_tutorial_text("Encode each column as integers")
@@ -391,8 +374,6 @@ class Data_mgmt:
 				print("Wrong file or file path")
 
 
-			
-
 		self.utils.save_array_txt("debug/supervised/FINAL", final_data)
 		np.save("debug/supervised/FINAL.npy", final_data)
 
@@ -466,6 +447,9 @@ class Data_mgmt:
 				if station_read.shape[0] > len_day:
 
 					no_missing_samples, missing_days = self.find_holes(station_read)
+
+					print("Missing samples " + str(no_missing_samples) + " DAYS " + str(missing_days))
+
 					filled_array = self.fill_holes(station_read, no_missing_samples)
 
 					self.utils.append_tutorial_text(" | " + station +  " | " + str(no_missing_samples) + " | " + str(missing_days) + " | ")
@@ -822,7 +806,7 @@ class Data_mgmt:
 
 		values = np.load("debug/supervised/FINAL.npy")
 
-		np.random.shuffle(values)
+#		np.random.shuffle(values)
 
 
 		if train_model == True:
