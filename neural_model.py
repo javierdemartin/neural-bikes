@@ -1,6 +1,7 @@
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, Dropout, Activation, TimeDistributed
+import datetime
 from keras.optimizers import SGD
 import pickle # Saving MinMaxScaler
 from utils import Utils
@@ -10,9 +11,14 @@ from numpy import concatenate
 import warnings
 warnings.filterwarnings(action='ignore', category=DeprecationWarning)
 from keras.utils.vis_utils import plot_model
+import pandas as pd
+from pandas import concat,DataFrame
+import pandas.core.frame # read_csv
 
 from keras.wrappers.scikit_learn import KerasClassifier, KerasRegressor
 
+import os
+from subprocess import check_output as qx
 
 train_model  = True
 len_day      = 144
@@ -117,11 +123,12 @@ class Neural_Model:
 
 				if train_model == True:
 
-					history = self.model.fit(self.train_x, self.train_y, batch_size=self.batch_size[0], epochs=self.epochs[0], validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = True) 
+					history = self.model.fit(self.train_x, self.train_y, batch_size=self.batch_size[0], epochs=self.epochs[0], validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = False) 
 					# history = self.model.fit(self.train_x, self.train_y, batch_size=300, epochs=self.epochs[0], validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = True) 
 					# history = self.model.fit(self.train_x, self.train_y, batch_size=30, epochs=self.epochs[0], validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = True) 
 					
 					self.model.save("model/" + str(self.epochs[0]) + "_" + str(self.batch_size[0]) + "/model.h5")  # creates a HDF5 file 'my_model.h5'
+					self.model.save("model/model.h5")  # creates a HDF5 file 'my_model.h5'
 				
 
 					print("\a Finished model training")
@@ -177,7 +184,6 @@ class Neural_Model:
 					predicted_test_set_i = predicted_test_set_i.reshape(predicted_test_set_i.shape[1],1)
 
 					inv_yhat = concatenate((self.test_xx[:,: self.test_xx.shape[1] - 1], predicted_test_set_i), axis=1)
-
 					inv_yhat = self.scaler.inverse_transform(inv_yhat)
 
 					station_name = str(self.station_encoder.inverse_transform([int(inv_yhat[0][2])])[0])
@@ -187,48 +193,62 @@ class Neural_Model:
 
 					self.p.two_plot(real_data[:,4].tolist(), list(map(int, inv_yhat[:,4].tolist())), "Time", "Free Bikes", "Prediction for " + station_name, self.plot_path + str(i), note, "Real", "Predicted")
 
-					# self.p.two_plot(
-					# 	real_data[:,4].tolist() +  list(map(int, inv_yhat[:,4].tolist())), 
-					# 	real_data[:,4].tolist() +  next_day[:,4].tolist(), 
-					# 	"Time", "Free Bikes", "Prediction for " + station_name, "plots/" + str(i) + "_WTF", note, "Real", "Predicted")
-
 				self.utils.append_tutorial_text("![Prediction Sample 1](plots/1.png)\n")
 				self.utils.append_tutorial_text("![Prediction Sample 2](plots/2.png)\n")
 				self.utils.append_tutorial_text("![Prediction Sample 3](plots/3.png)\n")
 				self.utils.append_tutorial_text("More prediction samples in [plots/](https://github.com/javierdemartin/neural-bikes/tree/master/plots).")
-
 
 				self.batch_size.pop(0)
 				self.epochs.pop(0)
 
 	def tomorrow(self):
 
+		# Copy the latest data
+		os.system("cp ../bicis/data/Bilbao.txt data/")
+
+		
+		date = datetime.datetime.today().strftime('%Y/%m/%d')
+
 		self.model = self.create_model()
-		self.model.load_weights("model/" + str(self.epochs[0]) + "_" + str(self.batch_size[0]) + "/model.h5")
-		print("Loaded model from disk")
+		self.model.load_weights("model/model.h5")
 
 		self.utils.check_and_create("plots/tomorrow")
 		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
 
+		f = os.popen("tail -n " + str(len(self.list_of_stations) * len_day* 2) + " data/Bilbao.txt")
+
+		out = f.read().splitlines()
+		f.close()
+
+		# Eliminarl os elementos que no sean del día anterior
+		for el in out:
+			if date in el:
+				out.remove(el)
+
+		# Ahora out solo tiene los datos de hoy
+		with open('tomorrow.txt', 'w') as f:
+			for item in out:
+				f.write("%s\n" % item)
+
+		out = pandas.read_csv('tomorrow.txt')
+		out.columns = ['datetime', 'weekday', 'id', 'station', 'free_docks', 'free_bikes'] # Insert correct column names
+
+		a = out[out['station'].isin(['AMETZOLA'])]['free_bikes'].values
+
+
 		for station in self.list_of_stations:
 
 			try:
+				
 				dataset = np.load('debug/tomorrow/' + str(station) + ".npy")
-				print("Loaded " + str(station) + " - " + str(dataset.shape))
+
+				a = out[out['station'].isin([station])]['free_bikes'].values
 
 				p = self.model.predict(dataset)
 
 				p = p.reshape((144, 1))
 				dataset = dataset.reshape((dataset.shape[1], dataset.shape[2]))
 				dataset = self.scaler.inverse_transform(dataset)
-				
-				print("PREDICTION " + str(p.shape))
-				print(p)
-
-				
-
-				print("DATASET " + str(dataset.shape))
-				print(dataset)
 
 				weekday = int(dataset[0][2])
 
@@ -237,84 +257,15 @@ class Neural_Model:
 				else:
 					weekday += 1
 
-				weekday = self.weekday_encoder.inverse_transform(weekday)
-
-				print("WDAY " + str(weekday))
-
+				weekday = self.weekday_encoder.inverse_transform([weekday])[0]
 
 				inv_yhat = concatenate((dataset[:,: dataset.shape[1] - 1], p), axis=1)
 
-				# print("INV_YHAT " + str(inv_yhat.shape))
-				# print(inv_yhat)
-
-
-				# p = self.scaler.inverse_transform(inv_yhat)
-				# print(p)
-
-				# columns=['datetime', 'time', 'weekday', 'station', 'free_bikes']
-
-				# weekday = ""
-
-				# if int(inv_yhat[:,2][0]) is 6:
-				# 	weekday = self.weekday_encoder.inverse_transform(int(0))
-				# else:
-				# 	weekday = self.weekday_encoder.inverse_transform(int(inv_yhat[:,2][0] + 1))
-
-				print(dataset[:,-1])
-
-
-				self.p.two_plot(dataset[:,-1], [0], "xlabel", "ylabel", str(station + " for " + weekday), "plots/tomorrow/" + station, text = None, line_1 = None, line_2 = None)
-
-
-
-				
-
+				self.p.two_plot(dataset[:,-1], a, "Tiempo", "Bicicletas", str(station + " for " + weekday), "plots/tomorrow/" + station, text = "", line_1 = "Prediction", line_2 = "Real Value")
 				
 			except (FileNotFoundError, IOError):
 				print("Wrong file or file path")
 
-	def multiple_runs(self):
-
-		p = Plotter()
-
-		# collect data across multiple repeats
-		train_loss = DataFrame()
-		val_loss = DataFrame()
-
-		train_acc = DataFrame()
-		val_acc = DataFrame()
-
-		pred = DataFrame()
-
-		title = "Multiple runs with " + str(self.epochs) + " epochs and batch size of " + str(self.batch_size)
-
-		for i in range(4):
-
-			print("\a")
-			self.model = self.create_model()
-
-			# fit model
-			history = self.model.fit(self.train_x, self.train_y, batch_size=30, epochs=self.epochs, validation_data=(self.validation_x, self.validation_y), verbose=2, shuffle = False)
-			history = self.model.fit(self.train_x, self.train_y, batch_size=300, epochs=self.epochs, validation_data=(self.validation_x, self.validation_y), verbose=2, shuffle = False)
-			self.model.save('model/model.h5')  # creates a HDF5 file 'my_model.h5'
-			# story history
-			train_loss[str(i)] = history.history['loss']
-			val_loss[str(i)] = history.history['val_loss']
-
-			train_acc[str(i)] = history.history['acc']
-			val_acc[str(i)] = history.history['val_acc']			
-
-			predicted = self.model.predict(self.test_x)[0]
-			predicted = [int(x) for x in predicted]
-
-			pred[str(i)] = predicted
-
-		# plot train and validation loss across multiple runs
-		self.p.two_plot(train_loss, val_loss, "xlabel", "ylabel", title + "_loss", "plots/", note)
-
-		self.p.two_plot(train_acc, val_acc, "xlabel", "ylabel", title + "_acc", "plots/", note)
-
-		self.p.two_plot(self.test_y, pred, "Time", "Average Bike Availability", title + "_availability", "plots/", note)
 
 	# Given the whole test set make multiple predictions to test the model
 	def predict_test_set(self):
@@ -322,12 +273,10 @@ class Neural_Model:
 		self.utils.check_and_create("plots/data/")
 		self.utils.check_and_create("plots/test_set_predictions/")
 
-		print("Original test shape " + str(self.test_x.shape))
+
 
 		average_error = np.zeros((len_day, len(self.test_x)))
 		mierda = np.zeros((len_day, len(self.test_x)))
-
-		print("DIMENSION AV " + str(len(self.test_x)))
 
 		for i in range(len(self.test_x)):
 
