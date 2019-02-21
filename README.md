@@ -102,42 +102,6 @@ columns used in the training set
 ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 ```
 
-ABANDO 4012
-AMETZOLA 3997
-ANSELMO CLAVE 5960
-ARANGOIT 189
-ARANGOITI 2986
-AREILTZA 4028
-ARRIAGA 3629
-ASKATASUNA 3080
-ASTILLERO 3842
-AYUNTAMIENTO 7034
-BLAS OTERO 5084
-BOLUETA 5816
-CORAZÓN MARIA 3218
-EGAÑA 8890
-EGUILLOR 6631
-EPALZA 3209
-ESKURTZE 3174
-ESTRADA CALEROS 7495
-ETXEBARRIA 5089
-GABRIEL ARESTI 2684
-HEROS 4818
-IBAIZABAL 5080
-INDAUTXU 4987
-KARMELO 5790
-LEIZAOLA 5098
-LEVANTE 10932
-MERCADO RIBERA 3164
-OLABEAGA 2146
-OTXARKOAGA 7334
-PLAZA ENCARNACIÓN 5827
-POLIDEPORTIVO ZORROZA 2304
-REKALDE 3205
-SABINO ARANA 5934
-SAN PEDRO 3775
-SARRIKO 4837
-TERMIBUS 11168
 Encoded dataset
 
 ```
@@ -171,147 +135,42 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 | Estación | Missing Samples | Missing Whole Days
 | --- | --- | --- |
- | ABANDO | 555 | 0 | 
-
-
-
- | AMETZOLA | 136 | 0 | 
-
-
-
- | ANSELMO CLAVE | 189 | 0 | 
-
-
-
- | ARANGOIT | 2 | 0 | 
-
-
-
- | ARANGOITI | 48 | 0 | 
-
-
-
- | AREILTZA | 249 | 0 | 
-
-
-
- | ARRIAGA | 216 | 0 | 
-
-
-
- | ASKATASUNA | 189 | 0 | 
-
-
-
- | ASTILLERO | 147 | 0 | 
-
-
-
- | AYUNTAMIENTO | 267 | 0 | 
-
-
-
- | BLAS OTERO | 201 | 0 | 
-
-
-
- | BOLUETA | 189 | 0 | 
-
-
-
- | CORAZÓN MARIA | 195 | 0 | 
-
-
-
- | EGAÑA | 283 | 0 | 
-
-
-
- | EGUILLOR | 238 | 0 | 
-
-
-
- | EPALZA | 204 | 0 | 
-
-
-
- | ESKURTZE | 50 | 0 | 
-
-
-
- | ESTRADA CALEROS | 238 | 0 | 
-
-
-
- | ETXEBARRIA | 196 | 0 | 
-
-
-
- | GABRIEL ARESTI | 153 | 0 | 
-
-
-
- | HEROS | 179 | 0 | 
-
-
-
- | IBAIZABAL | 205 | 0 | 
-
-
-
- | INDAUTXU | 154 | 0 | 
-
-
-
- | KARMELO | 215 | 0 | 
-
-
-
- | LEIZAOLA | 187 | 0 | 
-
-
-
- | LEVANTE | 257 | 0 | 
-
-
-
- | MERCADO RIBERA | 61 | 0 | 
-
-
-
- | OLABEAGA | 36 | 0 | 
-
-
-
- | OTXARKOAGA | 255 | 0 | 
-
-
-
- | PLAZA ENCARNACIÓN | 178 | 0 | 
-
-
-
- | POLIDEPORTIVO ZORROZA | 201 | 0 | 
-
-
-
- | REKALDE | 208 | 0 | 
-
-
-
- | SABINO ARANA | 215 | 0 | 
-
-
-
- | SAN PEDRO | 214 | 0 | 
-
-
-
- | SARRIKO | 160 | 0 | 
-
-
-
- | TERMIBUS | 309 | 0 | 
+ | ABANDO | 585 | 0 | 
+ | AMETZOLA | 166 | 0 | 
+ | ANSELMO CLAVE | 219 | 0 | 
+ | ARANGOIT | 28 | 0 | 
+ | ARANGOITI | 189 | 0 | 
+ | AREILTZA | 279 | 0 | 
+ | ARRIAGA | 246 | 0 | 
+ | ASKATASUNA | 219 | 0 | 
+ | ASTILLERO | 177 | 0 | 
+ | AYUNTAMIENTO | 297 | 0 | 
+ | BLAS OTERO | 231 | 0 | 
+ | BOLUETA | 219 | 0 | 
+ | CORAZÓN MARIA | 225 | 0 | 
+ | EGAÑA | 313 | 0 | 
+ | EGUILLOR | 268 | 0 | 
+ | EPALZA | 234 | 0 | 
+ | ESKURTZE | 80 | 0 | 
+ | ESTRADA CALEROS | 268 | 0 | 
+ | ETXEBARRIA | 226 | 0 | 
+ | GABRIEL ARESTI | 183 | 0 | 
+ | HEROS | 209 | 0 | 
+ | IBAIZABAL | 235 | 0 | 
+ | INDAUTXU | 184 | 0 | 
+ | KARMELO | 245 | 0 | 
+ | LEIZAOLA | 217 | 0 | 
+ | LEVANTE | 287 | 0 | 
+ | MERCADO RIBERA | 91 | 0 | 
+ | OLABEAGA | 66 | 0 | 
+ | OTXARKOAGA | 285 | 0 | 
+ | PLAZA ENCARNACIÓN | 208 | 0 | 
+ | POLIDEPORTIVO ZORROZA | 231 | 0 | 
+ | REKALDE | 238 | 0 | 
+ | SABINO ARANA | 245 | 0 | 
+ | SAN PEDRO | 244 | 0 | 
+ | SARRIKO | 190 | 0 | 
+ | TERMIBUS | 339 | 0 | 
 
 
 
@@ -320,11 +179,11 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 | Values | datetime | time | weekday | station | free_bikes |
 | --- | --- | --- | --- | --- | --- |
-| Minimum Values | -0.0027472527472527475 | 0.0 | 0.0 | 0.0 | 0.0 | 
+| Minimum Values | -0.0027472527472527475 | 0.006944444444444444 | 0.0 | 0.0 | 0.0 | 
 | Data Max | 365.0 | 143.0 | 6.0 | 35.0 | 42.0 | 
-| Data Min | 1.0 | 0.0 | 0.0 | 0.0 | 0.0 | 
-| Data Range | 364.0 | 143.0 | 6.0 | 35.0 | 42.0 | 
-| Scale | 0.0027472527472527475 | 0.006993006993006993 | 0.16666666666666666 | 0.02857142857142857 | 0.023809523809523808 | 
+| Data Min | 1.0 | -1.0 | 0.0 | 0.0 | 0.0 | 
+| Data Range | 364.0 | 144.0 | 6.0 | 35.0 | 42.0 | 
+| Scale | 0.0027472527472527475 | 0.006944444444444444 | 0.16666666666666666 | 0.02857142857142857 | 0.023809523809523808 | 
 
 
 ## Supervised Learning
@@ -332,53 +191,54 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 
 | Station | Days | 
 | --- | --- |
-| ABANDO | 29 | 
-| AMETZOLA | 26 | 
-| ANSELMO CLAVE | 40 | 
-| ARANGOIT | 40 | 
-| ARANGOITI | 19 | 
-| AREILTZA | 27 | 
-| ARRIAGA | 24 | 
-| ASKATASUNA | 20 | 
-| ASTILLERO | 25 | 
-| AYUNTAMIENTO | 48 | 
-| BLAS OTERO | 34 | 
-| BOLUETA | 39 | 
-| CORAZÓN MARIA | 21 | 
-| EGAÑA | 61 | 
-| EGUILLOR | 45 | 
-| EPALZA | 21 | 
-| ESKURTZE | 20 | 
-| ESTRADA CALEROS | 51 | 
-| ETXEBARRIA | 34 | 
-| GABRIEL ARESTI | 17 | 
-| HEROS | 32 | 
-| IBAIZABAL | 34 | 
-| INDAUTXU | 33 | 
-| KARMELO | 39 | 
-| LEIZAOLA | 34 | 
-| LEVANTE | 75 | 
-| MERCADO RIBERA | 20 | 
-| OLABEAGA | 13 | 
-| OTXARKOAGA | 50 | 
-| PLAZA ENCARNACIÓN | 39 | 
-| POLIDEPORTIVO ZORROZA | 15 | 
-| REKALDE | 21 | 
-| SABINO ARANA | 40 | 
-| SAN PEDRO | 25 | 
-| SARRIKO | 32 | 
-| TERMIBUS | 77 | 
+| ABANDO | 33 | 
+| AMETZOLA | 30 | 
+| ANSELMO CLAVE | 44 | 
+| ARANGOIT | 1 | 
+| ARANGOITI | 22 | 
+| AREILTZA | 31 | 
+| ARRIAGA | 28 | 
+| ASKATASUNA | 24 | 
+| ASTILLERO | 29 | 
+| AYUNTAMIENTO | 52 | 
+| BLAS OTERO | 38 | 
+| BOLUETA | 43 | 
+| CORAZÓN MARIA | 25 | 
+| EGAÑA | 65 | 
+| EGUILLOR | 49 | 
+| EPALZA | 25 | 
+| ESKURTZE | 24 | 
+| ESTRADA CALEROS | 55 | 
+| ETXEBARRIA | 38 | 
+| GABRIEL ARESTI | 21 | 
+| HEROS | 36 | 
+| IBAIZABAL | 38 | 
+| INDAUTXU | 37 | 
+| KARMELO | 43 | 
+| LEIZAOLA | 38 | 
+| LEVANTE | 79 | 
+| MERCADO RIBERA | 24 | 
+| OLABEAGA | 17 | 
+| OTXARKOAGA | 54 | 
+| PLAZA ENCARNACIÓN | 43 | 
+| POLIDEPORTIVO ZORROZA | 19 | 
+| REKALDE | 25 | 
+| SABINO ARANA | 44 | 
+| SAN PEDRO | 29 | 
+| SARRIKO | 36 | 
+| TERMIBUS | 81 | 
 
 
 ## Split datasets
 
 
+Dividing whole dataset into training 80.0%, validation 15.0% & test 5.0%
 
 | Dataset | Percentage | Samples |
 | --- | --- | --- |
-| Training | 40.0 | 488 | 
-| Validation | 50.0 | 610 | 
-| Test | 10.0 | 122 | 
+| Training | 80.0 | 1056 | 
+| Validation | 15.0 | 198 | 
+| Test | 5.0 | 66 | 
 
 
 ## Neural Network Training
@@ -387,7 +247,7 @@ Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no 
 ![Model Shape](model/model.png)
 
 * [20] epochs
-* [2] batch size
+* [100] batch size
 
 ![Training Acc](plots/training_acc.png)
 
