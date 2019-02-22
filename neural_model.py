@@ -22,7 +22,7 @@ from subprocess import check_output as qx
 
 train_model  = True
 len_day      = 144
-lstm_neurons = 40
+lstm_neurons = 50
 
 learning_rate = 0.1	
 momentum = 0.8
@@ -30,8 +30,6 @@ momentum = 0.8
 class Neural_Model:
 
 	def __init__(self):
-
-		print("Inited NeuralModel class")
 
 		self.utils = Utils()
 		self.p     = Plotter()
@@ -50,7 +48,6 @@ class Neural_Model:
 		self.validation_y = np.load('data/validation_y.npy')
 
 		
-
 		print("Array shapes")
 		print("Train X " + str(self.train_x.shape))
 		print("Train Y " + str(self.train_y.shape))
@@ -69,8 +66,6 @@ class Neural_Model:
 		self.utils.check_and_create(self.plot_path)
 		self.utils.check_and_create("model/" + str(self.epochs[0]) + "_" + str(self.batch_size[0]))
 
-		print("READIN")
-		print(self.batch_size)
 
 		self.hour_encoder.classes_, self.weekday_encoder.classes_, self.station_encoder.classes_ = self.load_encoders()
 		self.model = self.create_model()
@@ -82,7 +77,6 @@ class Neural_Model:
 		self.utils.append_tutorial_text("* " + str(self.batch_size) + " batch size\n")
 
 	def load_encoders(self):
-		print("> Loaded encoders ")
 		return np.load('debug/encoders/hour_encoder.npy'), np.load('debug/encoders/weekday_encoder.npy'), np.load('debug/encoders/station_encoder.npy')
 		
 	def create_model(self):		
@@ -93,16 +87,11 @@ class Neural_Model:
 		# model.add(LSTM(lstm_neurons, return_sequences=True)) # input_shape=(self.train_x.shape[1], self.train_x.shape[2]), stateful=False))
 		model.add(LSTM(lstm_neurons, input_shape=(self.train_x.shape[1], self.train_x.shape[2]), return_sequences = True))
 		model.add(Dropout(0.1))
-		# model.add(LSTM(lstm_neurons, return_sequences = True))
-		# model.add(Dropout(0.1))
-		# model.add(LSTM(lstm_neurons, return_sequences = True))
-		# model.add(Dropout(0.1))
 		model.add(LSTM(lstm_neurons))
 		model.add(Dropout(0.1))
 		model.add(Dense(len_day))
 		
 		# sgd = SGD(lr=learning_rate, momentum=momentum, decay=decay_rate, nesterov=False)
-
 
 		model.compile(loss='mae', optimizer='adam', metrics = ['acc', 'mape', 'mse'])
 
@@ -118,25 +107,18 @@ class Neural_Model:
 			for time in range(len(self.batch_size)):				
 
 				note = "Model trained with " + str(self.epochs[0]) + " epochs and batch size of " + str(self.batch_size[0])
-				# self.utils.check_and_create(plot_path)
 				
 
 				if train_model == True:
 
 					history = self.model.fit(self.train_x, self.train_y, batch_size=self.batch_size[0], epochs=self.epochs[0], validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = False) 
-					# history = self.model.fit(self.train_x, self.train_y, batch_size=300, epochs=self.epochs[0], validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = True) 
-					# history = self.model.fit(self.train_x, self.train_y, batch_size=30, epochs=self.epochs[0], validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = True) 
 					
 					self.model.save("model/" + str(self.epochs[0]) + "_" + str(self.batch_size[0]) + "/model.h5")  # creates a HDF5 file 'my_model.h5'
 					self.model.save("model/model.h5")  # creates a HDF5 file 'my_model.h5'
 				
-
-					print("\a Finished model training")
-
 					title_plot = "Training & Validation Loss"
 					title_path = "training_loss"
 					
-
 					self.p.two_plot(history.history['loss'], history.history['val_loss'], "Epoch", "Loss", title_plot, self.plot_path + title_path, note, "Loss", "Validation Loss")
 
 					title_plot = "Training & Validation Accuracy"
@@ -192,6 +174,7 @@ class Neural_Model:
 					next_day = self.scaler.inverse_transform(next_day)
 
 					self.p.two_plot(real_data[:,4].tolist(), list(map(int, inv_yhat[:,4].tolist())), "Time", "Free Bikes", "Prediction for " + station_name, self.plot_path + str(i), note, "Real", "Predicted")
+					self.p.two_plot(real_data[:,4].tolist(), list(map(int, inv_yhat[:,4].tolist())), "Time", "Free Bikes", "Prediction for " + station_name, "plots/" + str(i), note, "Real", "Predicted")
 
 				self.utils.append_tutorial_text("![Prediction Sample 1](plots/1.png)\n")
 				self.utils.append_tutorial_text("![Prediction Sample 2](plots/2.png)\n")
@@ -203,11 +186,15 @@ class Neural_Model:
 
 	def tomorrow(self):
 
-		# Copy the latest data
+		# Copy the latest data from the text file
 		os.system("cp ../bicis/data/Bilbao.txt data/")
-
-		
+	
 		date = datetime.datetime.today().strftime('%Y/%m/%d')
+
+		from datetime import timedelta
+
+		yesterday = datetime.datetime.today() - datetime.timedelta(1)
+		yesterday = yesterday.strftime('%Y/%m/%d')
 
 		self.model = self.create_model()
 		self.model.load_weights("model/model.h5")
@@ -215,15 +202,12 @@ class Neural_Model:
 		self.utils.check_and_create("plots/tomorrow")
 		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
 
+
+
 		f = os.popen("tail -n " + str(len(self.list_of_stations) * len_day* 2) + " data/Bilbao.txt")
 
 		out = f.read().splitlines()
 		f.close()
-
-		# Eliminarl os elementos que no sean del día anterior
-		for el in out:
-			if date in el:
-				out.remove(el)
 
 		# Ahora out solo tiene los datos de hoy
 		with open('tomorrow.txt', 'w') as f:
@@ -233,35 +217,39 @@ class Neural_Model:
 		out = pandas.read_csv('tomorrow.txt')
 		out.columns = ['datetime', 'weekday', 'id', 'station', 'free_docks', 'free_bikes'] # Insert correct column names
 
-		a = out[out['station'].isin(['AMETZOLA'])]['free_bikes'].values
-
+		out = out[out.datetime.str.contains(yesterday)]
 
 		for station in self.list_of_stations:
 
 			try:
-				
-				dataset = np.load('debug/tomorrow/' + str(station) + ".npy")
+
+				dataset = np.load('debug/yesterday/' + str(station) + ".npy")
+				today_data = np.load('debug/today/' + str(station) + ".npy")
 
 				a = out[out['station'].isin([station])]['free_bikes'].values
 
-				p = self.model.predict(dataset)
+				if a.shape[0] > 0:
+					
+					p = self.model.predict(dataset)
 
-				p = p.reshape((144, 1))
-				dataset = dataset.reshape((dataset.shape[1], dataset.shape[2]))
-				dataset = self.scaler.inverse_transform(dataset)
+					p = p.reshape((144, 1))
+					dataset = dataset.reshape((dataset.shape[1], dataset.shape[2]))
+					dataset = self.scaler.inverse_transform(dataset)
 
-				weekday = int(dataset[0][2])
+					weekday = int(dataset[0][2])
 
-				if weekday is 6:
-					weekday = 0
-				else:
-					weekday += 1
+					if weekday is 6: weekday = 0
+					else: weekday += 1
+						
 
-				weekday = self.weekday_encoder.inverse_transform([weekday])[0]
+					weekday = self.weekday_encoder.inverse_transform([weekday])[0]
 
-				inv_yhat = concatenate((dataset[:,: dataset.shape[1] - 1], p), axis=1)
+					print("@@@@@@@@@@@@@@@@@@@@ " + weekday)
 
-				self.p.two_plot(dataset[:,-1], a, "Tiempo", "Bicicletas", str(station + " for " + weekday), "plots/tomorrow/" + station, text = "", line_1 = "Prediction", line_2 = "Real Value")
+
+					inv_yhat = concatenate((dataset[:,: dataset.shape[1] - 1], p), axis=1)
+
+					self.p.two_plot(dataset[:,-1], today_data, "Tiempo", "Bicicletas", str("Prediction for " + station + " for today (" + weekday + ")"), "plots/tomorrow/" + station, text = "", line_1 = "Prediction", line_2 = "Real Value")
 				
 			except (FileNotFoundError, IOError):
 				print("Wrong file or file path")

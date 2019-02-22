@@ -14,6 +14,7 @@ from pandas import concat,DataFrame
 import itertools
 import numpy as np
 import os
+from datetime import timedelta
 
 # Global Configuration Variables
 # ------------------------------------------------------------------
@@ -46,8 +47,13 @@ class Data_mgmt:
 
 	def __init__(self):
 		
+		os.system("cp ../bicis/data/Bilbao.txt data/")
+
+		self.plotter = Plotter()
 		self.utils = Utils()
 		self.utils.init_tutorial()
+
+		self.columns=['datetime', 'time', 'weekday', 'station', 'free_bikes']
 
 		# os.system("rm -rf debug/") # Delete previous debug records
 		self.utils.check_and_create("debug/encoders")
@@ -60,33 +66,24 @@ class Data_mgmt:
 		self.utils.check_and_create("debug/utils/")
 		self.utils.check_and_create("model/")
 		self.utils.check_and_create("debug/filled")
-
-		os.system("rm TUTORIAL.md")
-		os.system("touch TUTORIAL.md")
-
-		self.plotter = Plotter()
+		self.utils.check_and_create("debug/yesterday")
+		self.utils.check_and_create("debug/today")
 		
 		# Leer los intervalos de 10 en 10'
-		if low_memory_mode == True:
-			p = "..:.5"
-			self.list_hours = self.utils.read_csv_as_list('list_hours.txt')
+		p = "..:.5"
+		self.list_hours = self.utils.read_csv_as_list('list_hours.txt')
 
-			a = pd.DataFrame(self.list_hours)
-			a = a[~a[0].str.contains(p)]
+		a = pd.DataFrame(self.list_hours)
+		a = a[~a[0].str.contains(p)]
+		self.list_hours = [i[0] for i in a.values.tolist()]
 
+	def read_dataset(self, path, save_path):
 
-			self.list_hours = [i[0] for i in a.values.tolist()]
-
-		# Leer los intervalos de 5 en 5', en mi ordenador no se puede eso pero bueno, para el servidor
-		else:
-			self.list_hours = self.utils.read_csv_as_list('list_hours.txt')
-
-	def read_dataset(self):
 
 		self.utils.append_tutorial_title("Reading Dataset")
 
 		# Read dataset from the CSV file
-		dataset = pandas.read_csv('data/Bilbao.txt')
+		dataset = pandas.read_csv(path)
 		dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_docks', 'free_bikes'] # Insert correct column names
 		
 		# Remove ID of the sation and free docks
@@ -97,7 +94,7 @@ class Data_mgmt:
 		# Separar la columna de tiempos en 
 		times = [x.split(" ")[1] for x in dataset.values[:,0]]
 
-		dataset['datetime'] = [datetime.datetime.strptime(x, '%Y/%m/%d %H:%M').timetuple().tm_yday for x in dataset.values[:,0]]
+		dataset['datetime'] = [datetime.datetime.today().strptime(x, '%Y/%m/%d %H:%M').timetuple().tm_yday for x in dataset.values[:,0]]
 
 		dataset.insert(loc = 1, column = 'time', value = times)
 
@@ -111,21 +108,32 @@ class Data_mgmt:
 			dataset = dataset[~dataset['time'].str.contains(p)]
 			dataset = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
 
-			print("read dataset with " + str(len(dataset.values)))
-
 		dataset = dataset.reset_index(drop = True) # Reset indexes, so they match the current row
-
-		self.utils.print_array("Dataset with unwanted columns removed", dataset.head(15))
 
 		text = "Reading dataset, data gathered every ten minutes."
 
 		self.utils.append_tutorial(text, dataset.head(40))
 
 		# Save the DataFrame to a Pickle file
-		dataset.to_pickle('data/Bilbao.pkl')    #to save the dataframe, df to 123.pkl
+		dataset.to_pickle(save_path)    #to save the dataframe, df to 123.pkl
 
 	# Gets a list of values and returns the list of stations
 	def get_list_of_stations(self, array):
+
+		"""
+		Iterate through all the available given data and saves a list for all the available stations.
+
+		Parameters
+		----------
+		array : Numpy.ndarray
+			
+
+		Returns
+		-------
+		array: Numpy.ndarray 
+			Array of all the available stations
+
+		"""
 
 		if array is not None:
 			array = np.asarray(array)
@@ -138,73 +146,84 @@ class Data_mgmt:
 			return None
 
 	# Codificar las columnas seleccionadas con LabelEncoder
-	def encode_data(self):
+	def encode_data(self, read_path, save_path, append_tutorial = False):
 
-		dataset = pd.read_pickle('data/Bilbao.pkl')
-		
-		self.utils.append_tutorial_title("Encoding Data")
+		"""
+		Iterates through all the stations from debug/encoded_data and counts the missing samples 
 
-		self.utils.append_tutorial_text("Encode each column as integers")
+		Parameters
+		----------
+		array : Numpy.ndarray
+			
 
-		if train_model == True:
+		Returns
+		-------
+		no_missing_samples: Int
+			Number of missing samples in the 
+		missing_days: Int
 
-			print("GOT LIST O FSTATIONS")
-			print(self.list_of_stations)
+		"""
 
+		dataset = pd.read_pickle(read_path)
+
+		# hour_encoder.fit(self.list_hours)
+		# station_encoder.classes_ = self.list_of_stations
+
+		# weekday_encoder.classes_ = weekdays
+
+		if append_tutorial is True:
+
+			self.utils.append_tutorial_title("Encoding Data")
+			self.utils.append_tutorial_text("Encode each column as integers")
 			self.utils.append_tutorial("Got list of " + str(len(self.list_of_stations)) + " stations before encoding", self.list_of_stations)
 			self.utils.append_tutorial_title("Creating Label Encoders and then encoding the previously read dataset")
 
-			hour_encoder.fit(self.list_hours)
-			# weekday_encoder.fit(weekdays)
-			station_encoder.classes_ = self.list_of_stations # station_encoder.fit(list_of_stations)
+			self.utils.append_tutorial("Hour Encoder (" + str(len(hour_encoder.classes_)) + " values)", hour_encoder.classes_)
+			self.utils.append_tutorial("Weekday Encoder (" + str(len(weekday_encoder.classes_)) + " values)", weekday_encoder.classes_)
+			self.utils.append_tutorial("Station Encoder (" + str(len(station_encoder.classes_)) + " values)", station_encoder.classes_)
 
-			#TODO: Debugging, only doing it for one station	
+		# Save as a numpy array
+		np.save('debug/encoders/hour_encoder.npy', hour_encoder.classes_)
+		np.save('debug/encoders/weekday_encoder.npy', weekday_encoder.classes_)
+		np.save('debug/encoders/station_encoder.npy', station_encoder.classes_)
 
-			weekday_encoder.classes_ = weekdays
+		# Encode the columns represented by a String with an integer with LabelEncoder()
 
-			self.utils.append_tutorial("Hour Encoder", hour_encoder.classes_)
-			self.utils.append_tutorial("Weekday Encoder", weekday_encoder.classes_)
-			self.utils.append_tutorial("Station Encoder", station_encoder.classes_)
+		values = self.encoder_helper(dataset)
 
-			# Save as readable text to check
-			self.utils.save_array_txt("debug/encoders/hour_encoder", hour_encoder)       
-			self.utils.save_array_txt("debug/encoders/weekday_encoder", weekday_encoder)
-			self.utils.save_array_txt("debug/encoders/station_encoder", station_encoder)
+		dataset = pd.DataFrame(data=values, columns=self.columns)
 
-			# Save as a numpy array
-			np.save('debug/encoders/hour_encoder.npy', hour_encoder.classes_)
-			np.save('debug/encoders/weekday_encoder.npy', weekday_encoder.classes_)
-			np.save('debug/encoders/station_encoder.npy', station_encoder.classes_)
+		self.utils.append_tutorial("columns used in the training set", self.columns)
 
-			values = dataset.values		
+		# Save encoded data for each station to an independent file as a .npy file
+		for station in self.list_of_stations:
 
-			values[:,1] = hour_encoder.transform(values[:,1])     # Encode HOUR as an integer value
-			values[:,2] = weekday_encoder.transform(values[:,2])  # Encode WEEKDAY as an integer value
-			values[:,3] = station_encoder.transform(values[:,3])  # Encode STATION as an integer value
+			file_name = save_path + station + ".npy"
 
-			columns=['datetime', 'time', 'weekday', 'station', 'free_bikes']
+			station_encoded_number = station_encoder.transform([station])[0]
 
-			dataset = pd.DataFrame(data=values, columns=columns)
+			np.save(file_name, dataset[dataset['station'].isin([station_encoded_number])].reset_index(drop = True).values)
 
 
-			self.utils.append_tutorial("columns used in the training set", columns)
+		self.utils.append_tutorial("Encoded dataset", dataset.head(20))
 
-			# Save encoded data for each station to an independent file as a .npy file
-			for st in self.list_of_stations:
+	def encoder_helper(self, dataset):
 
-				xxx = station_encoder.transform([st])[0]
+		hour_encoder.fit(self.list_hours)
+		station_encoder.classes_ = self.list_of_stations
 
-				file_name = "debug/encoded_data/" + st + ".npy"
+		weekday_encoder.classes_ = weekdays
 
-				np.save(file_name, dataset[dataset['station'].isin([xxx])].reset_index(drop = True).values)
+		# Encode the columns represented by a String with an integer with LabelEncoder()
+		values = dataset.values		
 
-			self.utils.print_array("Encoded dataset", dataset.head(15))
-			self.utils.append_tutorial("Encoded dataset", dataset.head(50))
+		values[:,1] = hour_encoder.transform(values[:,1])     # Encode HOUR as an integer value
+		values[:,2] = weekday_encoder.transform(values[:,2])  # Encode WEEKDAY as an integer value
+		values[:,3] = station_encoder.transform(values[:,3])  # Encode STATION as an integer value
 
-			return dataset, self.list_of_stations
+		return values
 
-		elif train_model == False:
-			return None, None
+
 
 	def stats_for_station(self):
 
@@ -220,10 +239,6 @@ class Data_mgmt:
 			for station in self.list_of_stations:
 
 				station_read = np.load("debug/encoded_data/" + station + ".npy")
-
-				print("Read station " + station)
-				# print(station_read)
-
 				station_read = pd.DataFrame(station_read, columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes'])
 
 				averaged_data = []
@@ -247,44 +262,15 @@ class Data_mgmt:
 		print("> Loaded encoders ")
 		return np.load('debug/encoders/hour_encoder.npy'), np.load('debug/encoders/weekday_encoder.npy'), np.load('debug/encoders/station_encoder.npy')
 
-	def prepare_tomorrow(self):
-
-		self.utils.check_and_create("debug/tomorrow")
-		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
-
-		we = LabelEncoder()
-
-		he, we.classes_, se = self.load_encoders()
-
-		scaler = MinMaxScaler()
-		scaler = pickle.load(open("MinMaxScaler.sav", 'rb'))
-
-		print("SCALER " + str(scaler.scale_))
-		print("SCALER " + str(scaler.data_max_))
-
-		for station in self.list_of_stations:
-
-			try:
-
-				dataset = np.load('debug/scaled/' + str(station) + ".npy")[-144:]
-				dataset = dataset.reshape(1,144,5)
-
-				print("---------------------------- " + str(dataset.shape))
-
-				print(dataset)
-
-				np.save("debug/tomorrow/" + station + '.npy', dataset)
-				
-				
-			except (FileNotFoundError, IOError):
-				print("Wrong file or file path")
-
+	
 
 
 	# Calls `series_to_supervised` and then returns a list of arrays, in each one are the values for each station
 	def supervised_learning(self):
 
 		self.utils.append_tutorial_title("Supervised Learning")
+		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+		self.list_of_stations = ["AMETZOLA"]
 
 		columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 
@@ -348,11 +334,13 @@ class Data_mgmt:
 			supervised = supervised.drop(supervised.index[rows_to_delete])
 			supervised = supervised.reset_index(drop = True)
 
+			print("-----------------------------------")
+			print(supervised)
+
 			self.utils.append_tutorial_text("| " + station + " | " + str(supervised.shape[0]) + " | ")
 
 			self.utils.save_array_txt("debug/supervised/" + station, supervised.values)
 			np.save("debug/supervised/" + station + '.npy', supervised.values)
-			print("SAVED TO " + "debug/supervised/" + station + '.npy')
 
 			if print_debug: self.utils.print_array("Deleted rows from " + station + " after framing to a supervised learning problem", supervised)
 
@@ -362,8 +350,6 @@ class Data_mgmt:
 
 		# Hacerlo con todas las estaciones
 		for i in range(1,len(self.list_of_stations)):
-
-			print("Series to supervised for " + self.list_of_stations[i])
 
 			try:
 				data_read = np.load("debug/supervised/" + self.list_of_stations[i] + ".npy")
@@ -419,138 +405,75 @@ class Data_mgmt:
 		if dropnan:
 			agg.dropna(inplace=True)
 
-		# if print_debug: self.utils.print_array("Reframed dataset after converting series to supervised", agg.head())
+		if print_debug: self.utils.print_array("Reframed dataset after converting series to supervised", agg.head())
 
 		return agg
 
 	# Iterates through every station file looking for holes
 	def iterate(self):
+		"""
+		Fills holes
 
+		Iterates through all the stations from debug/encoded_data and fills in the gaps caused by the server not collecting data correctly.
+
+		Parameters
+		----------
+		arg1 : int
+			Description of arg1
+		arg2 : str
+			Description of arg2
+
+		Returns
+		-------
+		int
+			Des cription of return value
+
+		"""
 		self.utils.append_tutorial_title("Finding holes in dataset")
 		self.utils.append_tutorial_text("Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no funcione correctamente y se queden huecos, arreglarlo inventando datos en esos huecos.\n")
+		self.utils.append_tutorial_text("| Estación | Missing Samples | Missing Whole Days")
+		self.utils.append_tutorial_text("| --- | --- | --- |")
 
-		if train_model == True:
+		for station in self.list_of_stations:
 
-			list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+			station_read = np.load("debug/encoded_data/" + station + ".npy")
 
-			self.utils.append_tutorial_text("| Estación | Missing Samples | Missing Whole Days")
-			self.utils.append_tutorial_text("| --- | --- | --- |")
+			# Problema cuadno aparece una estación nueva y se entrena el modelo con menos de un día de datos, no iterar si es nueva
+			if station_read.shape[0] > len_day:
 
+				no_missing_samples, missing_days = self.find_holes(station_read)
 
-			for station in list_of_stations:
+				filled_array = self.fill_holes(station_read, no_missing_samples)
 
-				station_read = np.load("debug/encoded_data/" + station + ".npy")
+				self.utils.append_tutorial_text(" | " + station +  " | " + str(no_missing_samples) + " | " + str(missing_days) + " | ")
 
-				print("Iterating through " + str(station) + " " + str(station_read.shape))
+				to_del = []
+				i = 0
 
-				# Problema cuadno aparece una estación nueva y se entrena el modelo con menos de un día de datos, no iterar si es nueva
-				if station_read.shape[0] > len_day:
+				self.utils.save_array_txt("debug/filled/" + "CABRON", filled_array)
 
-					no_missing_samples, missing_days = self.find_holes(station_read)
+				# Delete rows that are zerossss
+				for r in filled_array:
+					if (r == np.array([0.0,0.0,0.0,0.0,0.0])).all() == True:
+						to_del.append(i)
 
-					print("Missing samples " + str(no_missing_samples) + " DAYS " + str(missing_days))
+					i += 1
 
-					filled_array = self.fill_holes(station_read, no_missing_samples)
+				filled_array = np.delete(filled_array,to_del,0)
 
-					self.utils.append_tutorial_text(" | " + station +  " | " + str(no_missing_samples) + " | " + str(missing_days) + " | ")
+				# Borrar para que empiecen en dia completo las muestras
+				filled_array = np.delete(filled_array, (range(len_day - int(filled_array[0][1]))), axis=0)
+				# Borrar las muestras finales que hacen que el día no esté completo
+				filled_array = filled_array[:- (int(filled_array[filled_array.shape[0]-1][1])+1) ,:]
 
-					# filled_array = filled_array[np.all(filled_array != 0, axis=1)]
+				self.utils.save_array_txt("debug/filled/" + station + "_filled", filled_array)
 
-					to_del = []
-					i = 0
+				np.save('debug/filled/' + station + '_filled.npy', filled_array)				
 
-					# Delete rows that are zerossss
-					for r in filled_array:
-						if (r == np.array([0.0,0.0,0.0,0.0,0.0])).all() == True:
-							print("DELETO")
-							print(r)
-							to_del.append(i)
+				if enable_scale is False: np.save('debug/scaled/' + str(station) + ".npy", filled_array)
 
-						i += 1
+		self.utils.append_tutorial_text("\n\n")
 
-					filled_array = np.delete(filled_array,to_del,0)
-
-					# Borrar para que empiecen en dia completo las muestras
-					filled_array = np.delete(filled_array, (range(len_day - int(filled_array[0][1]))), axis=0)
-					# Borrar las muestras finales que hacen que el día no esté completo
-					filled_array = filled_array[:- (int(filled_array[filled_array.shape[0]-1][1])+1) ,:]
-
-					self.utils.save_array_txt("debug/filled/" + station + "_filled", filled_array)
-
-					np.save('debug/filled/' + station + '_filled.npy', filled_array)				
-
-				else: 
-					list_of_stations.remove(station)
-					self.utils.save_array_txt('debug/utils/list_of_stations', list_of_stations)
-
-			self.utils.append_tutorial_text("\n\n")
-
-	def find_holes(self, array):
-
-		# print("Find holes in " + str(array.shape))
-		# print("##################################################################")
-
-		# Detect and count holes
-		# ------------------------------------------------------------------------------------------
-		current_row = array[0]
-
-		no_missing_samples = 0
-		missing_days = 0
-
-		
-
-		# Iterar por todas las muestras del array leido
-		for i in range(1,array.shape[0]):
-
-			# Mismo día
-			if current_row[0] == array[i][0]:
-				if (current_row[1]) != (array[i][1]-1):
-
-					diff = array[i][1] - current_row[1] - 1
-
-					if diff > 0:
-
-						no_missing_samples += diff
-
-					# Negative difference, probably the time of the server was changed, need to delete some samples
-					else:
-
-						no_missing_samples -= diff # Actualizar las muestras a restar
-
-			# Días diferentes
-			elif current_row[0] == (array[i][0] - 1):
-
-				# Cambio de dia correcto, se pasa de las 23:55 a las 00:00
-				if current_row[1] == (len_day - 1) and array[i][1] == 0:
-					# print("HORAS GUAY")				
-					asdf = 0
-
-				# Se pasa del día anterior al día siguiente con huecos
-				elif current_row[1] != (len_day - 1) or array[i][1] != 0:
-
-					raise ValueError("Se pasa del dia anterior al dia siguiente con huecos, de " + str(current_row) + " hasta " + str(array[i]))
-					
-					# Si faltan muestras de más de un día no rellenar, se han perdido datos
-					if (current_row[0]+1) != array[i][0]:
-
-						missing_days += array[i][0] - current_row[0]
-						no_missing_samples += (len_day - current_row[1]) + array[i][1]
-
-						raise ValueError("Error, faltan muestras de más de un día")
-
-					else:
-						no_missing_samples += len_day  + diff
-
-				else:
-					raise ValueError("PROBLEMA " + str(current_row) + " - " + str(array[i]))
-
-			current_row = array[i]
-
-
-		
-
-
-		return no_missing_samples, missing_days
 
 	def get_hour_str(self, hour):
 
@@ -559,26 +482,100 @@ class Data_mgmt:
 		return hour_encoder.inverse_transform(hour)
 
 
-	def fill_holes(self, array, no_missing_samples):
-
-		print_debug = False
+	def new_fill_holes(self, array, no_missing_samples):
 
 		# Create the array with the final size
 		rows = array.shape[0] + no_missing_samples
 		columns = array.shape[1]
 
-		if print_debug: print("Original shape is " + str(array.shape) + " filled array will be (" + str(rows) + ", "  + str(columns) + ") " + str(no_missing_samples) + " rows will be added")
-		if print_debug: print("-----------------------------------------------------------------------------")
+		filled_array = np.zeros((rows, columns))
 
 
+	# El propósito es contar el número de muestras que faltan 
+	def find_holes(self, array):
+
+		"""
+		Find holes
+
+		Iterates through all the stations from debug/encoded_data and counts the missing samples 
+
+		Parameters
+		----------
+		array : Numpy.ndarray
+			
+
+		Returns
+		-------
+		no_missing_samples: Int
+			Number of missing samples in the 
+		missing_days: Int
+
+		"""
+
+		current_row = array[0]
+
+		no_missing_samples = 0
+		missing_days       = 0
+
+		# Iterar por todas las muestras del array leido
+		# Comparando la muestra actual con la siguiente
+		for i in range(1,array.shape[0]):
+
+			# Dos muestras dentro del mismo día para rellenar
+			if current_row[0] == array[i][0]:
+
+				# No hay huecos entre una muestra y la siguiente, es correcto esto
+				if (current_row[1]) != (array[i][1]-1):
+
+					# Contar las muestras que sobran
+					difference = array[i][1] - current_row[1] - 1
+
+					no_missing_samples += difference
+
+			# Días diferentes, hay cambio y comprobar si se ha hecho 
+			elif current_row[0] != array[i][0]:
+
+				# ✅ Inserta posibles muestras perdidas a las 00:00, sólo probado con una, faltaría si existe más de una pérdida
+				if array[i][1] != 0 or current_row[1] != (len_day - 1):
+
+					
+					# ✅ Comprobar que son días seguidos, no rellenar más de un día
+					# Se ha cortado entre un día y otro la lectura ->
+					#   [41 143 6 0 17] - [42 1 0 0 15]
+					if array[i][0] == (current_row[0] + 1):
+
+						difference = len_day - current_row[1] + array[i][1] - 1
+
+						no_missing_samples += difference
+
+						# raise ValueError("Error que no has mirado, diferentes días " + str(current_row) + " - " + str(array[i]))
+
+					# ✅ Hay diferencia de más de un dia incompleto, eliminar tanto el inicial como el final ya que los dos estan incompletos
+					# --> [312 84 3 0 20] - [322 112 6 0 14] 
+					else: 
+
+						no_missing_samples += (len_day - current_row[1]) + array[i][1]
+
+			# Conseguir nueva muestra
+			current_row = array[i]
+
+		return no_missing_samples, missing_days
+
+	# Toma el número de muestras que faltan de la función de 'find_holes' e inserta los valores que faltan
+	def fill_holes(self, array, no_missing_samples):
+
+		# Create the array with the final size
+		rows = array.shape[0] + no_missing_samples
+		columns = array.shape[1]
+
+		# Array en el que se insertarán las muestras, inicialmente está vacío y se introducen las muestras que están presentes
+		# Luego en una segunda pasada se crean las nuevas que faltan
 		filled_array = np.zeros((rows, columns))
 
 		index = 0
 
 		current_row = array[0]
 		filled_array[0] = current_row
-
-		if print_debug: print("First element of the array to fill is " + str(array[0]) + " and last is " + str(array[array.shape[0] - 1]))
 
 		for i in range(1, array.shape[0]):
 
@@ -587,61 +584,53 @@ class Data_mgmt:
 
 				# No coincide normalmente
 				if (current_row[1]) != (array[i][1]-1):
-					
 
-					# diferencia positiva entre muestras, rellenar huecos duplicando valores
-					if (array[i][1] - current_row[1] - 1) > 0:
+					difference = array[i][1] - current_row[1] - 1
+
+					# ✅ diferencia positiva entre muestras, rellenar huecos duplicando valores
+					if (difference) > 0:
 
 						missing_samples = array[i][1] - current_row[1] - 1
 
-						if print_debug: print("Missing samples " + str(array[i]) + " - " + str(current_row) + " (" + str(missing_samples) + ")")
-
 						# Iterar por toda la cantidad de muestras que faltan
 						for j in range(0, missing_samples):
-
-							if print_debug: print("  ↳ " + str(j+1))
 
 							filled_array[i + index] = current_row 
 							filled_array[i + index][1] += 1 + j
 
 							index += 1
 
-						if print_debug: print("↳ (" + str(i + index) + ") ⟶ " + str(array[i]))
-
 						filled_array[i + index] = array[i]  
 
 					# Diferencia negativa, cambio de hora probable
 					else: 
 
-						print("Diferencia negativa " + str(array[i]) + " y " + str(current_row))
-						print("Indice actual " + str(index) + " despues " + str(array[i][1] - current_row[1] - 1))
+						raise ValueError("Diferencia negativa de tiempos")
 
 						for j in range(abs(array[i][1] - current_row[1] - 1)):
 
 							filled_array[i + index] = current_row
 							index -= 1
-							
-
-						# TODO: MIRA ESTO HOSTIA JAVI
 					
-				# Dentro del mismo dia muestras okay
+				# Dentro del mismo dia muestras okay, rellenar normal
 				else:
-
-					if print_debug: print("↳ ✔︎ (" + str(i + index) + ") ⟶ " + str(array[i]))
 
 					filled_array[i + index] = array[i]
 
-			# Diferentes dias
+			# ✅ Diferentes dias
 			elif current_row[0] != array[i][0]:
 
-				# Inserta posibles muestras perdidas a las 00:00, sólo probado con una, faltaría si existe más de una pérdida
+				# ✅ Inserta posibles muestras perdidas a las 00:00, sólo probado con una, faltaría si existe más de una pérdida
 				if array[i][1] != 0 or current_row[1] != (len_day - 1):
 
-					# Comprobar que son días seguidos, no rellenar más de un día
+
+					
+					# ✅ Comprobar que son días seguidos, no rellenar más de un día
+					# [41 143 6 0 17] - [42 1 0 0 15]
 					if array[i][0] == (current_row[0] + 1):
 
-						# print("Missing samples " + str(array[i]) + " - " + str(current_row) + " (" + str(missing_samples) + ")")
-
+						
+						
 						filled_array[i + index] = array[i]
 						filled_array[i + index][1] -= 1 
 
@@ -649,28 +638,24 @@ class Data_mgmt:
 
 						filled_array[i + index] = array[i]
 
-					# Hay diferencia de más de un dia incompleto, eliminar tanto el inicial como el final ya que los dos estan incompletos
+					# ✅ Hay diferencia de más de un dia incompleto, eliminar tanto el inicial como el final ya que los dos estan incompletos
+					# [312 84 3 0 20] - [322 112 6 0 14]
 					else: 
-						
 
-						missing_samples = (len_day - current_row[1]) + array[i][1]
+						# raise ValueError("Error que no has mirado, diferentes días " + str(current_row) + " - " + str(array[i]))				
 
-						# print("Incomplete days INITIAL " + str(current_row) + " - " + str(array[i]) + " (" + str(missing_samples) + ")")
 
-						# Rellenar muestras trailing que faltan
+						# Rellenar muestras trailing que faltan del día ANTERIOR
+						# ------------------------------------------------------
 						for j in range(0,len_day - current_row[1] - 1):
 
-							if print_debug: print(color.yellow + "  ↳ " + str(j+1) + color.ENDC)
+							filled_array[i + index] = current_row  # Introducir la muestra actual como la recreada
+							filled_array[i + index][1] += 1 + j # Incrementar la hora de l amuestra que falta
 
-							filled_array[i + index] = current_row 
-							filled_array[i + index][1] += 1 + j
+							index += 1 # Incrementar el índice ya que se ha insertado una muestra
 
-							index += 1
-
-						# Rellenar muestras iniciales que falten
+						# Rellenar muestras iniciales que falten del siguiente día
 						for j in range(0, array[i][1]):
-
-							if print_debug: print(color.yellow + "  ↳ " + str(j+1) + color.ENDC)
 
 							filled_array[i + index] = array[i] 
 							filled_array[i + index][1] = j
@@ -681,21 +666,14 @@ class Data_mgmt:
 						filled_array[i + index] = array[i]
 						filled_array[i + index][1] = array[i][1]
 
-				# Insertar las muestras a las 00:00 de forma normal
+				# ✅ Insertar las muestras a las 00:00 de forma normal
 				else: 
+
+					# raise ValueError("Error que no has mirado, diferentes días " + str(current_row) + " - " + str(array[i]))				
+
 					filled_array[i + index] = array[i]
 
 			current_row = array[i]
-
-		# aux = 0
-
-		# for i in range(len(filled_array)):
-
-		# 	print(str(aux) + " " + str(filled_array[i]))
-		# 	aux += 1
-
-		# 	if aux == 288:
-		# 		aux = 0
 
 		return filled_array
 
@@ -711,7 +689,6 @@ class Data_mgmt:
 
 		dataset = np.load('debug/filled/' + list_of_stations[0] + '_filled.npy')
 
-
 		a = dataset
 
 		for i in range(1, len(list_of_stations)):
@@ -722,59 +699,77 @@ class Data_mgmt:
 
 		scaler.fit_transform(a)
 
-
-		print("Final MinMaxScaler values pre reading the data ")
-		print("  · Scaler range " + str(scaler.feature_range))
-		print("  · Max vals " + str(scaler.data_max_))
-		print("  · Min vals " + str(scaler.data_min_))
-		print("  · Scale " + str(scaler.scale_))
-
-		print("-----------------------------------------------------------------------------------------")
-		print(str(scaler.data_min_) + " - " + str(scaler.data_max_) + " - " + str(scaler.scale_))
-
-
 		return scaler
 
 	def scale_dataset(self):
 
-		self.utils.append_tutorial_title("Scaling dataset")
+		
+		if enable_scale is True:
 
-		list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+			self.utils.append_tutorial_title("Scaling dataset")
 
-		# Coger primero todos los máximos valores para luego escalar todos los datos poco a poco
-		self.scaler = self.get_maximums_pre_scaling()
+			list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+
+			# Coger primero todos los máximos valores para luego escalar todos los datos poco a poco
+			self.scaler = self.get_maximums_pre_scaling()
 
 
-		for station in list_of_stations:
+			for station in list_of_stations:
 
-				dataset = np.load('debug/filled/' + station + '_filled.npy')
+					dataset = np.load('debug/filled/' + station + '_filled.npy')
 
-				if train_model == True:
+					if dataset.shape[0] > (len_day*2):
 
-					if enable_scale: dataset = scaler.transform(dataset)
+						dataset = scaler.transform(dataset)
 
-					if print_debug: 
-						print("Scaling station " + str(station))
-						print("\t" + str(dataset.shape))
-						print(dataset)
+						if print_debug: 
+							print("Scaling station " + str(station))
+							print("\t" + str(dataset.shape))
+							print(dataset)
 
-					np.save('debug/scaled/' + str(station) + ".npy", dataset)
-					self.utils.save_array_txt('debug/scaled/' + str(station), dataset)
+						np.save('debug/scaled/' + str(station) + ".npy", dataset)
+						self.utils.save_array_txt('debug/scaled/' + str(station), dataset)
 
-		pickle.dump(scaler, open("MinMaxScaler.sav", 'wb'))
+			pickle.dump(scaler, open("MinMaxScaler.sav", 'wb'))
 
-		self.utils.append_tutorial_text("| Values | datetime | time | weekday | station | free_bikes |")
-		self.utils.append_tutorial_text("| --- | --- | --- | --- | --- | --- |")
-		self.utils.append_tutorial_text("| Minimum Values | " + str(scaler.min_[0]) + " | " + str(scaler.min_[1]) + " | " + str(scaler.min_[2]) + " | " + str(scaler.min_[3]) + " | " + str(scaler.min_[4]) + " | ")
-		self.utils.append_tutorial_text("| Data Max | " + str(scaler.data_max_[0]) + " | " + str(scaler.data_max_[1]) + " | " + str(scaler.data_max_[2]) + " | " + str(scaler.data_max_[3]) + " | " + str(scaler.data_max_[4]) + " | ")
-		self.utils.append_tutorial_text("| Data Min | " + str(scaler.data_min_[0]) + " | " + str(scaler.data_min_[1]) + " | " + str(scaler.data_min_[2]) + " | " + str(scaler.data_min_[3]) + " | " + str(scaler.data_min_[4]) + " | ")
-		self.utils.append_tutorial_text("| Data Range | " + str(scaler.data_range_[0]) + " | " + str(scaler.data_range_[1]) + " | " + str(scaler.data_range_[2]) + " | " + str(scaler.data_range_[3]) + " | " + str(scaler.data_range_[4]) + " | ")
-		self.utils.append_tutorial_text("| Scale | " + str(scaler.scale_[0]) + " | " + str(scaler.scale_[1]) + " | " + str(scaler.scale_[2]) + " | " + str(scaler.scale_[3]) + " | " + str(scaler.scale_[4]) + " | \n\n")
+			self.utils.append_tutorial_text("| Values | datetime | time | weekday | station | free_bikes |")
+			self.utils.append_tutorial_text("| --- | --- | --- | --- | --- | --- |")
+			self.utils.append_tutorial_text("| Minimum Values | " + str(scaler.min_[0]) + " | " + str(scaler.min_[1]) + " | " + str(scaler.min_[2]) + " | " + str(scaler.min_[3]) + " | " + str(scaler.min_[4]) + " | ")
+			self.utils.append_tutorial_text("| Data Max | " + str(scaler.data_max_[0]) + " | " + str(scaler.data_max_[1]) + " | " + str(scaler.data_max_[2]) + " | " + str(scaler.data_max_[3]) + " | " + str(scaler.data_max_[4]) + " | ")
+			self.utils.append_tutorial_text("| Data Min | " + str(scaler.data_min_[0]) + " | " + str(scaler.data_min_[1]) + " | " + str(scaler.data_min_[2]) + " | " + str(scaler.data_min_[3]) + " | " + str(scaler.data_min_[4]) + " | ")
+			self.utils.append_tutorial_text("| Data Range | " + str(scaler.data_range_[0]) + " | " + str(scaler.data_range_[1]) + " | " + str(scaler.data_range_[2]) + " | " + str(scaler.data_range_[3]) + " | " + str(scaler.data_range_[4]) + " | ")
+			self.utils.append_tutorial_text("| Scale | " + str(scaler.scale_[0]) + " | " + str(scaler.scale_[1]) + " | " + str(scaler.scale_[2]) + " | " + str(scaler.scale_[3]) + " | " + str(scaler.scale_[4]) + " | \n\n")
+
+	def scaler_helper(self, dataset):
+
+		"""
+		Scale dataset
+
+		Parameters
+		----------
+		array : Numpy.ndarray
+			
+
+		Returns
+		-------
+		no_missing_samples: Int
+			Number of missing samples in the 
+		missing_days: Int
+
+		"""
+
+		scaler = MinMaxScaler()
+		scaler = pickle.load(open("MinMaxScaler.sav", 'rb'))
+
+		dataset = scaler.transform(dataset)
+
+		return dataset
+
+
 
 	def split_input_output(self, dataset):
 
 		columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
-		print("Initial dataset shape " + str(dataset.shape))
 
 		x, y = dataset[:,range(0,len(columns) * n_in)], dataset[:,-n_out:] #dataset[:,n_out]
 		
@@ -800,19 +795,11 @@ class Data_mgmt:
 	def split_sets(self, training_size, validation_size, test_size):
 
 		self.utils.append_tutorial_title("Split datasets")
-		# self.utils.append_tutorial_text("Dividing whole dataset into training " + str(training_size*100) + "%, validation " + str(validation_size*100) + "% & test " + str(test_size*100) + "%")
-
-
+		self.utils.append_tutorial_text("Dividing whole dataset into training " + str(training_size*100) + "%, validation " + str(validation_size*100) + "% & test " + str(test_size*100) + "%")
 
 		values = np.load("debug/supervised/FINAL.npy")
 
-#		np.random.shuffle(values)
-
-
 		if train_model == True:
-
-			print("DATASET SHAPE" + " TYPE " + str(type(values)))
-			print("DATASET[0] SHAPE" + str(values[0].shape) + " TYPE " + str(type(values[0])))
 
 			train_size_samples = int(len(values) * training_size)
 			validation_size_samples = int(len(values) * validation_size)
@@ -820,18 +807,7 @@ class Data_mgmt:
 
 			# As previously the data was stored in an array the stations were contiguous, shuffle them so when splitting
 			# the datasets every station is spreaded across the array
-
-			print("Shuffled dataset " + str(values.shape))
 			np.random.shuffle(values)
-
-			print("Shuffled dataset " + str(values.shape))
-
-			# self.utils.save_array_txt("debug/supervised/final_shuffled", values)
-
-			print("Dataset size is " + str(len(values)) + " samples")
-			print("\t Train Size (" + str(training_size) + "%) is " + str(train_size_samples) + " samples")
-			print("\t Validation Size (" + str(validation_size) + "%) is " + str(validation_size_samples) + " samples")
-			print("\t Test Size (" + str(test_size) + "%) is " + str(test_size_samples) + " samples")
 
 			train      = values[0:train_size_samples,:]
 			validation = values[train_size_samples:train_size_samples + validation_size_samples, :]
@@ -848,12 +824,113 @@ class Data_mgmt:
 			np.save('data/validation_x.npy', validation_x)
 			np.save('data/validation_y.npy', validation_y)
 
-
 			self.utils.append_tutorial_text("\n| Dataset | Percentage | Samples |")
 			self.utils.append_tutorial_text("| --- | --- | --- |")
 			self.utils.append_tutorial_text("| Training | " + str(training_size*100) + " | " + str(train_size_samples) + " | ")
 			self.utils.append_tutorial_text("| Validation | " + str(validation_size*100) + " | " + str(validation_size_samples) + " | ")
 			self.utils.append_tutorial_text("| Test | " + str(test_size*100) + " | " + str(test_size_samples) + " | \n\n")
+
+	def prepare_tomorrow(self):
+
+		"""
+		Saves for each station an independent file with yesterday's availability to predict today's.
+
+
+		Parameters
+		----------
+		array : Numpy.ndarray
+			
+
+		Returns
+		-------
+		no_missing_samples: Int
+			Number of missing samples in the 
+		missing_days: Int
+
+		"""
+
+		dataset = pd.read_pickle('data/Bilbao.pkl')
+
+		print("READ DATASET LOCO")
+		print("---------------------")
+
+		print(dataset)
+
+		print("------------------------------------------------------------------------------------------------------------------------------")
+
+
+		self.utils.check_and_create("debug/tomorrow")
+		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+		# self.list_of_stations = ["AMETZOLA"]
+
+		we = LabelEncoder()
+ 
+		he, we.classes_, se = self.load_encoders()
+
+		today = datetime.datetime.today()
+		today = today.strftime('%Y/%m/%d')
+		today = datetime.datetime.strptime(today, '%Y/%m/%d').timetuple().tm_yday		
+
+		yesterday = datetime.datetime.today() - datetime.timedelta(1)
+		yesterday = yesterday.strftime('%Y/%m/%d')
+		yesterday = datetime.datetime.strptime(yesterday, '%Y/%m/%d').timetuple().tm_yday
+
+		for station in self.list_of_stations:
+
+			try:
+				
+				# Guardar los datos
+				dataset = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
+				out = dataset[dataset.datetime.isin([yesterday])]
+				out = out[out['station'].isin([station])] # ['free_bikes'].values
+
+				print("READ DATASET " + station +  " ------------------------------------------------------------------------------------------------------------------------------")
+				print(out)
+				if out.shape[0] > 0:
+
+					today_data = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
+					today_data = today_data[today_data.datetime.isin([today])]
+					today_data = today_data[today_data['station'].isin([station])]['free_bikes'].values
+
+					out = self.encoder_helper(out)
+
+					# Rellenar si faltan huecos
+					# n_holes = self.find_holes(out)
+
+					# print("------------------------------------------------------------------------------------------------------------------------------")
+					# print(out)
+
+					out = self.scaler_helper(out)
+
+
+
+					out = out.reshape(1,144,5)
+
+					print("RESHAPED ------------------------------------------------------------------------------------------------------------------------------")
+					print(out)
+					
+
+					# dataset = np.load('debug/supervised/' + str(station) + ".npy")[-4:][0]
+					# dataset = np.array([dataset])
+
+					# print("-------------------------------------- " + station + " (" + str(dataset.shape) + ")")
+					# print(dataset)				
+
+					# dataset = dataset[:,:len_day * 5]
+					
+
+					# print("-------------------------------------- " + station + " (" + str(dataset.shape) + ")")
+					# print(dataset)
+
+					# raise ValueError("HE")
+
+					np.save("debug/today/" + station + '.npy', today_data)
+					np.save("debug/yesterday/" + station + '.npy', out)
+					print("Saved " + station)
+				
+				
+			except (FileNotFoundError, IOError):
+				print("Wrong file or file path")
 
 	
 
