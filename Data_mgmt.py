@@ -69,13 +69,19 @@ class Data_mgmt:
 		self.utils.check_and_create("debug/yesterday")
 		self.utils.check_and_create("debug/today")
 		
-		# Leer los intervalos de 10 en 10'
-		p = "..:.5"
-		self.list_hours = self.utils.read_csv_as_list('list_hours.txt')
+		self.list_hours = self.get_hour_list()
 
-		a = pd.DataFrame(self.list_hours)
+
+	def get_hour_list(self):
+
+		p = "..:.5"
+		list_hours = self.utils.read_csv_as_list('list_hours.txt')
+
+		a = pd.DataFrame(list_hours)
 		a = a[~a[0].str.contains(p)]
-		self.list_hours = [i[0] for i in a.values.tolist()]
+		list_hours = [i[0] for i in a.values.tolist()]
+
+		return list_hours
 
 	def read_dataset(self, path, save_path):
 
@@ -166,10 +172,10 @@ class Data_mgmt:
 
 		dataset = pd.read_pickle(read_path)
 
-		# hour_encoder.fit(self.list_hours)
-		# station_encoder.classes_ = self.list_of_stations
+		hour_encoder.fit(self.list_hours)
+		station_encoder.classes_ = self.list_of_stations
 
-		# weekday_encoder.classes_ = weekdays
+		weekday_encoder.classes_ = weekdays
 
 		if append_tutorial is True:
 
@@ -319,9 +325,13 @@ class Data_mgmt:
 			dataframe = pd.DataFrame(data=dataset, columns=columns)
 
 
+
 			supervised = self.series_to_supervised(columns, dataframe, n_in, n_out)
 
 			supervised = supervised.drop(supervised.columns[final_list_indexes], axis=1)
+
+			print("tonto")
+			print(supervised.head(15))
 
 			# Eliminar cada N lineas para  no tener las muestras desplazadas
 			rows_to_delete = []
@@ -766,7 +776,6 @@ class Data_mgmt:
 		return dataset
 
 
-
 	def split_input_output(self, dataset):
 
 		columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
@@ -886,6 +895,7 @@ class Data_mgmt:
 
 				print("READ DATASET " + station +  " ------------------------------------------------------------------------------------------------------------------------------")
 				print(out)
+
 				if out.shape[0] > 0:
 
 					today_data = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
@@ -894,43 +904,20 @@ class Data_mgmt:
 
 					out = self.encoder_helper(out)
 
-					# Rellenar si faltan huecos
-					# n_holes = self.find_holes(out)
-
-					# print("------------------------------------------------------------------------------------------------------------------------------")
-					# print(out)
-
+					print("LOLAZO " + str(self.find_holes(out)))
+					
+					out = self.fill_holes(out, self.find_holes(out)[0])
 					out = self.scaler_helper(out)
-
-
-
 					out = out.reshape(1,144,5)
-
-					print("RESHAPED ------------------------------------------------------------------------------------------------------------------------------")
-					print(out)
-					
-
-					# dataset = np.load('debug/supervised/' + str(station) + ".npy")[-4:][0]
-					# dataset = np.array([dataset])
-
-					# print("-------------------------------------- " + station + " (" + str(dataset.shape) + ")")
-					# print(dataset)				
-
-					# dataset = dataset[:,:len_day * 5]
-					
-
-					# print("-------------------------------------- " + station + " (" + str(dataset.shape) + ")")
-					# print(dataset)
-
-					# raise ValueError("HE")
 
 					np.save("debug/today/" + station + '.npy', today_data)
 					np.save("debug/yesterday/" + station + '.npy', out)
 					print("Saved " + station)
 				
-				
 			except (FileNotFoundError, IOError):
 				print("Wrong file or file path")
+
+
 
 	
 
