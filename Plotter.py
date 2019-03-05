@@ -31,7 +31,7 @@ class Plotter:
 		plt.setp(lines, linewidth=3)
 
 		plt.title(title,color="black") #, alpha=0.3)
-		plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on") #, colors = 'silver')
+		plt.tick_params(bottom=False, top=False, labelbottom=True, left=False, right=False, labelleft=True) #, colors = 'silver')
 
 		plt.savefig(path + title + ".png", bbox_inches="tight", transparent = True)
 		plt.close()
@@ -56,7 +56,7 @@ class Plotter:
 		plt.setp(lines, linewidth=2.5)
 
 		plt.title(title,color="black") #, alpha=0.3)
-		plt.tick_params(bottom="off", top="off", labelbottom="on", left="off", right="off", labelleft="on") #, colors = 'silver')
+		plt.tick_params(bottom=False, top=False, labelbottom=True, left=False, right=False, labelleft=True) #, colors = 'silver')
 		# plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower left", mode = "expand", ncol = 2, fancybox = False)
 
 
@@ -73,7 +73,7 @@ class Plotter:
 		plt.gca().legend((line_1, line_2))
 
 
-		plt.savefig(path + ".png", bbox_inches="tight", transparent = True)
+		plt.savefig(path + ".png", bbox_inches="tight", transparent = False)
 		plt.close()
 
 		print("Plot saved " + str(path))
