@@ -8,7 +8,7 @@ data  = Data_mgmt()
 utils = Utils()
 model = Neural_Model()
 
-# dataset = data.read_dataset()
+data.read_dataset(path = '/Users/javierdemartin/Documents/neural-bikes/data/Bilbao.txt', save_path = '/Users/javierdemartin/Documents/neural-bikes/data/Bilbao.pkl')
 # data.iterate()
 # data.scale_dataset()
 # dato = data.supervised_learning()

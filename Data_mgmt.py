@@ -5,6 +5,7 @@ from utils import Utils
 from Plotter import Plotter
 import pandas.core.frame # read_csv
 import datetime
+import json
 from color import color
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import pandas as pd
@@ -118,7 +119,7 @@ class Data_mgmt:
 
 		text = "Reading dataset, data gathered every ten minutes."
 
-		self.utils.append_tutorial(text, dataset.head(40))
+		self.utils.append_tutorial(text, dataset.head(20))
 
 		# Save the DataFrame to a Pickle file
 		dataset.to_pickle(save_path)    #to save the dataframe, df to 123.pkl
@@ -276,11 +277,10 @@ class Data_mgmt:
 
 		self.utils.append_tutorial_title("Supervised Learning")
 		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
-		self.list_of_stations = ["AMETZOLA"]
+#		self.list_of_stations = ["AMETZOLA"]
 
 		columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 
-		# self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
 
 		# dont_predict = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 		dont_predict = ['datetime', 'time', 'weekday', 'station']
@@ -330,9 +330,6 @@ class Data_mgmt:
 
 			supervised = supervised.drop(supervised.columns[final_list_indexes], axis=1)
 
-			print("tonto")
-			print(supervised.head(15))
-
 			# Eliminar cada N lineas para  no tener las muestras desplazadas
 			rows_to_delete = []
 
@@ -344,15 +341,13 @@ class Data_mgmt:
 			supervised = supervised.drop(supervised.index[rows_to_delete])
 			supervised = supervised.reset_index(drop = True)
 
-			print("-----------------------------------")
-			print(supervised)
+			# print("-----------------------------------")
+			# print(supervised)
 
 			self.utils.append_tutorial_text("| " + station + " | " + str(supervised.shape[0]) + " | ")
 
 			self.utils.save_array_txt("debug/supervised/" + station, supervised.values)
 			np.save("debug/supervised/" + station + '.npy', supervised.values)
-
-			if print_debug: self.utils.print_array("Deleted rows from " + station + " after framing to a supervised learning problem", supervised)
 
 		self.utils.append_tutorial_text("\n")
 
@@ -414,8 +409,6 @@ class Data_mgmt:
 
 		if dropnan:
 			agg.dropna(inplace=True)
-
-		if print_debug: self.utils.print_array("Reframed dataset after converting series to supervised", agg.head())
 
 		return agg
 
@@ -732,11 +725,6 @@ class Data_mgmt:
 
 						dataset = scaler.transform(dataset)
 
-						if print_debug: 
-							print("Scaling station " + str(station))
-							print("\t" + str(dataset.shape))
-							print(dataset)
-
 						np.save('debug/scaled/' + str(station) + ".npy", dataset)
 						self.utils.save_array_txt('debug/scaled/' + str(station), dataset)
 
@@ -904,7 +892,7 @@ class Data_mgmt:
 
 					out = self.encoder_helper(out)
 
-					print("LOLAZO " + str(self.find_holes(out)))
+					print("Encontrados los siguientes huecos " + str(self.find_holes(out)))
 					
 					out = self.fill_holes(out, self.find_holes(out)[0])
 					out = self.scaler_helper(out)
@@ -919,6 +907,89 @@ class Data_mgmt:
 
 
 
-	
+		
+	def prepare_today(self):
 
+		"""
+		Saves for each station an independent file with yesterday's availability to predict today's.
+
+
+		Parameters
+		----------
+		array : Numpy.ndarray
+			
+
+		Returns
+		-------
+		no_missing_samples: Int
+			Number of missing samples in the 
+		missing_days: Int
+
+		"""
+
+		dataset = pd.read_pickle('data/Bilbao.pkl')
+
+		print("READ DATASET LOCO")
+		print("---------------------")
+
+		print(dataset)
+
+		print("------------------------------------------------------------------------------------------------------------------------------")
+
+
+		
+		self.utils.check_and_create('/Users/javierdemartin/Documents/neural-bikes/data/today/')
+		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+
+		we = LabelEncoder()
+ 
+		he, we.classes_, se = self.load_encoders()
+
+		today = datetime.datetime.today()
+		today = today.strftime('%Y/%m/%d')
+		today = datetime.datetime.strptime(today, '%Y/%m/%d').timetuple().tm_yday		
+
+		for station in self.list_of_stations:
+
+			try:
+				
+				# Guardar los datos
+				dataset = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
+				out = dataset[dataset.datetime.isin([today])]
+				out = out[out['station'].isin([station])] # ['free_bikes'].values
+
+
+				if out.shape[0] > 0:
+
+					today_data = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
+					today_data = today_data[today_data.datetime.isin([today])]
+					today_data = today_data[today_data['station'].isin([station])]['free_bikes']
+
+
+
+					out = self.encoder_helper(out)
+
+
+
+					
+					out = self.fill_holes(out, self.find_holes(out)[0])
+
+
+					# Guarda los datos de hoy como enteros, los saca del array y los pne como lista
+					out = [int(i) for i in out[:,4]]
+
+					data = dict(zip(self.list_hours, out))
+
+					print("[" + station + "] " + str(data))
+
+					with open('/Users/javierdemartin/Documents/neural-bikes/data/today/' + station + '.json', 'w') as outfile:
+						json.dump(data, outfile)
+
+				
+			except (FileNotFoundError, IOError):
+				print("Wrong file or file path")
+
+
+
+	
 	
