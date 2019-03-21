@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 #--------------------------------------------------------------------------------------------------------------------------------
 # Initial Considerations
@@ -19,7 +21,6 @@ import matplotlib
 matplotlib.use('Agg') # Needed to plot some things when running on headless server
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
-import gc # Freeing memory
 import csv
 
 from sklearn.metrics import mean_squared_error
@@ -30,13 +31,16 @@ from keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
 from color import color
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
 
 class Utils:	
 
 	def __init__(self):
 
 		# self.init_tutorial()
-		print("")
+
+		self.dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
 
@@ -60,7 +64,7 @@ class Utils:
 	def read(self, param):
 		
 
-		with open("config/" + param) as f:
+		with open(self.dir_path + "/config/" + param) as f:
 			content = f.readlines()
 			# you may also want to remove whitespace characters like `\n` at the end of each line
 			content = [int(x.strip()) for x in content] 
@@ -68,19 +72,26 @@ class Utils:
 
 	# Reads the list in the PATH and returns a LIST
 	def read_csv_as_list(self, path):
-		with open(path, 'r') as f:
-			reader = csv.reader(f)
-			your_list = list(reader)[0]
 
-		return your_list
+		data = []
+
+		with open(path) as csvfile:
+			readCSV = csv.reader(csvfile, delimiter=',')
+			for row in readCSV:
+				data = row
+
+				return data
 
 	def print_warn(self, message):
 		print(color.FAIL + "$ " + message + color.ENDC)
 
 	# Checks if de current directory exists, if not it's created
 	def check_and_create(self, directory):
-		if not os.path.exists(directory):
-			os.makedirs(directory)
+
+		print("Checking " + str(self.dir_path + directory))
+
+		if not os.path.exists(self.dir_path + directory):
+			os.makedirs(self.dir_path + directory)
 
 
 	#################################################################################################################
@@ -90,12 +101,12 @@ class Utils:
 
 	def init_tutorial(self):
 
-		os.system("rm README.md")
-		os.system("touch README.md")
+		os.system("rm " + self.dir_path + "/README.md")
+		os.system("touch " + self.dir_path + "/README.md")
 
 		intro = "# Steps"
 
-		f= open("README.md","a")
+		f= open(self.dir_path + "/README.md","a")
 		f.write(intro + "\n\n")
 
 		f.close()
@@ -104,25 +115,25 @@ class Utils:
 
 	def code(self, code):
 
-		f= open("README.md","a")
+		f= open(self.dir_path + "/README.md","a")
 		f.write("```\n" + str(code) + "\n```\n\n")
 		f.close()
 
 	def append_tutorial_title(self, title):
 
-		f= open("README.md","a")
+		f= open(self.dir_path + "/README.md","a")
 		f.write("## " + str(title) + "\n\n\n")
 		f.close()
 
 	def append_tutorial_text(self, text):
 
-		with open("README.md", "a") as myfile:
+		with open(self.dir_path + "/README.md", "a") as myfile:
 			myfile.write(str(text) + "\n")
 
 
 	def append_tutorial(self, body, text):
 
-		f= open("README.md","a")
+		f= open(self.dir_path + "/README.md","a")
 		f.write(str(body) + "\n\n")
 		f.write("```\n" + str(text) + "\n```\n\n")
 		f.close()
@@ -140,14 +151,8 @@ class Utils:
 			h += c + " | "
 			r += " --- |"
 
-
-
-
-
 	# Save an array/list/... for future debugging
 	def save_array_txt(self, path, array):
-
-		# print("Saving " + str(path))
 
 		# Guardar array con la función nativa de NumPy
 		if type(array) is np.ndarray:
@@ -161,13 +166,14 @@ class Utils:
 		elif type(array) is DataFrame:
 			array.to_csv(path, sep=',')
 		elif type(array) is list:
+			print(array)
 
-			with open(path,"w") as f:
+			with open(path,"w+") as f:
 				wr = csv.writer(f,delimiter=",")
 				wr.writerow(array)
 		else:
 
-			with open(path, 'w', newline='\n') as myfile:
+			with open(path, 'w+', newline='\n') as myfile:
 
 				for element in array:
 					myfile.write(str(element) + "\n")

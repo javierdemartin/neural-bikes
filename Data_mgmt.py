@@ -1,5 +1,5 @@
-# LIBRARIES
-# ------------------------------------------------------------------
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 from utils import Utils
 from Plotter import Plotter
@@ -21,6 +21,8 @@ from datetime import timedelta
 # ------------------------------------------------------------------
 # They might speed up the script as they do non-vital things such as recollecting
 # statistics
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 train_model = True
 statistics_enabled = True
@@ -48,7 +50,9 @@ class Data_mgmt:
 
 	def __init__(self):
 		
-		os.system("cp ../bicis/data/Bilbao.txt data/")
+		os.system("cp /Users/javierdemartin/Documents/bicis/data/Bilbao.txt " + dir_path + "/data/")
+
+		os.system("chmod 755 " + dir_path + "/data/Bilbao.txt")
 
 		self.plotter = Plotter()
 		self.utils = Utils()
@@ -56,27 +60,26 @@ class Data_mgmt:
 
 		self.columns=['datetime', 'time', 'weekday', 'station', 'free_bikes']
 
-		# os.system("rm -rf debug/") # Delete previous debug records
-		self.utils.check_and_create("debug/encoders")
-		self.utils.check_and_create("debug/encoded_data")
-		self.utils.check_and_create("debug/filled")
-		self.utils.check_and_create("debug/scaled")
-		self.utils.check_and_create("debug/supervised")
-		self.utils.check_and_create("stats/stations")
-		self.utils.check_and_create("plots/")
-		self.utils.check_and_create("debug/utils/")
-		self.utils.check_and_create("model/")
-		self.utils.check_and_create("debug/filled")
-		self.utils.check_and_create("debug/yesterday")
-		self.utils.check_and_create("debug/today")
+		self.utils.check_and_create("/debug/encoders")
+		self.utils.check_and_create("/debug/encoded_data")
+		self.utils.check_and_create("/debug/filled")
+		self.utils.check_and_create("/debug/scaled")
+		self.utils.check_and_create("/debug/supervised")
+		self.utils.check_and_create("/stats/stations")
+		self.utils.check_and_create("/plots/")
+		self.utils.check_and_create("/debug/utils/")
+		self.utils.check_and_create("/model/")
+		self.utils.check_and_create("/debug/filled")
+		self.utils.check_and_create("/debug/yesterday/")
+		self.utils.check_and_create("/debug/today")
+		self.utils.check_and_create('/data/today/')
 		
 		self.list_hours = self.get_hour_list()
-
 
 	def get_hour_list(self):
 
 		p = "..:.5"
-		list_hours = self.utils.read_csv_as_list('list_hours.txt')
+		list_hours = self.utils.read_csv_as_list(dir_path + '/debug/utils/list_hours')
 
 		a = pd.DataFrame(list_hours)
 		a = a[~a[0].str.contains(p)]
@@ -86,15 +89,15 @@ class Data_mgmt:
 
 	def read_dataset(self, path, save_path):
 
-
 		self.utils.append_tutorial_title("Reading Dataset")
 
 		# Read dataset from the CSV file
-		dataset = pandas.read_csv(path)
-		dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_docks', 'free_bikes'] # Insert correct column names
-		
+		dataset = pandas.read_csv(dir_path + path)
+
+		dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_bikes', 'free_docks'] # Insert correct column names
+
 		# Remove ID of the sation and free docks
-		dataset.drop(dataset.columns[[2,4]], axis = 1, inplace = True) 
+		dataset.drop(dataset.columns[[2,5]], axis = 1, inplace = True) 
 
 		self.list_of_stations = self.get_list_of_stations(dataset.values[:,2])
 
@@ -122,7 +125,9 @@ class Data_mgmt:
 		self.utils.append_tutorial(text, dataset.head(20))
 
 		# Save the DataFrame to a Pickle file
-		dataset.to_pickle(save_path)    #to save the dataframe, df to 123.pkl
+		dataset.to_pickle(dir_path + save_path)    #to save the dataframe, df to 123.pkl
+
+		os.system("chmod 755 " + dir_path + save_path)
 
 	# Gets a list of values and returns the list of stations
 	def get_list_of_stations(self, array):
@@ -133,7 +138,6 @@ class Data_mgmt:
 		Parameters
 		----------
 		array : Numpy.ndarray
-			
 
 		Returns
 		-------
@@ -143,17 +147,25 @@ class Data_mgmt:
 		"""
 
 		if array is not None:
-			array = np.asarray(array)
 
-			self.utils.save_array_txt('debug/utils/list_of_stations', list(np.unique(array)))
+			if os.stat(dir_path + '/debug/utils/list_of_stations').st_size == 0:
 
-			return list(np.unique(array))
+				array = np.asarray(array)
+
+				self.utils.save_array_txt(dir_path + '/debug/utils/list_of_stations', list(np.unique(array)))
+
+				return list(np.unique(array))
+					
+			else:
+
+				return self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
+			
 
 		elif array is None:
 			return None
 
 	# Codificar las columnas seleccionadas con LabelEncoder
-	def encode_data(self, read_path, save_path, append_tutorial = False):
+	def encode_data(self, read_path, save_path, append_tutorial = True):
 
 		"""
 		Iterates through all the stations from debug/encoded_data and counts the missing samples 
@@ -171,7 +183,7 @@ class Data_mgmt:
 
 		"""
 
-		dataset = pd.read_pickle(read_path)
+		dataset = pd.read_pickle(dir_path + read_path)
 
 		hour_encoder.fit(self.list_hours)
 		station_encoder.classes_ = self.list_of_stations
@@ -190,9 +202,9 @@ class Data_mgmt:
 			self.utils.append_tutorial("Station Encoder (" + str(len(station_encoder.classes_)) + " values)", station_encoder.classes_)
 
 		# Save as a numpy array
-		np.save('debug/encoders/hour_encoder.npy', hour_encoder.classes_)
-		np.save('debug/encoders/weekday_encoder.npy', weekday_encoder.classes_)
-		np.save('debug/encoders/station_encoder.npy', station_encoder.classes_)
+		np.save(dir_path + '/debug/encoders/hour_encoder.npy', hour_encoder.classes_)
+		np.save(dir_path + '/debug/encoders/weekday_encoder.npy', weekday_encoder.classes_)
+		np.save(dir_path + '/debug/encoders/station_encoder.npy', station_encoder.classes_)
 
 		# Encode the columns represented by a String with an integer with LabelEncoder()
 
@@ -205,7 +217,7 @@ class Data_mgmt:
 		# Save encoded data for each station to an independent file as a .npy file
 		for station in self.list_of_stations:
 
-			file_name = save_path + station + ".npy"
+			file_name = dir_path + save_path + station + ".npy"
 
 			station_encoded_number = station_encoder.transform([station])[0]
 
@@ -231,43 +243,8 @@ class Data_mgmt:
 		return values
 
 
-
-	def stats_for_station(self):
-
-		if statistics_enabled == True:
-
-			i = 0
-
-			self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
-
-			# Empty array to average the 
-			global_average = np.empty([31,len_day])
-
-			for station in self.list_of_stations:
-
-				station_read = np.load("debug/encoded_data/" + station + ".npy")
-				station_read = pd.DataFrame(station_read, columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes'])
-
-				averaged_data = []
-
-				# Hacer la media de cada hora del día estación por estación
-				for i in range(len_day):
-
-					# print("La media de las " + str(i))
-					filtered_by_hour = station_read[station_read['time'].isin([i])].values
-
-					print("filtered_by_hour")
-					print(filtered_by_hour)
-
-					averaged = int(sum(filtered_by_hour[:,4]) / len(filtered_by_hour))
-					averaged_data.append(averaged)
-
-				self.plotter.plot(averaged_data, "Time", "Average Bike Availability", str(station) + "_average_availability", "stats/stations/")
-				self.utils.save_array_txt("stats/stations/" + str(station) + "_average_availability", averaged_data)
-
 	def load_encoders(self):
-		print("> Loaded encoders ")
-		return np.load('debug/encoders/hour_encoder.npy'), np.load('debug/encoders/weekday_encoder.npy'), np.load('debug/encoders/station_encoder.npy')
+		return np.load(dir_path + '/debug/encoders/hour_encoder.npy'), np.load(dir_path +'/debug/encoders/weekday_encoder.npy'), np.load(dir_path + '/debug/encoders/station_encoder.npy')
 
 	
 
@@ -276,11 +253,9 @@ class Data_mgmt:
 	def supervised_learning(self):
 
 		self.utils.append_tutorial_title("Supervised Learning")
-		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
-#		self.list_of_stations = ["AMETZOLA"]
+		self.list_of_stations = self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
 
 		columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
-
 
 		# dont_predict = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 		dont_predict = ['datetime', 'time', 'weekday', 'station']
@@ -315,74 +290,55 @@ class Data_mgmt:
 		for station in self.list_of_stations:
 
 			try:
-				dataset = np.load('debug/scaled/' + str(station) + ".npy")
+				dataset = np.load(dir_path + '/debug/scaled/' + str(station) + ".npy")
+				dataframe = pd.DataFrame(data=dataset, columns=columns)
+
+				supervised = self.series_to_supervised(columns, dataframe, n_in, n_out)
+
+				supervised = supervised.drop(supervised.columns[final_list_indexes], axis=1)
+
+				# Eliminar cada N lineas para  no tener las muestras desplazadas
+				rows_to_delete = []
+
+				for j in range(supervised.shape[0]):
+
+					if j % n_in != 0:
+						rows_to_delete.append(j)
+
+				supervised = supervised.drop(supervised.index[rows_to_delete])
+				supervised = supervised.reset_index(drop = True)
+
+				# print("-----------------------------------")
+				# print(supervised)
+
+				self.utils.append_tutorial_text("| " + station + " | " + str(supervised.shape[0]) + " | ")
+
+				self.utils.save_array_txt(dir_path + "/debug/supervised/" + station, supervised.values)
+				np.save(dir_path + "/debug/supervised/" + station + '.npy', supervised.values)
 				
 			except (FileNotFoundError, IOError):
-				print("Wrong file or file path")
-
-			# np.save('debug/scaled/' + str(station) + ".npy", dataset)
-
-			dataframe = pd.DataFrame(data=dataset, columns=columns)
-
-
-
-			supervised = self.series_to_supervised(columns, dataframe, n_in, n_out)
-
-			supervised = supervised.drop(supervised.columns[final_list_indexes], axis=1)
-
-			# Eliminar cada N lineas para  no tener las muestras desplazadas
-			rows_to_delete = []
-
-			for j in range(supervised.shape[0]):
-
-				if j % n_in != 0:
-					rows_to_delete.append(j)
-
-			supervised = supervised.drop(supervised.index[rows_to_delete])
-			supervised = supervised.reset_index(drop = True)
-
-			# print("-----------------------------------")
-			# print(supervised)
-
-			self.utils.append_tutorial_text("| " + station + " | " + str(supervised.shape[0]) + " | ")
-
-			self.utils.save_array_txt("debug/supervised/" + station, supervised.values)
-			np.save("debug/supervised/" + station + '.npy', supervised.values)
+				print("Wrong file or file path (" + dir_path + '/debug/scaled/' + str(station) + ".npy)" )
+			
 
 		self.utils.append_tutorial_text("\n")
 
-		final_data = np.load("debug/supervised/" + self.list_of_stations[0] + ".npy")
+		final_data = np.load(dir_path + "/debug/supervised/" + self.list_of_stations[0] + ".npy")
 
 		# Hacerlo con todas las estaciones
 		for i in range(1,len(self.list_of_stations)):
 
 			try:
-				data_read = np.load("debug/supervised/" + self.list_of_stations[i] + ".npy")
+				data_read = np.load(dir_path + "/debug/supervised/" + self.list_of_stations[i] + ".npy")
 				final_data = np.append(final_data, data_read, 0)
-				np.save("debug/supervised/" + str(self.list_of_stations[i]) + ".npy", final_data)
+				np.save(dir_path + "/debug/supervised/" + str(self.list_of_stations[i]) + ".npy", final_data)
 				
 			except (FileNotFoundError, IOError):
 				print("Wrong file or file path")
 
 
-		self.utils.save_array_txt("debug/supervised/FINAL", final_data)
-		np.save("debug/supervised/FINAL.npy", final_data)
+		self.utils.save_array_txt(dir_path + "/debug/supervised/FINAL", final_data)
+		np.save(dir_path + "/debug/supervised/FINAL.npy", final_data)
 
-
-	def flatten_list_supervised(self, data):
-
-		flattened_data = np.array(data[0].values)
-
-		print("FLATTENED FIRST" + str(flattened_data))
-
-		for i in range(1, len(data)):
-			flattened_data = np.append(flattened_data, data[i].values, axis=0)
-
-		print("FLATTENED FINAL" + str(flattened_data))
-
-		self.utils.save_array_txt("debug/supervised/final", flattened_data)
-
-		return flattened_data
 
 	def series_to_supervised(self, columns, data, n_in=1, n_out=1, dropnan=True):
 
@@ -432,6 +388,10 @@ class Data_mgmt:
 			Des cription of return value
 
 		"""
+
+		print("> Finding holes")
+
+
 		self.utils.append_tutorial_title("Finding holes in dataset")
 		self.utils.append_tutorial_text("Los datos son recogidos cada 10' en el servidor y puede que en algunos casos no funcione correctamente y se queden huecos, arreglarlo inventando datos en esos huecos.\n")
 		self.utils.append_tutorial_text("| Estación | Missing Samples | Missing Whole Days")
@@ -439,7 +399,7 @@ class Data_mgmt:
 
 		for station in self.list_of_stations:
 
-			station_read = np.load("debug/encoded_data/" + station + ".npy")
+			station_read = np.load(dir_path + "/debug/encoded_data/" + station + ".npy")
 
 			# Problema cuadno aparece una estación nueva y se entrena el modelo con menos de un día de datos, no iterar si es nueva
 			if station_read.shape[0] > len_day:
@@ -452,8 +412,6 @@ class Data_mgmt:
 
 				to_del = []
 				i = 0
-
-				self.utils.save_array_txt("debug/filled/" + "CABRON", filled_array)
 
 				# Delete rows that are zerossss
 				for r in filled_array:
@@ -469,18 +427,16 @@ class Data_mgmt:
 				# Borrar las muestras finales que hacen que el día no esté completo
 				filled_array = filled_array[:- (int(filled_array[filled_array.shape[0]-1][1])+1) ,:]
 
-				self.utils.save_array_txt("debug/filled/" + station + "_filled", filled_array)
+				self.utils.save_array_txt(dir_path + "/debug/filled/" + station + "_filled", filled_array)
 
-				np.save('debug/filled/' + station + '_filled.npy', filled_array)				
+				np.save(dir_path + '/debug/filled/' + station + '_filled.npy', filled_array)				
 
-				if enable_scale is False: np.save('debug/scaled/' + str(station) + ".npy", filled_array)
+				if enable_scale is False: np.save('/Users/javierdemartin/Documents/neural-bikes/debug/scaled/' + str(station) + ".npy", filled_array)
 
 		self.utils.append_tutorial_text("\n\n")
 
 
 	def get_hour_str(self, hour):
-
-		print("reversin " + str(hour))
 
 		return hour_encoder.inverse_transform(hour)
 
@@ -685,18 +641,18 @@ class Data_mgmt:
 	#	· The scaler object
 	def get_maximums_pre_scaling(self):
 
-		list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+		list_of_stations = self.utils.read_csv_as_list("/Users/javierdemartin/Documents/neural-bikes/debug/utils/list_of_stations")
 
 		# Get the maximum values for
 		scaler_aux = MinMaxScaler(feature_range=(0,1))
 
-		dataset = np.load('debug/filled/' + list_of_stations[0] + '_filled.npy')
+		dataset = np.load('/Users/javierdemartin/Documents/neural-bikes/debug/filled/' + list_of_stations[0] + '_filled.npy')
 
 		a = dataset
 
 		for i in range(1, len(list_of_stations)):
 
-			dataset = np.load('debug/filled/' + list_of_stations[i] + '_filled.npy')
+			dataset = np.load('/Users/javierdemartin/Documents/neural-bikes/debug/filled/' + list_of_stations[i] + '_filled.npy')
 			
 			a = np.concatenate((a,dataset), axis = 0)
 
@@ -705,30 +661,30 @@ class Data_mgmt:
 		return scaler
 
 	def scale_dataset(self):
-
 		
 		if enable_scale is True:
 
 			self.utils.append_tutorial_title("Scaling dataset")
 
-			list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
+			list_of_stations = self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
+
+
 
 			# Coger primero todos los máximos valores para luego escalar todos los datos poco a poco
 			self.scaler = self.get_maximums_pre_scaling()
 
-
 			for station in list_of_stations:
 
-					dataset = np.load('debug/filled/' + station + '_filled.npy')
+					dataset = np.load(dir_path + '/debug/filled/' + station + '_filled.npy')
 
 					if dataset.shape[0] > (len_day*2):
 
 						dataset = scaler.transform(dataset)
 
-						np.save('debug/scaled/' + str(station) + ".npy", dataset)
-						self.utils.save_array_txt('debug/scaled/' + str(station), dataset)
+						np.save('/Users/javierdemartin/Documents/neural-bikes/debug/scaled/' + str(station) + ".npy", dataset)
+						self.utils.save_array_txt('/Users/javierdemartin/Documents/neural-bikes/debug/scaled/' + str(station), dataset)
 
-			pickle.dump(scaler, open("MinMaxScaler.sav", 'wb'))
+			pickle.dump(scaler, open("/Users/javierdemartin/Documents/neural-bikes/MinMaxScaler.sav", 'wb'))
 
 			self.utils.append_tutorial_text("| Values | datetime | time | weekday | station | free_bikes |")
 			self.utils.append_tutorial_text("| --- | --- | --- | --- | --- | --- |")
@@ -757,7 +713,7 @@ class Data_mgmt:
 		"""
 
 		scaler = MinMaxScaler()
-		scaler = pickle.load(open("MinMaxScaler.sav", 'rb'))
+		scaler = pickle.load(open(dir_path +  "/MinMaxScaler.sav", 'rb'))
 
 		dataset = scaler.transform(dataset)
 
@@ -776,12 +732,12 @@ class Data_mgmt:
 
 	def load_datasets(self):
 
-		train_x = np.load('data/train_x.npy')
-		train_y = np.load('data/train_y.npy')
-		test_x = np.load('data/test_x.npy')
-		test_y = np.load('data/test_y.npy')
-		validation_x = np.load('data/validation_x.npy')
-		validation_y = np.load('data/validation_y.npy')
+		train_x = np.load('/Users/javierdemartin/Documents/neural-bikes/data/train_x.npy')
+		train_y = np.load('/Users/javierdemartin/Documents/neural-bikes/data/train_y.npy')
+		test_x = np.load('/Users/javierdemartin/Documents/neural-bikes/data/test_x.npy')
+		test_y = np.load('/Users/javierdemartin/Documents/neural-bikes/data/test_y.npy')
+		validation_x = np.load('/Users/javierdemartin/Documents/neural-bikes/data/validation_x.npy')
+		validation_y = np.load('/Users/javierdemartin/Documents/neural-bikes/data/validation_y.npy')
 
 		return train_x, train_y, validation_x, validation_y, test_x, test_y
 
@@ -794,7 +750,7 @@ class Data_mgmt:
 		self.utils.append_tutorial_title("Split datasets")
 		self.utils.append_tutorial_text("Dividing whole dataset into training " + str(training_size*100) + "%, validation " + str(validation_size*100) + "% & test " + str(test_size*100) + "%")
 
-		values = np.load("debug/supervised/FINAL.npy")
+		values = np.load("/Users/javierdemartin/Documents/neural-bikes/debug/supervised/FINAL.npy")
 
 		if train_model == True:
 
@@ -814,12 +770,12 @@ class Data_mgmt:
 			validation_x, validation_y = self.split_input_output(validation)
 			test_x, test_y             = self.split_input_output(test)
 
-			np.save('data/train_x.npy', train_x)
-			np.save('data/train_y.npy', train_y)
-			np.save('data/test_x.npy', test_x)
-			np.save('data/test_y.npy', test_y)
-			np.save('data/validation_x.npy', validation_x)
-			np.save('data/validation_y.npy', validation_y)
+			np.save('/Users/javierdemartin/Documents/neural-bikes/data/train_x.npy', train_x)
+			np.save('/Users/javierdemartin/Documents/neural-bikes/data/train_y.npy', train_y)
+			np.save('/Users/javierdemartin/Documents/neural-bikes/data/test_x.npy', test_x)
+			np.save('/Users/javierdemartin/Documents/neural-bikes/data/test_y.npy', test_y)
+			np.save('/Users/javierdemartin/Documents/neural-bikes/data/validation_x.npy', validation_x)
+			np.save('/Users/javierdemartin/Documents/neural-bikes/data/validation_y.npy', validation_y)
 
 			self.utils.append_tutorial_text("\n| Dataset | Percentage | Samples |")
 			self.utils.append_tutorial_text("| --- | --- | --- |")
@@ -846,7 +802,7 @@ class Data_mgmt:
 
 		"""
 
-		dataset = pd.read_pickle('data/Bilbao.pkl')
+		dataset = pd.read_pickle(dir_path + '/data/Bilbao.pkl')
 
 		print("READ DATASET LOCO")
 		print("---------------------")
@@ -856,9 +812,9 @@ class Data_mgmt:
 		print("------------------------------------------------------------------------------------------------------------------------------")
 
 
-		self.utils.check_and_create("debug/tomorrow")
-		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
-		# self.list_of_stations = ["AMETZOLA"]
+		self.utils.check_and_create("/debug/tomorrow")
+		self.utils.check_and_create("/debug/yesterday")
+		self.list_of_stations = self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
 
 		we = LabelEncoder()
  
@@ -881,9 +837,6 @@ class Data_mgmt:
 				out = dataset[dataset.datetime.isin([yesterday])]
 				out = out[out['station'].isin([station])] # ['free_bikes'].values
 
-				print("READ DATASET " + station +  " ------------------------------------------------------------------------------------------------------------------------------")
-				print(out)
-
 				if out.shape[0] > 0:
 
 					today_data = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
@@ -892,22 +845,22 @@ class Data_mgmt:
 
 					out = self.encoder_helper(out)
 
-					print("Encontrados los siguientes huecos " + str(self.find_holes(out)))
-					
-					out = self.fill_holes(out, self.find_holes(out)[0])
+					n_holes = self.find_holes(out)[0]
+
+
+					out = self.fill_holes(out,n_holes)
 					out = self.scaler_helper(out)
 					out = out.reshape(1,144,5)
 
-					np.save("debug/today/" + station + '.npy', today_data)
-					np.save("debug/yesterday/" + station + '.npy', out)
-					print("Saved " + station)
+
+
+					np.save(dir_path + "/debug/today/" + station + '.npy', today_data)
+					np.save(dir_path + "/debug/yesterday/" + station + ".npy", out)
 				
 			except (FileNotFoundError, IOError):
-				print("Wrong file or file path")
+				print("Wrong file or file path (" + dir_path + "/debug/yesterday/" + station + ".npy)")
 
 
-
-		
 	def prepare_today(self):
 
 		"""
@@ -927,37 +880,25 @@ class Data_mgmt:
 
 		"""
 
-		dataset = pd.read_pickle('data/Bilbao.pkl')
-
-		print("READ DATASET LOCO")
-		print("---------------------")
-
-		print(dataset)
-
-		print("------------------------------------------------------------------------------------------------------------------------------")
-
-
+		dataset = pd.read_pickle(dir_path + '/data/Bilbao.pkl')
 		
-		self.utils.check_and_create('/Users/javierdemartin/Documents/neural-bikes/data/today/')
-		self.list_of_stations = self.utils.read_csv_as_list("debug/utils/list_of_stations")
-
-		we = LabelEncoder()
- 
-		he, we.classes_, se = self.load_encoders()
-
+		self.list_of_stations = self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
+		
 		today = datetime.datetime.today()
 		today = today.strftime('%Y/%m/%d')
-		today = datetime.datetime.strptime(today, '%Y/%m/%d').timetuple().tm_yday		
-
+		today = datetime.datetime.strptime(today, '%Y/%m/%d').timetuple().tm_yday	
+		
 		for station in self.list_of_stations:
+
+
+			
 
 			try:
 				
 				# Guardar los datos
 				dataset = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
 				out = dataset[dataset.datetime.isin([today])]
-				out = out[out['station'].isin([station])] # ['free_bikes'].values
-
+				out = out[out['station'].isin([station])]
 
 				if out.shape[0] > 0:
 
@@ -965,31 +906,20 @@ class Data_mgmt:
 					today_data = today_data[today_data.datetime.isin([today])]
 					today_data = today_data[today_data['station'].isin([station])]['free_bikes']
 
-
-
 					out = self.encoder_helper(out)
-
-
-
-					
 					out = self.fill_holes(out, self.find_holes(out)[0])
-
 
 					# Guarda los datos de hoy como enteros, los saca del array y los pne como lista
 					out = [int(i) for i in out[:,4]]
 
+
 					data = dict(zip(self.list_hours, out))
 
-					print("[" + station + "] " + str(data))
+					#self.utils.save_array_txt(dir_path + "/rando/" + station, json.dumps(data))
 
-					with open('/Users/javierdemartin/Documents/neural-bikes/data/today/' + station + '.json', 'w') as outfile:
-						json.dump(data, outfile)
-
+					jsonFile = open(dir_path + '/data/today/' + station + '.json', 'w+')
+					jsonFile.write(json.dumps(data))
+					jsonFile.close()
 				
 			except (FileNotFoundError, IOError):
-				print("Wrong file or file path")
-
-
-
-	
-	
+				print("Wrong file or file path")	
