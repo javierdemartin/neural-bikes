@@ -49,10 +49,12 @@ class Data_mgmt:
 	list_of_stations = []
 
 	def __init__(self):
-		
-		os.system("cp /Users/javierdemartin/Documents/bicis/data/Bilbao.txt " + dir_path + "/data/")
 
-		os.system("chmod 755 " + dir_path + "/data/Bilbao.txt")
+		self.dir_path = os.path.dirname(os.path.realpath(__file__))
+		
+		os.system("cp /Users/javierdemartin/Documents/bicis/data/Bilbao.txt " + self.dir_path + "/data/")
+
+		os.system("chmod 755 " + self.dir_path + "/data/Bilbao.txt")
 
 		self.plotter = Plotter()
 		self.utils = Utils()
@@ -79,7 +81,7 @@ class Data_mgmt:
 	def get_hour_list(self):
 
 		p = "..:.5"
-		list_hours = self.utils.read_csv_as_list(dir_path + '/debug/utils/list_hours')
+		list_hours = self.utils.read_csv_as_list(self.dir_path + '/debug/utils/list_hours')
 
 		a = pd.DataFrame(list_hours)
 		a = a[~a[0].str.contains(p)]
@@ -96,16 +98,17 @@ class Data_mgmt:
 
 		dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_bikes', 'free_docks'] # Insert correct column names
 
-		# Remove ID of the sation and free docks
+		# Remove ID of the sation and free docks, I am not interested in using them
 		dataset.drop(dataset.columns[[2,5]], axis = 1, inplace = True) 
 
 		self.list_of_stations = self.get_list_of_stations(dataset.values[:,2])
 
-		# Separar la columna de tiempos en 
+		# Separar la columna de tiempos en fecha + hora
 		times = [x.split(" ")[1] for x in dataset.values[:,0]]
 
 		dataset['datetime'] = [datetime.datetime.today().strptime(x, '%Y/%m/%d %H:%M').timetuple().tm_yday for x in dataset.values[:,0]]
 
+		# Insertar en la columna time las hoas
 		dataset.insert(loc = 1, column = 'time', value = times)
 
 		# Delete incorrectly sampled hours that don't match five minute intervals
@@ -148,24 +151,24 @@ class Data_mgmt:
 
 		if array is not None:
 
-			if os.stat(dir_path + '/debug/utils/list_of_stations').st_size == 0:
+			if os.stat(self.dir_path + '/debug/utils/list_of_stations').st_size == 0:
 
 				array = np.asarray(array)
 
-				self.utils.save_array_txt(dir_path + '/debug/utils/list_of_stations', list(np.unique(array)))
+				self.utils.save_array_txt(self.dir_path + '/debug/utils/list_of_stations', list(np.unique(array)))
 
 				return list(np.unique(array))
 					
 			else:
 
-				return self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
+				return self.utils.read_csv_as_list(self.dir_path + "/debug/utils/list_of_stations")
 			
 
 		elif array is None:
 			return None
 
 	# Codificar las columnas seleccionadas con LabelEncoder
-	def encode_data(self, read_path, save_path, append_tutorial = True):
+	def encode_data(self, read_path, save_path):
 
 		"""
 		Iterates through all the stations from debug/encoded_data and counts the missing samples 
@@ -183,23 +186,21 @@ class Data_mgmt:
 
 		"""
 
-		dataset = pd.read_pickle(dir_path + read_path)
+		dataset = pd.read_pickle(self.dir_path + read_path)
 
 		hour_encoder.fit(self.list_hours)
 		station_encoder.classes_ = self.list_of_stations
 
 		weekday_encoder.classes_ = weekdays
 
-		if append_tutorial is True:
+		self.utils.append_tutorial_title("Encoding Data")
+		self.utils.append_tutorial_text("Encode each column as integers")
+		self.utils.append_tutorial("Got list of " + str(len(self.list_of_stations)) + " stations before encoding", self.list_of_stations)
+		self.utils.append_tutorial_title("Creating Label Encoders and then encoding the previously read dataset")
 
-			self.utils.append_tutorial_title("Encoding Data")
-			self.utils.append_tutorial_text("Encode each column as integers")
-			self.utils.append_tutorial("Got list of " + str(len(self.list_of_stations)) + " stations before encoding", self.list_of_stations)
-			self.utils.append_tutorial_title("Creating Label Encoders and then encoding the previously read dataset")
-
-			self.utils.append_tutorial("Hour Encoder (" + str(len(hour_encoder.classes_)) + " values)", hour_encoder.classes_)
-			self.utils.append_tutorial("Weekday Encoder (" + str(len(weekday_encoder.classes_)) + " values)", weekday_encoder.classes_)
-			self.utils.append_tutorial("Station Encoder (" + str(len(station_encoder.classes_)) + " values)", station_encoder.classes_)
+		self.utils.append_tutorial("Hour Encoder (" + str(len(hour_encoder.classes_)) + " values)", hour_encoder.classes_)
+		self.utils.append_tutorial("Weekday Encoder (" + str(len(weekday_encoder.classes_)) + " values)", weekday_encoder.classes_)
+		self.utils.append_tutorial("Station Encoder (" + str(len(station_encoder.classes_)) + " values)", station_encoder.classes_)
 
 		# Save as a numpy array
 		np.save(dir_path + '/debug/encoders/hour_encoder.npy', hour_encoder.classes_)
@@ -217,7 +218,7 @@ class Data_mgmt:
 		# Save encoded data for each station to an independent file as a .npy file
 		for station in self.list_of_stations:
 
-			file_name = dir_path + save_path + station + ".npy"
+			file_name = self.dir_path + save_path + station + ".npy"
 
 			station_encoded_number = station_encoder.transform([station])[0]
 
@@ -668,8 +669,6 @@ class Data_mgmt:
 
 			list_of_stations = self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
 
-
-
 			# Coger primero todos los máximos valores para luego escalar todos los datos poco a poco
 			self.scaler = self.get_maximums_pre_scaling()
 
@@ -750,7 +749,7 @@ class Data_mgmt:
 		self.utils.append_tutorial_title("Split datasets")
 		self.utils.append_tutorial_text("Dividing whole dataset into training " + str(training_size*100) + "%, validation " + str(validation_size*100) + "% & test " + str(test_size*100) + "%")
 
-		values = np.load("/Users/javierdemartin/Documents/neural-bikes/debug/supervised/FINAL.npy")
+		values = np.load(self.dir_path + "/debug/supervised/FINAL.npy")
 
 		if train_model == True:
 
