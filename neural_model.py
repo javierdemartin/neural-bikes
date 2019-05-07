@@ -98,10 +98,6 @@ class Neural_Model:
 		model.add(GRU(lstm_neurons))
 		model.add(Dense(len_day))
 		
-# 		model.add(LSTM(lstm_neurons * 2, input_shape=(self.train_x.shape[1], self.train_x.shape[2]), return_sequences = True))
-# 		model.add(LSTM(lstm_neurons))
-# 		model.add(Dense(len_day))
-		
 		model.compile(loss='mean_absolute_error', optimizer='adam', metrics = ['acc', rmse])
 
 		return model
@@ -187,10 +183,17 @@ class Neural_Model:
 
 	def tomorrow(self):
 
-		# Copy the latest data from the text file
-		os.system("cp /Users/javierdemartin/Documents/bicis/data/Bilbao.txt " + self.dir_path + "/data/")
 
+		from influxdb import InfluxDBClient
+		client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_Bilbao_Prediction')
+
+		p = "..:.5"
 		list_hours = self.utils.read_csv_as_list(self.dir_path + '/debug/utils/list_hours')
+
+		a = pd.DataFrame(list_hours)
+		a = a[~a[0].str.contains(p)]
+		list_hours = [i[0] for i in a.values.tolist()]
+
 	
 		date = datetime.datetime.today().strftime('%Y/%m/%d')
 
@@ -200,38 +203,50 @@ class Neural_Model:
 		self.model = self.create_model()
 		self.model.load_weights(self.dir_path + "/model/model.h5")
 
+		import time
+
 		self.list_of_stations = self.utils.read_csv_as_list(self.dir_path + "/debug/utils/list_of_stations")
 
-		f = os.popen("tail -n " + str(len(self.list_of_stations) * len_day* 2) + " " + self.dir_path + "/data/Bilbao.txt")
+		# f = os.popen("tail -n " + str(len(self.list_of_stations) * len_day* 2) + " " + self.dir_path + "/data/Bilbao.txt")
 
-		out = f.read().splitlines()
-		f.close()
+		# out = f.read().splitlines()
+		# f.close()
 
 		# Ahora out solo tiene los datos de hoy
-		with open(self.dir_path + '/tomorrow.txt', 'w') as f:
-			for item in out:
-				f.write("%s\n" % item)
+		# with open(self.dir_path + '/tomorrow.txt', 'w') as f:
+		# 	for item in out:
+		# 		f.write("%s\n" % item)
 
-		out = pandas.read_csv(self.dir_path + '/tomorrow.txt')
-		out.columns = ['datetime', 'weekday', 'id', 'station', 'free_docks', 'free_bikes'] # Insert correct column names
+		# out = pandas.read_csv(self.dir_path + '/tomorrow.txt')
+		# out.columns = ['datetime', 'weekday', 'id', 'station', 'free_docks', 'free_bikes'] # Insert correct column names
 
-		out = out[out.datetime.str.contains(yesterday)]
+		# out = out[out.datetime.str.contains(yesterday)]
+
+		current_time = datetime.datetime.today() 
+
+		
 
 		for station in self.list_of_stations:
 
+			json_body = []
+
 			try:
+
 
 				dataset = np.load(self.dir_path + '/debug/yesterday/' + str(station) + ".npy")
 
-				today_data = np.load(self.dir_path + '/debug/today/' + str(station) + ".npy")
+				print(dataset)
+
+				print("SHAPO " + str(dataset.shape))
+
+				today_data = np.load(self.dir_path + '/data/today/' + str(station) + ".npy")
 
 				
 			except (FileNotFoundError, IOError):
 				print("Wrong file or file path for " + self.dir_path + '/data/tomorrow/' + station + '.json')
 
-			a = out[out['station'].isin([station])]['free_bikes'].values
 
-			if a.shape[0] > 0:
+			if len(dataset.shape) > 2:
 				
 				p = self.model.predict(dataset)
 
@@ -253,7 +268,40 @@ class Neural_Model:
 
 				data = dict(zip(list_hours, predo_vals))
 
+				print(data)
+
 				jsonFile = open(self.dir_path + '/data/tomorrow/' + station + '.json', 'w')
 				jsonFile.write(json.dumps(data))
 
-				self.p.two_plot(dataset[:,-1], today_data, "Tiempo", "Bicicletas", str("Prediction for " + station + " for today (" + weekday + ")"), self.dir_path + "/plots/tomorrow/" + station, text = "", line_1 = "Prediction", line_2 = "Real Value")
+
+				for i in range(0,len_day):
+
+					# print(list_hours[i], predo_vals[i])
+
+					print(list_hours[i].split(':'))
+
+					current_time_aux = current_time.replace(hour=int(list_hours[i].split(':')[0]), minute=int(list_hours[i].split(':')[1]))
+
+					current_time_aux = current_time_aux.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+					print(current_time_aux)
+
+					meas = {}
+					meas["measurement"] = "bikes"
+					meas["tags"] = { "station_name" : station}
+					meas["time"] =  current_time_aux
+					meas["fields"] = { "value" : predo_vals[i] }
+
+					print(meas)
+
+					json_body.append(meas)
+
+
+				print(json_body)
+				
+				# errreere()
+
+
+				client.write_points(json_body)
+
+				self.p.two_plot(dataset[:,-1], [0.0], "Tiempo", "Bicicletas", str("Prediction for " + station + " for today (" + weekday + ")"), self.dir_path + "/plots/tomorrow/" + station, text = "", line_1 = "Prediction", line_2 = "Real Value")

@@ -19,15 +19,10 @@ from datetime import timedelta
 
 # Global Configuration Variables
 # ------------------------------------------------------------------
-# They might speed up the script as they do non-vital things such as recollecting
-# statistics
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 train_model = True
-statistics_enabled = True
-print_debug = True
-low_memory_mode = True
 enable_scale = True
 
 weekdays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
@@ -52,9 +47,9 @@ class Data_mgmt:
 
 		self.dir_path = os.path.dirname(os.path.realpath(__file__))
 		
-		os.system("cp /Users/javierdemartin/Documents/bicis/data/Bilbao.txt " + self.dir_path + "/data/")
+		# os.system("cp /Users/javierdemartin/Documents/bicis/data/Bilbao.txt " + self.dir_path + "/data/")
 
-		os.system("chmod 755 " + self.dir_path + "/data/Bilbao.txt")
+		# os.system("chmod 755 " + self.dir_path + "/data/Bilbao.txt")
 
 		self.plotter = Plotter()
 		self.utils = Utils()
@@ -78,6 +73,8 @@ class Data_mgmt:
 		
 		self.list_hours = self.get_hour_list()
 
+		self.list_of_stations = self.new_get_stations()
+
 	def get_hour_list(self):
 
 		p = "..:.5"
@@ -88,13 +85,73 @@ class Data_mgmt:
 		list_hours = [i[0] for i in a.values.tolist()]
 
 		return list_hours
+		
+	def new_read_dataset(self, save_path):
+		
+		'''
+		Pide todos los datos almacenados a la base de datos de InfluxDB y realiza el formateo adecuado
+		'''
+		
+		from influxdb import InfluxDBClient
+		client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_Bilbao_Availability')
+		
+		query_all = 'select * from bikes'
+		
+		dataset = pd.DataFrame(client.query(query_all, chunked=True).get_points())
+		
+		# dataset = dataset[['datetime', 'time', 'weekday', 'station_name', 'value']]
+		
+		dataset.drop(dataset.columns[[0]], axis = 1, inplace = True) 
+
+
+		times = [x.split("T")[1].replace('Z','')[:-3] for x in dataset.values[:,1]]
+
+		dataset["datetime"] = dataset["time"]
+		dataset["weekday"] = dataset["time"]
+
+		f = lambda x: datetime.datetime.strptime(x.split("T")[0],'%Y-%m-%d').timetuple().tm_yday #  len(x["review"].split("disappointed")) -1
+		dataset["datetime"] = dataset["datetime"].apply(f)
+
+		f = lambda x: weekdays[datetime.datetime.strptime(x.split("T")[0],'%Y-%m-%d').weekday()] #  len(x["review"].split("disappointed")) -1
+		dataset["weekday"] = dataset["weekday"].apply(f)
+		
+		dataset["time"] = times
+		# dataset = dataset[dataset['time'].isin(self.list_hours)]
+		dataset["value"] = pd.to_numeric(dataset["value"])
+
+		dataset = dataset[['datetime', 'time', 'weekday', 'station_name', 'value']]
+
+		# Eliminar muestras queno hayan sido recogidas correctamente a horas que no sean intervalos de 10 minutos
+		ps = ["..:.1", "..:.2", "..:.3", "..:.4", "..:.5", "..:.6", "..:.7", "..:.8", "..:.9"]
+
+		print(self.list_of_stations)
+		
+		for p in ps:
+			dataset = dataset[~dataset['time'].str.contains(p)]
+			dataset = dataset[dataset['station_name'].isin(self.list_of_stations)] # TODO: Debugging
+
+		dataset = dataset.reset_index(drop = True) # Reset indexes, so they match the current row
+
+		
+		# Devuelve un DataFrame con las siguientes columnas
+		# [ bikes, time, station_id, station_name, value ]
+		# Tratar el df eliminando la primera columna y la de time dividir la fecha en day of the year (datetime) y time.
+		dataset.to_pickle(self.dir_path + save_path)    #to save the dataframe, df to 123.pkl
+		
 
 	def read_dataset(self, path, save_path):
+
+		'''
+		Reads dataset from file
+		'''
+
+		from influxdb import InfluxDBClient
+		client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_Bilbao_Availability')
 
 		self.utils.append_tutorial_title("Reading Dataset")
 
 		# Read dataset from the CSV file
-		dataset = pandas.read_csv(dir_path + path)
+		dataset = pandas.read_csv(self.dir_path + path)
 
 		dataset.columns = ['datetime', 'weekday', 'id', 'station', 'free_bikes', 'free_docks'] # Insert correct column names
 
@@ -128,9 +185,28 @@ class Data_mgmt:
 		self.utils.append_tutorial(text, dataset.head(20))
 
 		# Save the DataFrame to a Pickle file
-		dataset.to_pickle(dir_path + save_path)    #to save the dataframe, df to 123.pkl
+		dataset.to_pickle(self.dir_path + save_path)    #to save the dataframe, df to 123.pkl
 
-		os.system("chmod 755 " + dir_path + save_path)
+		os.system("chmod 755 " + self.dir_path + save_path)
+
+	def new_get_stations(self):
+
+		from influxdb import InfluxDBClient
+		client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_Bilbao_Availability')
+		query_all = 'select * from bikes'
+		
+		dataset = pd.DataFrame(client.query(query_all, chunked=True).get_points())
+
+		list_of_stations = list(np.unique(dataset["station_name"].values))
+
+		print(list_of_stations)
+
+		client.close()
+
+		self.utils.save_array_txt(self.dir_path + '/debug/utils/list_of_stations', list_of_stations)
+
+		return list_of_stations
+
 
 	# Gets a list of values and returns the list of stations
 	def get_list_of_stations(self, array):
@@ -188,9 +264,14 @@ class Data_mgmt:
 
 		dataset = pd.read_pickle(self.dir_path + read_path)
 
+		print("READ DATASETO ")
+
+		print(dataset)
+
 		hour_encoder.fit(self.list_hours)
 		station_encoder.classes_ = self.list_of_stations
 
+		# Init the LabelEncoder for the weekdays with the previously saved data
 		weekday_encoder.classes_ = weekdays
 
 		self.utils.append_tutorial_title("Encoding Data")
@@ -203,9 +284,9 @@ class Data_mgmt:
 		self.utils.append_tutorial("Station Encoder (" + str(len(station_encoder.classes_)) + " values)", station_encoder.classes_)
 
 		# Save as a numpy array
-		np.save(dir_path + '/debug/encoders/hour_encoder.npy', hour_encoder.classes_)
-		np.save(dir_path + '/debug/encoders/weekday_encoder.npy', weekday_encoder.classes_)
-		np.save(dir_path + '/debug/encoders/station_encoder.npy', station_encoder.classes_)
+		np.save(self.dir_path + '/debug/encoders/hour_encoder.npy', hour_encoder.classes_)
+		np.save(self.dir_path + '/debug/encoders/weekday_encoder.npy', weekday_encoder.classes_)
+		np.save(self.dir_path + '/debug/encoders/station_encoder.npy', station_encoder.classes_)
 
 		# Encode the columns represented by a String with an integer with LabelEncoder()
 
@@ -245,7 +326,7 @@ class Data_mgmt:
 
 
 	def load_encoders(self):
-		return np.load(dir_path + '/debug/encoders/hour_encoder.npy'), np.load(dir_path +'/debug/encoders/weekday_encoder.npy'), np.load(dir_path + '/debug/encoders/station_encoder.npy')
+		return np.load(self.dir_path + '/debug/encoders/hour_encoder.npy'), np.load(self.dir_path +'/debug/encoders/weekday_encoder.npy'), np.load(self.dir_path + '/debug/encoders/station_encoder.npy')
 
 	
 
@@ -254,7 +335,7 @@ class Data_mgmt:
 	def supervised_learning(self):
 
 		self.utils.append_tutorial_title("Supervised Learning")
-		self.list_of_stations = self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
+		self.list_of_stations = self.utils.read_csv_as_list(self.dir_path + "/debug/utils/list_of_stations")
 
 		columns = ['datetime', 'time', 'weekday', 'station', 'free_bikes']
 
@@ -291,7 +372,7 @@ class Data_mgmt:
 		for station in self.list_of_stations:
 
 			try:
-				dataset = np.load(dir_path + '/debug/scaled/' + str(station) + ".npy")
+				dataset = np.load(self.dir_path + '/debug/scaled/' + str(station) + ".npy")
 				dataframe = pd.DataFrame(data=dataset, columns=columns)
 
 				supervised = self.series_to_supervised(columns, dataframe, n_in, n_out)
@@ -314,31 +395,31 @@ class Data_mgmt:
 
 				self.utils.append_tutorial_text("| " + station + " | " + str(supervised.shape[0]) + " | ")
 
-				self.utils.save_array_txt(dir_path + "/debug/supervised/" + station, supervised.values)
-				np.save(dir_path + "/debug/supervised/" + station + '.npy', supervised.values)
+				self.utils.save_array_txt(self.dir_path + "/debug/supervised/" + station, supervised.values)
+				np.save(self.dir_path + "/debug/supervised/" + station + '.npy', supervised.values)
 				
 			except (FileNotFoundError, IOError):
-				print("Wrong file or file path (" + dir_path + '/debug/scaled/' + str(station) + ".npy)" )
+				print("Wrong file or file path (" + self.dir_path + '/debug/scaled/' + str(station) + ".npy)" )
 			
 
 		self.utils.append_tutorial_text("\n")
 
-		final_data = np.load(dir_path + "/debug/supervised/" + self.list_of_stations[0] + ".npy")
+		final_data = np.load(self.dir_path + "/debug/supervised/" + self.list_of_stations[0] + ".npy")
 
 		# Hacerlo con todas las estaciones
 		for i in range(1,len(self.list_of_stations)):
 
 			try:
-				data_read = np.load(dir_path + "/debug/supervised/" + self.list_of_stations[i] + ".npy")
+				data_read = np.load(self.dir_path + "/debug/supervised/" + self.list_of_stations[i] + ".npy")
 				final_data = np.append(final_data, data_read, 0)
-				np.save(dir_path + "/debug/supervised/" + str(self.list_of_stations[i]) + ".npy", final_data)
+				np.save(self.dir_path + "/debug/supervised/" + str(self.list_of_stations[i]) + ".npy", final_data)
 				
 			except (FileNotFoundError, IOError):
 				print("Wrong file or file path")
 
 
-		self.utils.save_array_txt(dir_path + "/debug/supervised/FINAL", final_data)
-		np.save(dir_path + "/debug/supervised/FINAL.npy", final_data)
+		self.utils.save_array_txt(self.dir_path + "/debug/supervised/FINAL", final_data)
+		np.save(self.dir_path + "/debug/supervised/FINAL.npy", final_data)
 
 
 	def series_to_supervised(self, columns, data, n_in=1, n_out=1, dropnan=True):
@@ -400,7 +481,7 @@ class Data_mgmt:
 
 		for station in self.list_of_stations:
 
-			station_read = np.load(dir_path + "/debug/encoded_data/" + station + ".npy")
+			station_read = np.load(self.dir_path + "/debug/encoded_data/" + station + ".npy")
 
 			# Problema cuadno aparece una estación nueva y se entrena el modelo con menos de un día de datos, no iterar si es nueva
 			if station_read.shape[0] > len_day:
@@ -428,11 +509,11 @@ class Data_mgmt:
 				# Borrar las muestras finales que hacen que el día no esté completo
 				filled_array = filled_array[:- (int(filled_array[filled_array.shape[0]-1][1])+1) ,:]
 
-				self.utils.save_array_txt(dir_path + "/debug/filled/" + station + "_filled", filled_array)
+				self.utils.save_array_txt(self.dir_path + "/debug/filled/" + station + "_filled", filled_array)
 
-				np.save(dir_path + '/debug/filled/' + station + '_filled.npy', filled_array)				
+				np.save(self.dir_path + '/debug/filled/' + station + '_filled.npy', filled_array)				
 
-				if enable_scale is False: np.save('/Users/javierdemartin/Documents/neural-bikes/debug/scaled/' + str(station) + ".npy", filled_array)
+				if enable_scale is False: np.save(self.dir_path + '/debug/scaled/' + str(station) + ".npy", filled_array)
 
 		self.utils.append_tutorial_text("\n\n")
 
@@ -642,18 +723,18 @@ class Data_mgmt:
 	#	· The scaler object
 	def get_maximums_pre_scaling(self):
 
-		list_of_stations = self.utils.read_csv_as_list("/Users/javierdemartin/Documents/neural-bikes/debug/utils/list_of_stations")
+		list_of_stations = self.utils.read_csv_as_list(self.dir_path + "/debug/utils/list_of_stations")
 
 		# Get the maximum values for
 		scaler_aux = MinMaxScaler(feature_range=(0,1))
 
-		dataset = np.load('/Users/javierdemartin/Documents/neural-bikes/debug/filled/' + list_of_stations[0] + '_filled.npy')
+		dataset = np.load(self.dir_path +  '/debug/filled/' + list_of_stations[0] + '_filled.npy')
 
 		a = dataset
 
 		for i in range(1, len(list_of_stations)):
 
-			dataset = np.load('/Users/javierdemartin/Documents/neural-bikes/debug/filled/' + list_of_stations[i] + '_filled.npy')
+			dataset = np.load(self.dir_path + '/debug/filled/' + list_of_stations[i] + '_filled.npy')
 			
 			a = np.concatenate((a,dataset), axis = 0)
 
@@ -667,23 +748,23 @@ class Data_mgmt:
 
 			self.utils.append_tutorial_title("Scaling dataset")
 
-			list_of_stations = self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
+			list_of_stations = self.utils.read_csv_as_list(self.dir_path + "/debug/utils/list_of_stations")
 
 			# Coger primero todos los máximos valores para luego escalar todos los datos poco a poco
 			self.scaler = self.get_maximums_pre_scaling()
 
 			for station in list_of_stations:
 
-					dataset = np.load(dir_path + '/debug/filled/' + station + '_filled.npy')
+					dataset = np.load(self.dir_path + '/debug/filled/' + station + '_filled.npy')
 
 					if dataset.shape[0] > (len_day*2):
 
 						dataset = scaler.transform(dataset)
 
-						np.save('/Users/javierdemartin/Documents/neural-bikes/debug/scaled/' + str(station) + ".npy", dataset)
-						self.utils.save_array_txt('/Users/javierdemartin/Documents/neural-bikes/debug/scaled/' + str(station), dataset)
+						np.save(self.dir_path + '/debug/scaled/' + str(station) + ".npy", dataset)
+						self.utils.save_array_txt(self.dir_path + '/debug/scaled/' + str(station), dataset)
 
-			pickle.dump(scaler, open("/Users/javierdemartin/Documents/neural-bikes/MinMaxScaler.sav", 'wb'))
+			pickle.dump(scaler, open(self.dir_path + "/MinMaxScaler.sav", 'wb'))
 
 			self.utils.append_tutorial_text("| Values | datetime | time | weekday | station | free_bikes |")
 			self.utils.append_tutorial_text("| --- | --- | --- | --- | --- | --- |")
@@ -712,7 +793,7 @@ class Data_mgmt:
 		"""
 
 		scaler = MinMaxScaler()
-		scaler = pickle.load(open(dir_path +  "/MinMaxScaler.sav", 'rb'))
+		scaler = pickle.load(open(self.dir_path +  "/MinMaxScaler.sav", 'rb'))
 
 		dataset = scaler.transform(dataset)
 
@@ -731,12 +812,12 @@ class Data_mgmt:
 
 	def load_datasets(self):
 
-		train_x = np.load('/Users/javierdemartin/Documents/neural-bikes/data/train_x.npy')
-		train_y = np.load('/Users/javierdemartin/Documents/neural-bikes/data/train_y.npy')
-		test_x = np.load('/Users/javierdemartin/Documents/neural-bikes/data/test_x.npy')
-		test_y = np.load('/Users/javierdemartin/Documents/neural-bikes/data/test_y.npy')
-		validation_x = np.load('/Users/javierdemartin/Documents/neural-bikes/data/validation_x.npy')
-		validation_y = np.load('/Users/javierdemartin/Documents/neural-bikes/data/validation_y.npy')
+		train_x = np.load(self.dir_path + '/data/train_x.npy')
+		train_y = np.load(self.dir_path + '/data/train_y.npy')
+		test_x = np.load(self.dir_path + '/data/test_x.npy')
+		test_y = np.load(self.dir_path + '/data/test_y.npy')
+		validation_x = np.load(self.dir_path + '/data/validation_x.npy')
+		validation_y = np.load(self.dir_path + '/data/validation_y.npy')
 
 		return train_x, train_y, validation_x, validation_y, test_x, test_y
 
@@ -769,18 +850,27 @@ class Data_mgmt:
 			validation_x, validation_y = self.split_input_output(validation)
 			test_x, test_y             = self.split_input_output(test)
 
-			np.save('/Users/javierdemartin/Documents/neural-bikes/data/train_x.npy', train_x)
-			np.save('/Users/javierdemartin/Documents/neural-bikes/data/train_y.npy', train_y)
-			np.save('/Users/javierdemartin/Documents/neural-bikes/data/test_x.npy', test_x)
-			np.save('/Users/javierdemartin/Documents/neural-bikes/data/test_y.npy', test_y)
-			np.save('/Users/javierdemartin/Documents/neural-bikes/data/validation_x.npy', validation_x)
-			np.save('/Users/javierdemartin/Documents/neural-bikes/data/validation_y.npy', validation_y)
+			np.save(self.dir_path + '/data/train_x.npy', train_x)
+			np.save(self.dir_path + '/data/train_y.npy', train_y)
+			np.save(self.dir_path + '/data/test_x.npy', test_x)
+			np.save(self.dir_path + '/data/test_y.npy', test_y)
+			np.save(self.dir_path + '/data/validation_x.npy', validation_x)
+			np.save(self.dir_path + '/data/validation_y.npy', validation_y)
+
+
+			print("Train X " + str(train_x.shape))
+			print("Train Y " + str(train_y.shape))
+			print("Test X " + str(test_x.shape))
+			print("Test Y " + str(test_y.shape))
+			print("Validation X " + str(validation_x.shape))
+			print("Validation Y " + str(validation_y.shape))
 
 			self.utils.append_tutorial_text("\n| Dataset | Percentage | Samples |")
 			self.utils.append_tutorial_text("| --- | --- | --- |")
 			self.utils.append_tutorial_text("| Training | " + str(training_size*100) + " | " + str(train_size_samples) + " | ")
 			self.utils.append_tutorial_text("| Validation | " + str(validation_size*100) + " | " + str(validation_size_samples) + " | ")
 			self.utils.append_tutorial_text("| Test | " + str(test_size*100) + " | " + str(test_size_samples) + " | \n\n")
+
 
 	def prepare_tomorrow(self):
 
@@ -801,63 +891,189 @@ class Data_mgmt:
 
 		"""
 
-		dataset = pd.read_pickle(dir_path + '/data/Bilbao.pkl')
 
-		print("READ DATASET LOCO")
-		print("---------------------")
+		from datetime import datetime, timedelta
+		from influxdb import InfluxDBClient
+		import time
 
-		print(dataset)
 
-		print("------------------------------------------------------------------------------------------------------------------------------")
+		client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_Bilbao_Availability')
+
+		
+
+		current_time = time.strftime('%Y-%m-%dT00:00:00Z',time.localtime(time.time()))
+		
+		self.list_of_stations = self.utils.read_csv_as_list(self.dir_path + "/debug/utils/list_of_stations")
+
+		dataset = pd.read_pickle(self.dir_path + '/data/Bilbao.pkl')
 
 
 		self.utils.check_and_create("/debug/tomorrow")
 		self.utils.check_and_create("/debug/yesterday")
-		self.list_of_stations = self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
+		self.list_of_stations = self.utils.read_csv_as_list(self.dir_path + "/debug/utils/list_of_stations")
 
-		we = LabelEncoder()
- 
-		he, we.classes_, se = self.load_encoders()
+		d = time.strftime('%Y-%m-%dT00:00:00Z',time.localtime(time.time()))
 
-		today = datetime.datetime.today()
-		today = today.strftime('%Y/%m/%d')
-		today = datetime.datetime.strptime(today, '%Y/%m/%d').timetuple().tm_yday		
+		today = datetime.today()
+		weekday = weekdays[(today - timedelta(days=1)).weekday()]
+		yesterday = today - timedelta(days=1)
+		yesterday = yesterday.strftime('%Y-%m-%dT00:00:00Z')
+		today = today.strftime('%Y-%m-%dT00:00:00Z')
 
-		yesterday = datetime.datetime.today() - datetime.timedelta(1)
-		yesterday = yesterday.strftime('%Y/%m/%d')
-		yesterday = datetime.datetime.strptime(yesterday, '%Y/%m/%d').timetuple().tm_yday
+		
+
+		print(yesterday)
+		print(today)
+		print(weekday)
 
 		for station in self.list_of_stations:
 
 			try:
+
+				query = 'select * from bikes where time > \'' + str(yesterday) + '\' and time < \'' + today + '\' and station_name=\'' + str(station) + '\''
+
+
 				
-				# Guardar los datos
-				dataset = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
-				out = dataset[dataset.datetime.isin([yesterday])]
-				out = out[out['station'].isin([station])] # ['free_bikes'].values
 
-				if out.shape[0] > 0:
+				dataset = pd.DataFrame(client.query(query, chunked=True).get_points())
 
-					today_data = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
-					today_data = today_data[today_data.datetime.isin([today])]
-					today_data = today_data[today_data['station'].isin([station])]['free_bikes'].values
+				print(dataset)
 
-					out = self.encoder_helper(out)
+				if dataset.size > 0:
 
-					n_holes = self.find_holes(out)[0]
+					dataset.drop(['station_id'], axis=1, inplace=True)
+
+					print("################################")
+					print(dataset)
+
+					# ['datetime', 'weekday', 'id', 'station', 'free_bikes', 'free_docks'] # Insert correct column names
+
+					
+
+					print(dataset)
+
+					dataset['weekday'] = weekday
+					dataset['datetime'] = (datetime.today() - timedelta(days=1)).timetuple().tm_yday
 
 
-					out = self.fill_holes(out,n_holes)
-					out = self.scaler_helper(out)
-					out = out.reshape(1,144,5)
+					times = [x.split("T")[1].replace('Z','')[:-3] for x in dataset.values[:,1]]
+
+					dataset["time"] = times
+					dataset = dataset[dataset['time'].isin(self.list_hours)]
+
+					dataset = dataset[['datetime', 'time', 'weekday', 'station_name', 'value']]
+
+					# print(dataset)
+
+
+					dataset["value"] = pd.to_numeric(dataset["value"])
+
+					out = self.encoder_helper(dataset)
+
+					if out.shape[0] > 0:
+
+						today_data = dataset[dataset['station_name'].isin(self.list_of_stations)] # TODO: Debugging
+						today_data = today_data[today_data.datetime.isin([today])]
+						today_data = today_data[today_data['station_name'].isin([station])]['value'].values
+
+						out = self.encoder_helper(dataset)
+
+						n_holes = self.find_holes(out)[0]
+
+
+						out = self.fill_holes(out,n_holes)
+						out = self.scaler_helper(out)
+						out = out.reshape(1,144,5)
+
+						print(out)
 
 
 
-					np.save(dir_path + "/debug/today/" + station + '.npy', today_data)
-					np.save(dir_path + "/debug/yesterday/" + station + ".npy", out)
+						np.save(self.dir_path + "/debug/yesterday/" + station + ".npy", out)
 				
 			except (FileNotFoundError, IOError):
-				print("Wrong file or file path (" + dir_path + "/debug/yesterday/" + station + ".npy)")
+				print("Wrong file or file path (" + self.dir_path + "/debug/yesterday/" + station + ".npy)")
+
+	# def prepare_tomorrow(self):
+
+	# 	"""
+	# 	Saves for each station an independent file with yesterday's availability to predict today's.
+
+
+	# 	Parameters
+	# 	----------
+	# 	array : Numpy.ndarray
+			
+
+	# 	Returns
+	# 	-------
+	# 	no_missing_samples: Int
+	# 		Number of missing samples in the 
+	# 	missing_days: Int
+
+	# 	"""
+
+	# 	dataset = pd.read_pickle(self.dir_path + '/data/Bilbao.pkl')
+
+	# 	print("READ DATASET LOCO")
+	# 	print("---------------------")
+
+	# 	print(dataset)
+
+	# 	print("------------------------------------------------------------------------------------------------------------------------------")
+
+
+	# 	self.utils.check_and_create("/debug/tomorrow")
+	# 	self.utils.check_and_create("/debug/yesterday")
+	# 	self.list_of_stations = self.utils.read_csv_as_list(self.dir_path + "/debug/utils/list_of_stations")
+
+	# 	we = LabelEncoder()
+ 
+	# 	he, we.classes_, se = self.load_encoders()
+
+	# 	today = datetime.datetime.today()
+	# 	today = today.strftime('%Y/%m/%d')
+	# 	today = datetime.datetime.strptime(today, '%Y/%m/%d').timetuple().tm_yday		
+
+	# 	yesterday = datetime.datetime.today() - datetime.timedelta(1)
+	# 	yesterday = yesterday.strftime('%Y/%m/%d')
+	# 	yesterday = datetime.datetime.strptime(yesterday, '%Y/%m/%d').timetuple().tm_yday
+
+	# 	for station in self.list_of_stations:
+
+	# 		try:
+				
+
+
+	# 			# Guardar los datos
+	# 			dataset = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
+	# 			out = dataset[dataset.datetime.isin([yesterday])]
+	# 			out = out[out['station'].isin([station])] # ['free_bikes'].values
+
+	# 			if out.shape[0] > 0:
+
+	# 				# today_data = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
+	# 				# today_data = today_data[today_data.datetime.isin([today])]
+	# 				# today_data = today_data[today_data['station'].isin([station])]['free_bikes'].values
+
+	# 				out = self.encoder_helper(out)
+
+	# 				n_holes = self.find_holes(out)[0]
+
+
+	# 				out = self.fill_holes(out,n_holes)
+	# 				out = self.scaler_helper(out)
+	# 				out = out.reshape(1,144,5)
+
+	# 				print(out)
+	# 				sadfas()
+
+
+	# 				# np.save(self.dir_path + "/debug/today/" + station + '.npy', today_data)
+	# 				np.save(self.dir_path + "/debug/yesterday/" + station + ".npy", out)
+				
+	# 		except (FileNotFoundError, IOError):
+	# 			print("Wrong file or file path (" + self.dir_path + "/debug/yesterday/" + station + ".npy)")
 
 
 	def prepare_today(self):
@@ -879,9 +1095,14 @@ class Data_mgmt:
 
 		"""
 
-		dataset = pd.read_pickle(dir_path + '/data/Bilbao.pkl')
+		from influxdb import InfluxDBClient
+		client = InfluxDBClient('localhost', '8086', 'root', 'root', 'Bicis_Bilbao_Availability')
+
+		import time
+
+		current_time = time.strftime('%Y-%m-%dT00:00:00Z',time.localtime(time.time()))
 		
-		self.list_of_stations = self.utils.read_csv_as_list(dir_path + "/debug/utils/list_of_stations")
+		self.list_of_stations = self.utils.read_csv_as_list(self.dir_path + "/debug/utils/list_of_stations")
 		
 		today = datetime.datetime.today()
 		today = today.strftime('%Y/%m/%d')
@@ -890,35 +1111,46 @@ class Data_mgmt:
 		for station in self.list_of_stations:
 
 
-			
-
 			try:
-				
-				# Guardar los datos
-				dataset = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
-				out = dataset[dataset.datetime.isin([today])]
-				out = out[out['station'].isin([station])]
 
-				if out.shape[0] > 0:
+				dataset = pd.DataFrame(client.query('select * from bikes where time > \'' + str(current_time) + '\' and station_name=\'' + str(station) + '\'', chunked=True).get_points())
 
-					today_data = dataset[dataset['station'].isin(self.list_of_stations)] # TODO: Debugging
-					today_data = today_data[today_data.datetime.isin([today])]
-					today_data = today_data[today_data['station'].isin([station])]['free_bikes']
+				print(dataset.size)
 
-					out = self.encoder_helper(out)
-					out = self.fill_holes(out, self.find_holes(out)[0])
+				if dataset.size > 0:
 
-					# Guarda los datos de hoy como enteros, los saca del array y los pne como lista
-					out = [int(i) for i in out[:,4]]
+					dataset.drop(['station_id','station_name'], axis=1, inplace=True)
+
+					print(dataset)
+
+					times = [x.split("T")[1].replace('Z','')[:-3] for x in dataset.values[:,0]]
+
+					dataset["time"] = times
 
 
+					# dataset['datetime'] = [datetime.datetime.today().strptime(x, '%Y-%m-%dT%H:%M:%SZ').timetuple().tm_yday for x in dataset.values[:,0]]
+
+					# Insertar en la columna time las hoas
+					# dataset.insert(loc = 1, column = 'time', value = times)
+
+					# Delete incorrectly sampled hours that don't match five minute intervals
+					dataset = dataset[dataset['time'].isin(self.list_hours)]
+
+					print(dataset)
+
+					values = dataset.values
+
+					out = [int(i) for i in values[:,1]]
 					data = dict(zip(self.list_hours, out))
 
-					#self.utils.save_array_txt(dir_path + "/rando/" + station, json.dumps(data))
 
-					jsonFile = open(dir_path + '/data/today/' + station + '.json', 'w+')
+					print(data)
+
+
+					jsonFile = open(self.dir_path + '/data/today/' + station + '.json', 'w+')
 					jsonFile.write(json.dumps(data))
-					jsonFile.close()
-				
-			except (FileNotFoundError, IOError):
-				print("Wrong file or file path")	
+				jsonFile.close()
+
+
+			except(pandas.errors.EmptyDataError):
+				print("NO FOR STATION " + str(station))
