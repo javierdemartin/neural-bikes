@@ -36,32 +36,28 @@ for station in d.list_of_stations:
 
 	if data.size == 0:
 		continue
-
-
+	
+	
 	data = data[['time', 'station_id', 'station_name', 'value']]
 
-	data['time'] = pd.to_datetime(data['time'])
+	data['time'] = data['time'].map( lambda x: x[:-4] )
+	data.index = data['time']
+	data.index = pd.to_datetime( data.index )
+	data.drop(['time'], axis=1, inplace=True)
 	data['station_id'] = pd.to_numeric(data['station_id'])
 	data['value'] = pd.to_numeric(data['value'])
-
-	date_str = data['time'].iloc[0].strftime('%Y-%m-%d')
-	time_range = pd.date_range(date_str + ' 00:00:00+00:00', date_str + ' 23:50:00+00:00', freq='10T')
-
-	data = data.set_index(keys=['time']).resample('10min').bfill()
-
-	df = data.reindex(time_range, fill_value=np.NaN)
-	df = df.reset_index()
-	df.columns = ['time', 'station_id','station_name', 'value']
-
-	df['time'] = pd.to_datetime(df['time'])
-
-	df['value'] = df['value'].fillna(method='bfill')
-	df['station_id'] = df['station_id'].fillna(method='bfill')
-	df['station_name'] = df['station_name'].fillna(method='bfill')
-
+		
+	date_str = data.iloc[0].name.strftime('%Y-%m-%d')
+	time_range = pd.date_range(date_str + ' 00:00', date_str + ' 23:50', freq='10T')
+		
+	data = data.reindex( time_range )	# by default fills with NaN
+	data = data.interpolate(limit_direction='both')
+	data['station_name'] = data['station_name'].mode()[0]
 
 	data = data.reset_index()
-
-
-	p.two_plot(df["value"].values, pred["value"].values, "", "", "", dir_path + "/plots/tomorrow/" + str(station))
+	data.columns = ['time', 'station_id','station_name', 'value']
+	
+	
+	
+	p.two_plot(data["value"].values, pred["value"].values, "", "", "", dir_path + "/plots/tomorrow/" + str(station))
 
