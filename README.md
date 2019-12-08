@@ -2,7 +2,7 @@
 
 [![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H2H814TXG).
 
-![Neural Bikes in action](resources/promo.png)
+![Neural Bikes in action](resources/promo.png =450x)
 
 I have a brief description and architecture of this project in my [blog](https://javierdemart.in/blog/Bicis_App_Architecture). 
 
@@ -14,17 +14,9 @@ Restocking bikes in a system is a difficult problem to solve. Unequal riding pat
 
 Neural Bikes is a Machine Learning backend for my project, Bicis. A service to predict bike sharing availability and help users of those services.
 
-### App
-
-[iOS app](http://app.neural.bike)
-
-### Web
-
-[Web](http://neural.bike)
-
-### API
-
-Available endpoints:
+* [Web](http://neural.bike)
+* [iOS app](http://app.neural.bike)
+* API, available endpoints:
 
 ```
 https://javierdemart.in/api/v1/prediction/madrid
@@ -33,8 +25,6 @@ https://javierdemart.in/api/v1/today/madrid
 https://javierdemart.in/api/v1/prediction/bilbao
 https://javierdemart.in/api/v1/today/bilbao
 ```
-
-More info [here](https://javierdemart.in/blog/Launching_Neural_Bikes_API).
 
 ## Where does the data come from?
 
