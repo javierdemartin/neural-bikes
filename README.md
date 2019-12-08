@@ -2,7 +2,7 @@
 
 [![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H2H814TXG).
 
-![Neural Bikes in action](resources/promo.png =450x)
+![Neural Bikes in action](resources/promo.png)
 
 I have a brief description and architecture of this project in my [blog](https://javierdemart.in/blog/Bicis_App_Architecture). 
 
