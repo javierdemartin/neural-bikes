@@ -56,7 +56,7 @@ Finally, in case there are missing rows they are filled and then the dataset is 
 
 Start off analyzing the usage patterns during the days. If you use a bike sharing service you have a mental model of the busiest and quietest stations. To understand more deeply every neighbourhood and the possible variations in the city I classified the stations. This script produces a classification of the stations in categories depending of the behaviour.
 
-A separate analysis for the city of Bilbao can be found [here](https://javierdemart.in/cluster).
+To read a more detailed analysis of the clustering of stations in Bilbao head [here](https://javierdemart.in/cluster).
 
 ### Training
 
