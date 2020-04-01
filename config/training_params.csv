@@ -1,2 +1,6 @@
-batch_size,epochs
-200, 50
+city,batch_size,epochs
+bilbao,200,20
+berlin,500,50
+madrid,1000,50
+new_york,1000,50
+chicago,100,50

@@ -8,52 +8,60 @@ sns.set_context('talk')
 import os
 from Data_mgmt import Data_mgmt
 from utils import Utils
+import folium
+import os
+from kneed import DataGenerator, KneeLocator
+from Plotter import Plotter
 
 
 class Cluster:
 
-	def __init__(self):
-		print("HE")
+	# Specify if the clustering has to be done
+	weekday_analysis = True
+	city = ""
+	n_clusters = -1
+	plotter = Plotter()
+	dir_path = ""
+	locations = ""
+	position = ""
+	
+	Ks = range(1,11)
 
-	def do_cluster(self, citio):
+	def __init__(self, weekday_analysis = True, city = ""):
+		self.weekday_analysis = weekday_analysis
+		self.city = city
+		self.dir_path = os.path.dirname(os.path.realpath(__file__))
+
+
+	def do_cluster(self):
 	
-		print("**********************")
-		print("** Cluster analysis **")
-		print("**********************\n\n")
-	
-		print("> Performing cluster analysis for " + citio)
+		print("> Performing cluster analysis for " + self.city)
 
 		self.d = Data_mgmt()
-		# Specify if the clustering has to be done
-		weekday_analysis = True
-
-		if weekday_analysis == True:
-			type_of_analysis = "weekday"
-		else:
-			type_of_analysis = "weekend"
-
-		locations = Utils(city=citio).stations_from_web(city = citio)
-
-		position = [locations['lat'].iloc[0], locations['lon'].iloc[0]]
-
-		dir_path = os.path.dirname(os.path.realpath(__file__))
-
 
 		print("> Reading dataset from DB")
 		raw = self.d.read_dataset(no_date_split=True)
+		
+		labels = self.cluster_analysis("weekday", raw)
 
-		max_bikes = raw.groupby('station_name')['value'].max()
+		return labels
+
+		
+	# Type is weekday or weekend
+	def cluster_analysis(self, type, raw_data):
+	
+		self.locations = Utils(city=self.city).stations_from_web(city = self.city)
+		self.position = [self.locations['lat'].iloc[0], self.locations['lon'].iloc[0]]
+	
+		max_bikes = raw_data.groupby('station_name')['value'].max()
 
 		print("> There are " + str(max_bikes.shape[0]) + " stations")
 
 		wrong_stations = max_bikes[max_bikes == 0].index.tolist()
 
-		print(">>>> Stations that have maximum number of bikes as zero")
-		print(wrong_stations)
+		well_station_mask = np.logical_not(raw_data['station_name'].isin(wrong_stations))
 
-		well_station_mask = np.logical_not(raw['station_name'].isin(wrong_stations))
-
-		data = raw[well_station_mask]
+		data = raw_data[well_station_mask]
 
 		# Time resampling, get data every 5 minutes
 		df = (data.set_index('time')
@@ -63,29 +71,32 @@ class Cluster:
 				.bfill())
 
 		df = df.unstack(0)
-
-
+	
 		# Daily profile getting rid out of sat and sun 
 		weekday = df.index.weekday
-
-
-		print("> Analysis for " + type_of_analysis)
-
-		if weekday_analysis == True:
+		
+		title = "Cluster analysis for " + sys.argv[1] 
+		
+		if type == "weekday":
 			mask = weekday < 5
+			title += " on weekdays"
+			type_of_analysis = "weekday"
 		else:
 			mask = weekday > 4
-
-		df = df[mask]
+			title += " on weekends"
+			type_of_analysis = "weekend"
+			
+		if not os.path.exists(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data"):
+			os.makedirs(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data")
+		if not os.path.exists(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + type):
+			os.makedirs(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + type)
+		if not os.path.exists(self.dir_path + "/plots/" + self.city +  "/cluster/"):
+			os.makedirs(self.dir_path + "/plots/" + self.city +  "/cluster/")
 
 		df['hour'] = df.index.hour
 
 
 		df = df.groupby('hour').mean()
-
-
-		# Clusters
-		n_clusters = 4
 
 		# normalization
 		df_norm = df / df.max()
@@ -99,24 +110,68 @@ class Cluster:
 		
 		df_norm = df_norm.replace([np.inf, -np.inf], np.nan)
 		df_norm = df_norm.fillna(df_norm.mean())
+		
+		df_norm.index.name = 'id'
+		
+		distortions = []
+		
+		for k in self.Ks:
+			kmeanModel = KMeans(n_clusters=k)
+			kmeanModel.fit(df_norm.T)
+			distortions.append(kmeanModel.inertia_)
+			
+		kneedle = KneeLocator(self.Ks, distortions, curve='convex', direction='decreasing')
 
-		kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(df_norm.T)
+		self.n_clusters = round(kneedle.knee)
+					
+		plt.figure(figsize=(15,9))
+
+		plt.xlabel('Hour')
+		plt.xticks(np.linspace(0,24,13))
+		plt.yticks(np.linspace(0,100,11))
+		plt.ylabel("Available bikes (%)")
+
+		plt.title(title)
+		sns.despine()
+		
+		ax = plt.axes(frameon=True)
+
+# 		ax.spines["top"].set_visible(False)
+# 		ax.spines["bottom"].set_visible(False)
+# 		ax.spines["right"].set_visible(False)
+# 		ax.spines["left"].set_visible(False)
+
+		ax.set_xlim(left = 0, right = 11)
+		ax.xaxis.label.set_visible(False)
+		
+		plt.plot(self.Ks, distortions, 'bx-')
+		plt.axvline(x=self.n_clusters, linewidth=4, color='r')
+		plt.title('The Elbow Method showing the optimal k (' + str(self.n_clusters) + ")")
+		plt.savefig(self.dir_path + "/plots/" + self.city +  "/cluster/elbow_method.png")
+		plt.close()
+		
+		distortions_df = pd.DataFrame(distortions)
+
+		distortions_df.to_csv(self.dir_path + "/data/" + self.city +  "/cluster/distortions.csv", index_label='id', header=['values'])
+
+		
+		kmeans = KMeans(n_clusters=self.n_clusters, random_state=0).fit(df_norm.T)
 		label = pd.Series(kmeans.labels_)
 
-		# Number of stations for each label, usage pattern
-# 		print(label.groupby(label).count())
-
-		colors = sns.color_palette('cubehelix', n_clusters)
+		colors = sns.color_palette('bright', self.n_clusters)
 
 		sns.palplot(colors)
+		
+		cluster_df = pd.DataFrame(kmeans.cluster_centers_)
+		
+		(cluster_df.T).to_csv(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/data.csv", index_label='id')	
 
-		pd.DataFrame(kmeans.cluster_centers_).to_csv(dir_path + "/data/" + citio +  "/cluster/" + str(citio) + "_clusters_" + type_of_analysis +".csv", index=False)
-
+		cluster_df.to_csv(self.dir_path + "/data/" + self.city +  "/cluster/" + str(self.city) + "_clusters_" + type_of_analysis +".csv", index=False)
 
 		with sns.axes_style("darkgrid", {'xtick.major.size': 8.0}):
 			fig, ax = plt.subplots(figsize=(10,6))
 
-		for k, label, color in zip(kmeans.cluster_centers_, range(n_clusters), colors):
+		for k, label, color in zip(kmeans.cluster_centers_, range(self.n_clusters), colors):
 			plt.plot(100*k, color=color, label=label)
 
 		plt.legend()
@@ -125,57 +180,88 @@ class Cluster:
 		plt.yticks(np.linspace(0,100,11))
 		plt.ylabel("Available bikes (%)")
 
-		title = "Cluster analysis for " + sys.argv[1] 
-
-		if weekday_analysis == True:
-			title += " on weekdays"
-			type_of_analysis = "weekday"
-		else:
-			title += " on weekends"
-			type_of_analysis = "weekend"
-
 		plt.title(title)
 		sns.despine()
-		plt.savefig(dir_path + "/data/" + citio +  "/cluster/" + str(sys.argv[1]) + "_pattern_" + type_of_analysis  + ".png")
+		plt.savefig(self.dir_path + "/plots/" + self.city +  "/cluster/" + str(sys.argv[1]) + "_pattern_" + type_of_analysis  + ".png")
 
-		# Map locations and names
+		mask = np.logical_not(self.locations['nom'].isin(wrong_stations))
 
-
-		mask = np.logical_not(locations['nom'].isin(wrong_stations))
-
-		locations = locations[mask]
+		self.locations = self.locations[mask]
 
 		dflabel = pd.DataFrame({"label": kmeans.labels_}, index=df_norm.columns)
+		
 
-	
+		self.locations = self.locations.merge(dflabel, right_index=True, left_on='nom')
+		
+		self.locations.drop_duplicates(inplace=True)
 
-		locations = locations.merge(dflabel, right_index=True, left_on='nom')
-
-		import folium
-
-		mp = folium.Map(location=position, zoom_start=13, tiles='cartodbpositron')
+		mp = folium.Map(location=self.position, zoom_start=13, tiles='cartodbpositron')
 
 		hex_colors = colors.as_hex()
 
-		for _, row in locations.iterrows():
+		for _, row in self.locations.iterrows():
 
 			folium.CircleMarker(
-			location=[row['lat'], row['lon']],
-			radius = 5,
-			popup = row['nom'],
-			color = hex_colors[row['label']],
-			fill = True,
-			fill_opacity = 0.5,
-			foll_color = hex_colors[row['label']]
+				location=[row['lat'], row['lon']],
+				radius = 5,
+				popup = row['nom'],
+				color = hex_colors[row['label']],
+				fill = True,
+				fill_opacity = 0.5,
+				foll_color = hex_colors[row['label']]
 			).add_to(mp)
 
 
-		mp.save(dir_path + "/data/" + citio +  "/cluster/" + str(sys.argv[1]) + "_map_" + type_of_analysis + ".html")
-		
+		mp.save(self.dir_path + "/plots/" + self.city +  "/cluster/" + str(sys.argv[1]) + "_map_" + type_of_analysis + ".html")
+				
 		dflabel = dflabel.reset_index()
-	
-		dflabel.to_csv(dir_path + "/data/" + citio +  "/cluster/" + "cluster_stations.csv", index=False)	
 		
-		dflabel.to_csv(dir_path + "/data/" + citio +  "/cluster/" + str(sys.argv[1]) + "-stations-" + type_of_analysis + ".csv", index=False)
-	
+		labels_dict = dict(zip(dflabel.station_name, dflabel.label))
+		
+		for label in dflabel.label.unique():
+		
+			if not os.path.exists(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + str(label)):
+				os.makedirs(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + str(label))
+			
+			result = [k for k,v in labels_dict.items() if v == label]
+			
+			plt.close()
+			plt.legend()
+			plt.figure(figsize=(15,9))
 
+			plt.xlabel('Hour')
+			plt.xticks(np.linspace(0,24,13))
+			plt.yticks(np.linspace(0,100,11))
+			plt.ylabel("Available bikes (%)")
+
+			plt.title(title)
+			sns.despine()
+
+			ax.spines["top"].set_visible(False)
+			ax.spines["bottom"].set_visible(False)
+			ax.spines["right"].set_visible(False)
+			ax.spines["left"].set_visible(False)
+			ax = plt.axes(frameon=False)
+
+			ax.set_xlim(left = 0, right = 24)
+			ax.xaxis.label.set_visible(False)
+			
+			for station in result:
+			
+				selected_df = df_norm[station].apply(lambda x: x*100)		
+
+				plt.plot(selected_df.values,color = '#458DE1')
+				plt.ylabel("Available bikes (%)")
+				
+# 				(selected_df).to_csv(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + str(label) + "/" + station + ".csv", index_label='id', header=['values'])	
+				(selected_df).to_csv(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + station + ".csv", index_label='id', header=['values'])	
+
+			plt.title(title + " for cluster name " + str(label))
+			plt.savefig(self.dir_path + "/plots/" + self.city +  "/cluster/" + str(sys.argv[1]) + "_pattern_" + type_of_analysis + "_cluster_" + str(label)  + ".png")
+			plt.close()			
+	
+		dflabel.to_csv(self.dir_path + "/data/" + self.city +  "/cluster/" + "cluster_stations.csv", index=False)	
+		
+		dflabel.to_csv(self.dir_path + "/data/" + self.city +  "/cluster/" + str(sys.argv[1]) + "-stations-" + type_of_analysis + ".csv", index=False)
+
+		return dflabel
