@@ -108,7 +108,7 @@ tzlocal==1.5.1
 urllib3==1.25.6
 wcwidth==0.1.7
 webencodings==0.5.1
-Werkzeug==0.15.1
+Werkzeug==0.15.3
 widgetsnbextension==3.5.0
 xlrd==1.2.0
 XlsxWriter==1.2.2
