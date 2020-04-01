@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import textwrap as tw
+import matplotlib.style as style
+style.available
 
 class Plotter:
 
@@ -7,36 +9,66 @@ class Plotter:
 		print("")
 
 	def plot(self, data, xlabel, ylabel, title, path):
+	
+	
+		colors = [[0,0,0], [230/255,159/255,0], [86/255,180/255,233/255], [0,158/255,115/255],
+          [213/255,94/255,0], [0,114/255,178/255]]
+	
+		plt.plot(x = 'Year', y = data, figsize = (16,8))
+		plt.tick_params(axis = 'both', which = 'major', labelsize = 18)
+# 		plt.set_yticklabels(labels = [-10, '0   ', '10   ', '20   ', '30   ', '40   ', '50%'])
+# 		plt.axhline(y = 0, color = 'black', linewidth = 1.3, alpha = .7)
 
-		min_y = 0.0 #min(data)
-		max_y = max(data)
+# 		
 
-		plt.figure(figsize=(12, 9))
-		ax = plt.subplot(111)
+		# plt.text(x = 1965.8, y = -7,
+# 			s = '   ©DATAQUEST                                                                                 Source: National Center for Education Statistics   ',
+# 			fontsize = 14, color = '#f0f0f0', backgroundcolor = 'grey')
+# 
+# 
+# 		# Adding a title and a subtitle
+# 		plt.text(x = 1966.65, y = 62.7, s = "The gender gap is transitory - even for extreme cases",
+# 					   fontsize = 26, weight = 'bold', alpha = .75)
+# 		plt.text(x = 1966.65, y = 57,
+# 					   s = 'Percentage of Bachelors conferred to women from 1970 to 2011 in the US for\nextreme cases where the percentage was less than 20% in 1970',
+# 					  fontsize = 19, alpha = .85)
+					  
+# 
+# 		min_y = 0.0 #min(data)
+# 		max_y = max(data)
+# 
+# 		plt.figure(figsize=(12, 9))
+# 		ax = plt.subplot(111)
 		ax = plt.axes(frameon=False)
 
-		ax.spines["top"].set_visible(False)
-		ax.spines["bottom"].set_visible(False)
-		ax.spines["right"].set_visible(False)
-		ax.spines["left"].set_visible(False)
-		ax.get_xaxis().tick_bottom()
-		ax.get_yaxis().tick_left()
+		ax.set_xlim(left = 0, right = 24)
+		ax.xaxis.label.set_visible(False)
 
-		plt.xlabel(xlabel, color = 'black', fontsize = 14)
-		plt.ylabel(ylabel, color = 'black', fontsize = 14)
+# 
+# 		ax.spines["top"].set_visible(False)
+# 		ax.spines["bottom"].set_visible(False)
+# 		ax.spines["right"].set_visible(False)
+# 		ax.spines["left"].set_visible(False)
+# 		ax.get_xaxis().tick_bottom()
+# 		ax.get_yaxis().tick_left()
+# 
+# 		plt.xlabel(xlabel, color = 'black', fontsize = 14)
+# 		plt.ylabel(ylabel, color = 'black', fontsize = 14)
+# 
+# 		# lines  = plt.plot(data,  linestyle = '--', label = 'train', color = '#458DE1')
+		lines  = plt.plot(data, label = 'train', color = [230/255,159/255,0])
 
-		# lines  = plt.plot(data,  linestyle = '--', label = 'train', color = '#458DE1')
-		lines  = plt.plot(data, label = 'train', color = '#458DE1')
-
-		plt.setp(lines, linewidth=3)
-
+# 
+# 		plt.setp(lines, linewidth=3)
+# 
 		plt.title(title,color="black") #, alpha=0.3)
-		plt.tick_params(bottom=False, top=False, labelbottom=True, left=False, right=False, labelleft=True) #, colors = 'silver')
+		plt.style.use('fivethirtyeight')
+# 
+# 		plt.tick_params(bottom=False, top=False, labelbottom=True, left=False, right=False, labelleft=True) #, colors = 'silver')
 
-		plt.savefig(path + title + ".png", bbox_inches="tight", transparent = True)
+# 		plt.savefig(path, bbox_inches="tight", transparent = True)
+		plt.savefig(path)
 		plt.close()
-
-		# print("Plot saved " + str(path) + str(title))
 
 	def two_plot(self, data_1, data_2, xlabel, ylabel, title, path, text = None, line_1 = None, line_2 = None):
 
@@ -75,6 +107,3 @@ class Plotter:
 		plt.close()
 
 		print("Plot saved " + str(path))
-
-final_availability = []
-

@@ -24,6 +24,8 @@ import pandas.core.frame # read_csv
 from numpy import concatenate	
 from keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
+from urllib.request import Request, urlopen  # Python 3
+
 
 class Utils:	
 
@@ -63,37 +65,79 @@ class Utils:
 		
 		urls = {"Barcelona": "http://api.citybik.es/v2/networks/bicing", 
 		"Santander": "https://api.jcdecaux.com/vls/v1/stations?contract=Santander&apiKey=9fcde589b2071fa7895969c4f0a186f2beb6ac84", 
+		"New_York": "https://feeds.citibikenyc.com/stations/stations.json",
+                "Berlin": "https://api.nextbike.net/maps/nextbike-live.json?city=362",
 		"Bilbao": "https://nextbike.net/maps/nextbike-official.json?city=532", 
-		"Chicago": "https://feeds.divvybikes.com/stations/stations.json", 
+		"Chicago": "https://layer.bicyclesharing.net/map/v1/chi/map-inventory", 
 		"Bilbao": "https://nextbike.net/maps/nextbike-official.json?city=532", 
-		"Madrid": "http://api.citybik.es/v2/networks/bicimad",
+		"Madrid": "https://openapi.emtmadrid.es/v1/transport/bicimad/stations/",
 		"Vienna": "http://api.citybik.es/v2/networks/citybike-wien"}
 
-		data = requests.get(urls[city]).json()
+
 
 		# Filter and only show the stations, the feeds contain more data than necessary. 
-		if city == "Bilbao":
+		if city == "Bilbao" or city == "Berlin":
+			data = requests.get(urls[city]).json()
 			data = data["countries"][0]["cities"][0]["places"]
 		elif city == "Chicago":
-			data = data["stationBeanList"]
+			data = requests.get(urls[city]).json()
+			data = data["features"]
 		elif city == "Madrid":
-			data = data["network"]["stations"]
+			url_login = "https://openapi.emtmadrid.es/v1/mobilitylabs/user/login/"
+
+			req = Request(url_login)
+
+			req.add_header('email','javierdemartin@me.com')
+			req.add_header('password','zXF2AbQt7L6#')
+			req.add_header('X-ApiKey','76eb9ed5-25b6-4e57-a905-71d4ac2ecdf2')
+			req.add_header('X-ClientId','f64bb631-8b03-426d-a1e3-9939a571003a')
+
+			content = urlopen(req).read()
+			content = json.loads(content)
+
+			accessToken = content['data'][0]['accessToken']
+
+			url_stations = "https://openapi.emtmadrid.es/v1/transport/bicimad/stations/"
+
+			req2 = Request(url_stations)
+			req2.add_header('accessToken', accessToken)
+
+			content = urlopen(req2).read()
+			data = json.loads(content)['data']
+
+		elif city== "New_York":
+			data = requests.get(urls[city]).json()
+			data = data["stationBeanList"]
 		elif city== "Barcelona":
+			data = requests.get(urls[city]).json()
 			data = data["network"]["stations"]
 		elif city== "Vienna":
+			data = requests.get(urls[city]).json()
 			data = data["network"]["stations"]
+			
 
 		feedKeywords = {"Santander": ["number", "name", "lat", "lng"], 
 		"Chicago": ["id", "stationName", "latitude", "longitude"], 
 		"Bilbao": ["uid", "name", "lat", "lng"], 
-		"Madrid": ["id", "name", "latitude", "longitude"], 
+		"Berlin": ["uid", "name", "lat", "lng"], 
+		"Madrid": ["id", "name", "geometry"],
+		"New_York": ["id", "stationName", "latitude", "longitude"],
 		"Barcelona": ["id", "name", "latitude", "longitude"],
 		"Vienna": ["id", "name", "latitude", "longitude"]}
+		
+		if city == "Madrid":
+		
+			idVAR = feedKeywords[city][0]
+			nameVAR = feedKeywords[city][1]
+			latVAR = feedKeywords[city][2] #["coordinates"][0]
+			lonVAR = feedKeywords[city][2] #["coordinates"][1]
+		
+		else:
 
-		idVAR = feedKeywords[city][0]
-		nameVAR = feedKeywords[city][1]
-		latVAR = feedKeywords[city][2]
-		lonVAR = feedKeywords[city][3]
+			idVAR = feedKeywords[city][0]
+			nameVAR = feedKeywords[city][1]
+			latVAR = feedKeywords[city][2]
+			lonVAR = feedKeywords[city][3]
 
 		query       = ""
 		totalQuery  = ""
@@ -106,25 +150,33 @@ class Utils:
 
 		for i in data: 
 		    
-		    totalQuery += query
-	
-		    identifier = str(i[idVAR])
-		    name = str(i[nameVAR])
-			
-		    if city == "Santander":
-		        latitude = str(i['position'][latVAR])
-		        longitude = str(i['position'][lonVAR])
-		    else:
-		        latitude = str(i[latVAR])
-		        longitude = str(i[lonVAR])
+			totalQuery += query
 
-		    if city == "Bilbao":
-                        if re.search(r'\d\d-\w+', name):     # any words end with ing?
-                            name = name[3::]
+			if city == "Madrid":
+				identifier = str(i[idVAR])
+				name = str(i[nameVAR])
+				latitude = str(i[latVAR]["coordinates"][1])
+				longitude = str(i[lonVAR]["coordinates"][0]) 
+			elif city == "Bilbao":
+				identifier = str(i[idVAR])
+				name = str(i[nameVAR])
+				latitude = str(i[latVAR])
+				longitude = str(i[lonVAR])
+				if re.search(r'\d\d-\w+', name):   
+					name = name[3::]
+			  
+			elif city == "Chicago":
+				identifier = i['properties']['station']['id']
+				name = i["properties"]['station']['name']
+				latitude = i['geometry']['coordinates'][1]
+				longitude = i['geometry']['coordinates'][0]
+			else:
+				identifier = str(i[idVAR])
+				name = str(i[nameVAR])
+				latitude = str(i[latVAR])
+				longitude = str(i[lonVAR])
 
-		    print(name)
-
-		    pre_df.append([identifier, name, latitude, longitude])
+			pre_df.append([identifier, name, latitude, longitude])
 
 		df = DataFrame(pre_df, columns = ['idstation', 'nom', 'lat', 'lon'])
 		
