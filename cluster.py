@@ -12,7 +12,7 @@ import folium
 import os
 from kneed import DataGenerator, KneeLocator
 from Plotter import Plotter
-
+from Timer import Timer
 
 class Cluster:
 
@@ -31,6 +31,7 @@ class Cluster:
 		self.weekday_analysis = weekday_analysis
 		self.city = city
 		self.dir_path = os.path.dirname(os.path.realpath(__file__))
+		self.timer = Timer(city = self.city)
 
 
 	def do_cluster(self):
@@ -42,7 +43,9 @@ class Cluster:
 		print("> Reading dataset from DB")
 		raw = self.d.read_dataset(no_date_split=True)
 		
+		self.timer.start()
 		labels = self.cluster_analysis("weekday", raw)
+		self.timer.stop("Cluster analysis done, found " + str(len(labels)) + " clusters/")
 
 		return labels
 
@@ -246,15 +249,15 @@ class Cluster:
 			ax.set_xlim(left = 0, right = 24)
 			ax.xaxis.label.set_visible(False)
 			
-			for station in result:
+# 			for station in result:
 			
-				selected_df = df_norm[station].apply(lambda x: x*100)		
+# 				selected_df = df_norm[station].apply(lambda x: x*100)		
 
-				plt.plot(selected_df.values,color = '#458DE1')
-				plt.ylabel("Available bikes (%)")
+# 				plt.plot(selected_df.values,color = '#458DE1')
+# 				plt.ylabel("Available bikes (%)")
 				
-# 				(selected_df).to_csv(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + str(label) + "/" + station + ".csv", index_label='id', header=['values'])	
-				(selected_df).to_csv(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + station + ".csv", index_label='id', header=['values'])	
+# # 				(selected_df).to_csv(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + str(label) + "/" + station + ".csv", index_label='id', header=['values'])	
+# 				(selected_df).to_csv(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + station + ".csv", index_label='id', header=['values'])	
 
 			plt.title(title + " for cluster name " + str(label))
 			plt.savefig(self.dir_path + "/plots/" + self.city +  "/cluster/" + str(sys.argv[1]) + "_pattern_" + type_of_analysis + "_cluster_" + str(label)  + ".png")

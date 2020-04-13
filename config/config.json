@@ -1,0 +1,150 @@
+{
+
+	"parameters": {
+		"lookback_days": 3
+	},
+	"data": {
+		"og_columns": ["time", "weekday", "station_name", "value"],
+		"generated_columns": ["datetime", "time", "weekday", "label", "value"],
+		"dont_predict": ["time", "weekday", "label"]
+	},
+	"training": {
+		"Bilbao": {
+			"epochs": 50,
+			"batch_size": 100
+		},
+		"New_York": {
+			"epochs": 20,
+			"batch_size": 500
+		},
+		"London": {
+			"epochs": 20,
+			"batch_size": 200
+		},
+		"Chicago": {
+			"epochs": 20,
+			"batch_size": 200
+		},
+		"Madrid": {
+			"epochs": 50,
+			"batch_size": 500
+		},
+		"Berlin": {
+			"epochs": 50,
+			"batch_size": 500
+		}
+	},
+	"model": {
+		"Bilbao": {
+			"loss": "mse",
+			"optimizer": "adam",
+			"save_dir": "saved_models",
+			"layers": [
+			{
+				"type": "lstm",
+				"neurons": 100,
+				"input_timesteps": 49,
+				"input_dim": 2,
+				"return_seq": true
+			},
+			{
+				"type": "dropout",
+				"rate": 0.2
+			},
+			{
+				"type": "lstm",
+				"neurons": 100,
+				"return_seq": true
+			},
+			{
+				"type": "lstm",
+				"neurons": 100,
+				"return_seq": false
+			},
+			{
+				"type": "dropout",
+				"rate": 0.2
+			},
+			{
+				"type": "dense",
+				"neurons": 1,
+				"activation": "linear"
+			}
+			]
+		},
+		"Madrid": {
+			"loss": "mse",
+			"optimizer": "adam",
+			"save_dir": "saved_models",
+			"layers": [
+			{
+				"type": "lstm",
+				"neurons": 100,
+				"input_timesteps": 49,
+				"input_dim": 2,
+				"return_seq": true
+			},
+			{
+				"type": "dropout",
+				"rate": 0.2
+			},
+			{
+				"type": "lstm",
+				"neurons": 100,
+				"return_seq": true
+			},
+			{
+				"type": "lstm",
+				"neurons": 100,
+				"return_seq": false
+			},
+			{
+				"type": "dropout",
+				"rate": 0.2
+			},
+			{
+				"type": "dense",
+				"neurons": 1,
+				"activation": "linear"
+			}
+			]
+		},
+		"New_York": {
+			"loss": "mse",
+			"optimizer": "adam",
+			"save_dir": "saved_models",
+			"layers": [
+			{
+				"type": "lstm",
+				"neurons": 100,
+				"input_timesteps": 49,
+				"input_dim": 2,
+				"return_seq": true
+			},
+			{
+				"type": "dropout",
+				"rate": 0.2
+			},
+			{
+				"type": "lstm",
+				"neurons": 100,
+				"return_seq": true
+			},
+			{
+				"type": "lstm",
+				"neurons": 100,
+				"return_seq": false
+			},
+			{
+				"type": "dropout",
+				"rate": 0.2
+			},
+			{
+				"type": "dense",
+				"neurons": 1,
+				"activation": "linear"
+			}
+			]
+		}
+	}
+}

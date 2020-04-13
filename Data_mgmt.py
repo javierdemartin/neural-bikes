@@ -15,11 +15,14 @@ import numpy as np
 import os
 import time
 import datetime
+from Timer import Timer
 
 import os.path
 import sys
 from datetime import timedelta, datetime
 from influxdb import InfluxDBClient
+
+import inspect
 
 class Data_mgmt:
 
@@ -37,13 +40,14 @@ class Data_mgmt:
 	
 # 	og_columns = ['datetime','time', 'weekday', 'station_name', 'value']
 
-	og_columns = ['time', 'weekday', 'station_name', 'value']
 	
-	generated_columns = ['datetime', 'time', 'weekday', 'station_name', 'label', 'value']
-# 	generated_columns = ['time', 'weekday', 'station_name', 'label', 'value']
+
+	
+
+	# generated_columns = ['time', 'weekday', 'station_name', 'label', 'value']
 	
 	len_day = 144
-	n_days_in = 4
+
 	city = ""
 	dbDaysQueryThresshold = 30
 	scaler = MinMaxScaler(feature_range=(0,1)) # Normalize values
@@ -52,7 +56,7 @@ class Data_mgmt:
 	queries_database = False
 	station_dict = {}
 
-	n_in  = len_day * n_days_in# Number of previous samples used to feed the Neural Network
+	
 	n_out = len_day
 
 	def __init__(self):
@@ -62,8 +66,23 @@ class Data_mgmt:
 			# Get current working directory 
 			self.dir_path = os.path.dirname(os.path.realpath(__file__))
 
+			with open(self.dir_path + '/config/config.json', 'r') as j:
+				configs = json.loads(j.read())
+
+			self.og_columns = configs['data']['og_columns']
+			self.generated_columns = configs['data']['generated_columns']
+			# When generating the output samples (Y) of the supervised problem
+			# add the columns you don't want to predict
+			self.dont_predict = configs['data']['dont_predict']
+
+			self.n_days_in = configs['parameters']['lookback_days']
+			self.n_in  = self.len_day * self.n_days_in# Number of previous samples used to feed the Neural Network
+
 	
 			self.city = sys.argv[1]
+
+			self.timer = Timer(city = self.city)
+
 			self.availability_db_name = "Bicis_" + self.city + "_Availability"
 			self.prediction_db_name = "Bicis_" + self.city + "_Prediction"
 
@@ -96,6 +115,8 @@ class Data_mgmt:
 			Data will be returnes in the form of a pandas.Dataframe and saved to disk in the
 			../data/CITY/CITY.pkl cirectory
 			"""
+
+			self.timer.start()
 			
 			# If file already exists on disk check when was previously downloaded
 			if os.path.isfile(self.dir_path + "/data/" + self.city + "/"  + self.city + ".pkl"):
@@ -110,6 +131,8 @@ class Data_mgmt:
 			
 							print("Dataset was downloaded " + str(timeDiff.days) + " days ago.")
 							dataset = pd.read_pickle(self.dir_path + "/data/" + self.city + "/"  + self.city + ".pkl")
+
+							self.timer.stop("Dataset was downloaded " + str(timeDiff.days) + " days ago.")
 						   
 					# If the data os old enough query the server
 					else: 
@@ -157,6 +180,8 @@ class Data_mgmt:
 							# [ bikes, time, station_id, station_name, value ]
 							# Tratar el df eliminando la primera columna y la de time dividir la fecha en day of the year (datetime) y time.
 							dataset.to_pickle(self.dir_path + "/data/" + self.city + "/"  + self.city + ".pkl")    #to save the dataframe, df to 123.pkl
+
+							self.timer.stop("dataset downloaded from db")
 			
 			# File doesn't exist
 			else:
@@ -205,6 +230,8 @@ class Data_mgmt:
 					# Tratar el df eliminando la primera columna y la de time dividir la fecha en day of the year (datetime) y time.
 					dataset.to_pickle(self.dir_path + "/data/" + self.city + "/"  + self.city + ".pkl")    #to save the dataframe, df to 123.pkl
 
+					self.timer.stop("dataset downloaded from db")
+
 			return dataset
 			
 	def encoder_helper(self, dataset):
@@ -212,13 +239,18 @@ class Data_mgmt:
 			# Encode the columns represented by a String with an integer with LabelEncoder()
 			values = dataset.values         
 			
-			hour_index = self.generated_columns.index("time")
-			weekday_index = self.generated_columns.index("weekday")
-			station_index = self.generated_columns.index("station_name")
-			
-			values[:,hour_index] = self.hour_encoder.transform(values[:,hour_index])     # Encode HOUR as an integer value
-			values[:,weekday_index] = self.weekday_encoder.transform(values[:,weekday_index])  # Encode WEEKDAY as an integer value
-			values[:,station_index] = self.station_encoder.transform(values[:,station_index])  # Encode STATION as an integer value
+			if "time" in self.generated_columns:
+
+				hour_index = self.generated_columns.index("time")
+				values[:,hour_index] = self.hour_encoder.transform(values[:,hour_index])     # Encode HOUR as an integer value
+
+			if "weekday" in self.generated_columns:
+				weekday_index = self.generated_columns.index("weekday")
+				values[:,weekday_index] = self.weekday_encoder.transform(values[:,weekday_index])  # Encode WEEKDAY as an integer value
+
+			if "station_name" in self.generated_columns:
+				station_index = self.generated_columns.index("station_name")	
+				values[:,station_index] = self.station_encoder.transform(values[:,station_index])  # Encode STATION as an integer value
 			
 			self.save_encoders()
 			
@@ -236,16 +268,8 @@ class Data_mgmt:
 	def supervised_learning(self):
 	
 			print("[SUPERVISED LEARNING]")
+			self.timer.start()
 			
-# 			self.generated_columns
-
-			columns = ['datetime', 'time', 'weekday', 'station_name', 'label', 'value']
-
-			# When generating the output samples (Y) of the supervised problem
-			# add the columns you don't want to predict
-# 			dont_predict = ['datetime', 'time', 'weekday', 'station_name', 'label']
-			dont_predict = ['time', 'weekday', 'station_name', 'label']
-
 			self.scaler = self.get_maximums_pre_scaling()
 
 			# Encontrar los índices de las columnas a borrar
@@ -253,7 +277,7 @@ class Data_mgmt:
 
 			list_of_indexes = []
 
-			for to_delete in dont_predict:
+			for to_delete in self.dont_predict:
 					indices = [i for i, x in enumerate(self.generated_columns) if x == to_delete]  
 					list_of_indexes.append(indices[0])
 
@@ -304,7 +328,7 @@ class Data_mgmt:
 							np.save(self.dir_path + "/data/" + self.city + "/supervised/" + self.station_dict[station] + '.npy', supervised.values)
 							
 					except (FileNotFoundError, IOError):
-							print("Wrong file or file path (" + self.dir_path + '/data/' + self.city + '/scaled/' + str(self.station_dict[station]) + ".npy)" )
+							print("Wrong file or file path (" + '/data/' + self.city + '/scaled/' + str(self.station_dict[station]) + ".npy)" )
 					
 			aux = np.load(self.dir_path + "/data/" + self.city  + "/supervised/" + self.station_dict[self.list_of_stations[0]] + ".npy")
 			final_data = np.empty(aux.shape)
@@ -319,10 +343,12 @@ class Data_mgmt:
 							os.remove(self.dir_path + "/data/" + self.city + "/supervised/" + value + ".npy")
 							
 					except (FileNotFoundError, IOError):
-							print("Wrong file or file path")
+							print("Wrong file or file path (" + "/data/" + self.city + "/supervised/" + value + ".npy")
 
 			self.utils.save_array_txt(self.dir_path + "/data/" + self.city + "/supervised/" + self.city, final_data)
 			np.save(self.dir_path + "/data/" + self.city + "/supervised/" + self.city + ".npy", final_data)
+
+			self.timer.stop("Supervised learning")
 
 
 	def series_to_supervised(self, columns, data, n_in=1, n_out=1, dropnan=True):
@@ -372,6 +398,8 @@ class Data_mgmt:
 			path_to_save = os.path.join(self.dir_path, 'data', self.city, 'filled')
 			
 			my_data = dataset #self.read_dataset()
+
+			self.timer.start()
 							
 			for idx, station in enumerate(self.list_of_stations):
 			
@@ -394,7 +422,7 @@ class Data_mgmt:
 					first_sample = current_iteration['time'].iloc[0].strftime('%Y-%m-%d')
 					last_sample = current_iteration['time'].iloc[current_iteration.shape[0]-1].strftime('%Y-%m-%d')
 					
-					print("[" + str(idx) + "/" + str(len(self.list_of_stations)) + "] " + station + " (" + str(first_sample) + " to " + str(last_sample) + ")")
+					print("[" + str(idx) + "/" + str(len(self.list_of_stations)) + "] " + station + " (" + str(first_sample) + " to " + str(last_sample) + ")", end='\r')
 					
 					time_range = pd.date_range(first_sample + 'T00:00:00Z', last_sample + 'T00:00:00Z', freq='1D').strftime('%Y-%m-%dT00:00:00Z')
 			
@@ -406,6 +434,10 @@ class Data_mgmt:
 							query_all = "select * from bikes where station_id = \'" + str(self.station_dict[station]) + "\' and time > \'" + str(time_range[i]) + "\' and time < \'" + str(time_range[i+1]) + "\'"
 
 							daily = pd.DataFrame(self.client.query(query_all, chunked=True).get_points())
+
+							# daily = dataset.loc[dataset['station_id'] == self.station_dict[station]]
+							# date_mask = (dataset['time'] > time_range[i]) & (dataset['time'] <= time_range[i+1])
+							# daily = daily[date_mask]
 
 							# No proceses nada si el día no tiene más del 80% de las muestras, va a causar muchos errores
 							if daily.size < int(self.len_day * 0.8): continue
@@ -439,14 +471,13 @@ class Data_mgmt:
 							
 							# Reorder columns
 							daily = daily[['datetime', 'time', 'weekday', 'station_name', 'label', 'value']]
-						
-							# Encode columns that are strings to be numbers
-							daily = self.encoder_helper(daily)
-							
+													
 							daily = pd.DataFrame(data=daily, columns=['datetime', 'time', 'weekday', 'station_name', 'label', 'value'])
 
-
-							daily = daily[self.generated_columns].values	
+							daily = daily[self.generated_columns]
+							
+							# Encode columns that are strings to be numbers
+							daily = self.encoder_helper(daily)
 							
 							daily = daily.reshape((1,self.len_day,len(self.generated_columns)))
 							
@@ -455,6 +486,8 @@ class Data_mgmt:
 					aux_path = os.path.join(path_to_save, self.station_dict[station])
 					
 					np.save(aux_path, aux)
+
+			self.timer.stop(" " + str(inspect.stack()[0][3]) + " for " + station + " (" + self.station_dict[station] + ") " + str(first_sample) + " to " + str(last_sample) + ")")
 
 	def new_fill_holes(self, data):
 
