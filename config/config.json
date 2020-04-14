@@ -5,32 +5,32 @@
 	},
 	"data": {
 		"og_columns": ["time", "weekday", "station_name", "value"],
-		"generated_columns": ["datetime", "time", "weekday", "label", "value"],
-		"dont_predict": ["time", "weekday", "label"]
+		"generated_columns": ["datetime","time", "weekday", "station_name", "value"],
+		"dont_predict": ["datetime","time", "weekday", "station_name"]
 	},
 	"training": {
 		"Bilbao": {
 			"epochs": 50,
-			"batch_size": 100
+			"batch_size": 300
 		},
 		"New_York": {
-			"epochs": 20,
-			"batch_size": 500
+			"epochs": 5,
+			"batch_size": 300
 		},
 		"London": {
-			"epochs": 20,
-			"batch_size": 200
+			"epochs": 50,
+			"batch_size": 600
 		},
 		"Chicago": {
-			"epochs": 20,
-			"batch_size": 200
+			"epochs": 1,
+			"batch_size": 50
 		},
 		"Madrid": {
-			"epochs": 50,
+			"epochs": 25,
 			"batch_size": 500
 		},
 		"Berlin": {
-			"epochs": 50,
+			"epochs": 10,
 			"batch_size": 500
 		}
 	},

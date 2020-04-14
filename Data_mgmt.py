@@ -40,9 +40,6 @@ class Data_mgmt:
 	
 # 	og_columns = ['datetime','time', 'weekday', 'station_name', 'value']
 
-	
-
-	
 
 	# generated_columns = ['time', 'weekday', 'station_name', 'label', 'value']
 	
@@ -324,6 +321,15 @@ class Data_mgmt:
 							supervised = supervised.drop(supervised.index[rows_to_delete])
 							supervised = supervised.reset_index(drop = True)
 
+							array_sum = np.sum(supervised.values)
+							array_has_nan = np.isnan(array_sum)
+
+							if array_has_nan: 
+								print(supervised)
+								asdfasdF()
+
+
+
 							self.utils.save_array_txt(self.dir_path + "/data/" + self.city + "/supervised/" + self.station_dict[station], supervised.values)
 							np.save(self.dir_path + "/data/" + self.city + "/supervised/" + self.station_dict[station] + '.npy', supervised.values)
 							
@@ -346,6 +352,15 @@ class Data_mgmt:
 							print("Wrong file or file path (" + "/data/" + self.city + "/supervised/" + value + ".npy")
 
 			self.utils.save_array_txt(self.dir_path + "/data/" + self.city + "/supervised/" + self.city, final_data)
+
+
+			array_sum = np.sum(final_data)
+			array_has_nan = np.isnan(array_sum)
+
+			if array_has_nan: 
+				print(final_data)
+				asdfasdF()
+
 			np.save(self.dir_path + "/data/" + self.city + "/supervised/" + self.city + ".npy", final_data)
 
 			self.timer.stop("Supervised learning")
@@ -480,6 +495,13 @@ class Data_mgmt:
 							daily = self.encoder_helper(daily)
 							
 							daily = daily.reshape((1,self.len_day,len(self.generated_columns)))
+
+							array_sum = np.sum(daily)
+							array_has_nan = np.isnan(array_sum)
+
+							if array_has_nan: 
+								print(daily)
+								asdfasdF()
 							
 							aux = np.concatenate((aux,daily), axis = 0)
 

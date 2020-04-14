@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Dense, LSTM, Dropout, Activation, TimeDistributed, GRU
+from keras.layers import Dense, LSTM, Dropout, Activation, Flatten, GRU
 import datetime
 from keras.optimizers import SGD
 import pickle # Saving MinMaxScaler
@@ -135,22 +135,23 @@ class Neural_Model:
 
 		# model.compile(loss=configs['model'][self.city]['loss'], optimizer=configs['model'][self.city]['optimizer'])
 		
-		hidden_nodes = int(2/3 * (self.train_x.shape[1] + self.n_in))
+		hidden_nodes = int(1/5 * (self.train_x.shape[1] + self.n_in))
 		input_neurons = int(self.train_x.shape[1])
 				
 		print(f"The number of hidden nodes is {hidden_nodes}.")
 		print(f"The number of INPUT nodes is {input_neurons}.")
 
-		#i guess you want to keep the sigmoid in the hidden layer(to obtain a nonlinear model), but probably you want to use a linear activation function in the output layer. In this way the values won't be bounded between 0 and 1.
+		# i guess you want to keep the sigmoid in the hidden layer(to obtain a nonlinear model), but probably you want to use a linear activation function in the output layer. In this way the values won't be bounded between 0 and 1.
 
-		model.add(LSTM(input_neurons, input_shape=(self.train_x.shape[1], self.train_x.shape[2]), return_sequences = True))
+		model.add(LSTM(self.n_out + 50, input_shape=(self.train_x.shape[1], self.train_x.shape[2]), return_sequences = True, activation="relu"))
 		model.add(Dropout(0.2))
-		model.add(LSTM(hidden_nodes, return_sequences=True))
-		model.add(LSTM(hidden_nodes, return_sequences=False))
-		model.add(Dropout(0.2))
+		model.add(Flatten())
 		model.add(Dense(self.n_out, activation="linear"))
 
-		model.compile(loss='mean_squared_logarithmic_error', optimizer='rmsprop', metrics = ['mse', 'acc'])
+		print("Model summary")
+		print(model.summary())
+
+		model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mean_squared_error', 'acc'])
 
 		plot_model(model, to_file=self.dir_path + "/model/" + self.city + "/model.png", show_shapes=True, show_layer_names=True)
 
@@ -198,8 +199,11 @@ class Neural_Model:
 		es = EarlyStopping(monitor='val_mean_squared_error', mode='min', verbose=1, patience=3)
 		mc = ModelCheckpoint(self.dir_path + "/model/" + self.city + "/model.h5", monitor='val_mean_squared_error', mode='min', save_best_only=True)
 
+		# es = EarlyStopping(monitor='val_mean_squared_error', mode='min', verbose=1, patience=3)
+		# mc = ModelCheckpoint(self.dir_path + "/model/" + self.city + "/model.h5", monitor='val_mean_squared_error', mode='min', save_best_only=True)
 
-		cb_list = [es,mc]
+		# cb_list = [es,mc]
+		cb_list = []
 		
 		history = self.model.fit(self.train_x, self.train_y, batch_size=current_batch_size, epochs=self.epochs, validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = False, callbacks = cb_list) 
 		
@@ -214,12 +218,15 @@ class Neural_Model:
 		title_path = "training_loss"
 		self.p.two_plot(history.history['loss'], history.history['val_loss'], "Epoch", "Loss", title_plot, self.dir_path + self.plot_path + title_path, note, "Loss", "Validation Loss")
 
-		title_path = "training_mse"
+		title_path = "training_mae"
 		title_plot = "Training & Validation MSE"
+		self.p.two_plot(history.history['mean_squared_error'], history.history['val_mean_squared_error'], "Epoch", "MSE", title_plot, self.dir_path + self.plot_path + title_path, note, "MAE", "Validation MAE")		
 
-		self.p.two_plot(history.history['mean_squared_error'], history.history['val_mean_squared_error'], "Epoch", "accuracy", title_plot, self.dir_path + self.plot_path + title_path, note, "MSE", "Validation MSE")		
+		# title_path = "training_mse"
+		# title_plot = "Training & Validation MSE"
+		# self.p.two_plot(history.history['mean_squared_error'], history.history['val_mean_squared_error'], "Epoch", "accuracy", title_plot, self.dir_path + self.plot_path + title_path, note, "MSE", "Validation MSE")		
 
-		self.timer.stop("Fitting model")
+		self.timer.stop("Trained model")
 		
 	def rmse(predictions, targets):
 		return np.sqrt(np.mean((predictions-targets)**2))
@@ -286,13 +293,25 @@ class Neural_Model:
 
 			predo_vals = y_rescaled[:,-1]
 
+			title = ""
+
+			if "weekday" in self.generated_columns:
+				weekday_index = self.generated_columns.index("station_name")
+				print(int(y_rescaled[:,weekday_index][0]))
+				predicted_station = self.station_encoder.inverse_transform([int(y_rescaled[:,weekday_index][0])])[0]
+				title += predicted_station + " "
+
+				# weekday = 
+
+			title += "%s: %.2f%%" % (self.model.metrics_names[1], scores[1]*100) #"RMSE " + str(rmse(real_vals, predo_vals))
+
 			if np.isnan(predo_vals).any():
 				print("Error, predicted NaN values")
 				continue
 			
 			predo_vals = [int(i) for i in predo_vals]
 
-			title = "RMSE " + str(rmse(real_vals, predo_vals))
+
 			
 			self.p.two_plot(real_vals, predo_vals, "Tiempo", "Bicicletas", title, self.dir_path + "/plots/" + self.city + "/test/" + str(i), text = "", line_1 = "Real", line_2 = "Prediction")
 			
