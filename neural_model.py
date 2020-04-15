@@ -115,43 +115,49 @@ class Neural_Model:
 
 		model = Sequential()
 
-		# for layer in configs['model'][self.city]['layers']:
+		for layer in configs['model'][self.city]['layers']:
 
-		# 	neurons = layer['neurons'] if 'neurons' in layer else None
-		# 	dropout_rate = layer['rate'] if 'rate' in layer else None
-		# 	activation = layer['activation'] if 'activation' in layer else None
-		# 	return_seq = layer['return_seq'] if 'return_seq' in layer else None
-		# 	input_timesteps = layer['input_timesteps'] if 'input_timesteps' in layer else None
-		# 	input_dim = layer['input_dim'] if 'input_dim' in layer else None
+			neurons = layer['neurons'] if 'neurons' in layer else None
+			dropout_rate = layer['rate'] if 'rate' in layer else None
+			activation = layer['activation'] if 'activation' in layer else None
+			return_seq = layer['return_seq'] if 'return_seq' in layer else None
+			input_timesteps = layer['input_timesteps'] if 'input_timesteps' in layer else None
+			input_dim = layer['input_dim'] if 'input_dim' in layer else None
 
-		# 	if layer['type'] == 'dense':
-		# 		model.add(Dense(neurons, activation=activation))
-		# 	if layer['type'] == 'lstm':
-		# 		model.add(LSTM(neurons, input_shape=(input_timesteps, input_dim), return_sequences=return_seq))
-		# 	if layer['type'] == 'dropout':
-		# 		model.add(Dropout(dropout_rate))
+			if layer['type'] == 'dense':
+				model.add(Dense(neurons, activation=activation))
+			if layer['type'] == 'lstm':
+				model.add(LSTM(neurons, input_shape=(input_timesteps, input_dim), return_sequences=return_seq))
+			if layer['type'] == 'dropout':
+				model.add(Dropout(dropout_rate))
+			if layer['type'] == 'flatten':
+				model.add(Flatten())
 
-		# 	print(model)
+		model.compile(loss=configs['model'][self.city]['loss'], optimizer=configs['model'][self.city]['optimizer'], metrics=configs['model'][self.city]['metrics'])
 
-		# model.compile(loss=configs['model'][self.city]['loss'], optimizer=configs['model'][self.city]['optimizer'])
-		
-		hidden_nodes = int(1/5 * (self.train_x.shape[1] + self.n_in))
-		input_neurons = int(self.train_x.shape[1])
-				
-		print(f"The number of hidden nodes is {hidden_nodes}.")
-		print(f"The number of INPUT nodes is {input_neurons}.")
-
-		# i guess you want to keep the sigmoid in the hidden layer(to obtain a nonlinear model), but probably you want to use a linear activation function in the output layer. In this way the values won't be bounded between 0 and 1.
-
-		model.add(LSTM(self.n_out + 50, input_shape=(self.train_x.shape[1], self.train_x.shape[2]), return_sequences = True, activation="relu"))
-		model.add(Dropout(0.2))
-		model.add(Flatten())
-		model.add(Dense(self.n_out, activation="linear"))
-
-		print("Model summary")
 		print(model.summary())
 
-		model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mean_squared_error', 'acc'])
+		# model = Sequential()
+
+		# hidden_nodes = int(1/5 * (self.train_x.shape[1] + self.n_in))
+		# input_neurons = int(self.train_x.shape[1])
+				
+		# print(f"The number of hidden nodes is {hidden_nodes}.")
+		# print(f"The number of INPUT nodes is {input_neurons}.")
+
+		# # i guess you want to keep the sigmoid in the hidden layer(to obtain a nonlinear model), but probably you want to use a linear activation function in the output layer. In this way the values won't be bounded between 0 and 1.
+
+		# model.add(LSTM(self.n_out + 50, input_shape=(self.train_x.shape[1], self.train_x.shape[2]), return_sequences = True, activation="relu"))
+		# model.add(Dropout(0.2))
+		# model.add(Flatten())
+		# model.add(Dense(self.n_out, activation="linear"))
+
+		# print("Model summary")
+		# print(model.summary())
+
+		# adsfasdf()
+
+		# model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mean_squared_error', 'acc'])
 
 		plot_model(model, to_file=self.dir_path + "/model/" + self.city + "/model.png", show_shapes=True, show_layer_names=True)
 
@@ -196,14 +202,23 @@ class Neural_Model:
 
 		note = str(self.epochs) + " epochs and batch size of " + str(self.batch_size)
 
-		es = EarlyStopping(monitor='val_mean_squared_error', mode='min', verbose=1, patience=3)
-		mc = ModelCheckpoint(self.dir_path + "/model/" + self.city + "/model.h5", monitor='val_mean_squared_error', mode='min', save_best_only=True)
-
-		# es = EarlyStopping(monitor='val_mean_squared_error', mode='min', verbose=1, patience=3)
-		# mc = ModelCheckpoint(self.dir_path + "/model/" + self.city + "/model.h5", monitor='val_mean_squared_error', mode='min', save_best_only=True)
-
-		# cb_list = [es,mc]
+		with open(self.dir_path + '/config/config.json', 'r') as j:
+			configs = json.loads(j.read())
+		
 		cb_list = []
+
+		for layer in configs['model'][self.city]['callbacks']:
+
+			mode = layer['mode'] if 'mode' in layer else None
+			monitor = layer['monitor'] if 'monitor' in layer else None
+			patience = layer['patience'] if 'patience' in layer else None
+
+			if layer['type'] == 'early_stopping':
+				cb = EarlyStopping(monitor=monitor, mode=mode, verbose=1, patience=patience)
+				cb_list.append(cb)
+			if layer['type'] == 'model_checkpoint':
+				cb = ModelCheckpoint(self.dir_path + "/model/" + self.city + "/model.h5", monitor=monitor, mode=mode, save_best_only=True)
+				cb_list.append(cb)
 		
 		history = self.model.fit(self.train_x, self.train_y, batch_size=current_batch_size, epochs=self.epochs, validation_data=(self.validation_x, self.validation_y), verbose=1, shuffle = False, callbacks = cb_list) 
 		

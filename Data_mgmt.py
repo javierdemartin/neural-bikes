@@ -36,13 +36,7 @@ class Data_mgmt:
 	weekday_encoder = LabelEncoder()
 	station_encoder = LabelEncoder()
 	
-	dataset_percentage_reduction = 0
-	
-# 	og_columns = ['datetime','time', 'weekday', 'station_name', 'value']
-
-
-	# generated_columns = ['time', 'weekday', 'station_name', 'label', 'value']
-	
+		
 	len_day = 144
 
 	city = ""
@@ -75,6 +69,7 @@ class Data_mgmt:
 			self.n_days_in = configs['parameters']['lookback_days']
 			self.n_in  = self.len_day * self.n_days_in# Number of previous samples used to feed the Neural Network
 
+			self.dataset_percentage_reduction = configs['parameters']['dataset_percentage_reduction']
 	
 			self.city = sys.argv[1]
 
@@ -146,9 +141,6 @@ class Data_mgmt:
 							if no_date_split == False:
 
 									times = [x.split("T")[1].replace('Z','')[:-3] for x in dataset.values[:,1]]
-
-# 									dataset["datetime"] = dataset["time"]
-# 									dataset["weekday"]  = dataset["time"]
 
 									f = lambda x: datetime.strptime(x.split("T")[0],'%Y-%m-%d').timetuple().tm_yday 
 									dataset["datetime"] = dataset["time"].apply(f)
@@ -237,7 +229,6 @@ class Data_mgmt:
 			values = dataset.values         
 			
 			if "time" in self.generated_columns:
-
 				hour_index = self.generated_columns.index("time")
 				values[:,hour_index] = self.hour_encoder.transform(values[:,hour_index])     # Encode HOUR as an integer value
 
