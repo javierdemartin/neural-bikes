@@ -62,7 +62,7 @@ class Neural_Model:
 		self.city = sys.argv[1]
 		self.utils = Utils(self.city)
 		self.p     = Plotter()
-		self.d = Data_mgmt()
+		self.d = Data_mgmt(city=self.city)
 
 		self.timer = Timer(city = self.city)
 
@@ -82,20 +82,18 @@ class Neural_Model:
 
 		self.scaler = pickle.load(open(self.dir_path + '/data/' + self.city + "/MinMaxScaler.sav", 'rb'))
 
-		self.configuration = pd.read_csv(self.dir_path + "/config/training_params.csv")
-		self.configuration = self.configuration[self.configuration['city'].isin([self.city.lower()])]
-
-		self.batch_size = configs['training'][self.city]['batch_size'] #list(self.configuration.values[:,1])[0]
-		self.epochs = configs['training'][self.city]['epochs']#list(self.configuration.values[:,2])[0]
+		self.batch_size = configs['training'][self.city]['batch_size'] 
+		self.epochs = configs['training'][self.city]['epochs']
 
 		self.list_of_stations = list(self.utils.stations_from_web(self.city).values[:,1])
 
 		self.plot_path = "/plots/" + self.city + "/" + str(self.epochs) + "_" + str(self.batch_size) + "/"
-		self.utils.check_and_create([self.plot_path + "data/" + self.city + "/metrics/"])
-		self.utils.check_and_create([self.plot_path])
-		self.utils.check_and_create(["/plots/" + self.city + "/"])
-		self.utils.check_and_create(['/data/' +self.city + '/tomorrow/'])
-		self.utils.check_and_create(['/plots/' + self.city + '/tomorrow/'])
+		self.utils.check_and_create([
+			self.plot_path + "data/" + self.city + "/metrics/",
+			self.plot_path,
+			"/plots/" + self.city + "/",
+			'/data/' +self.city + '/tomorrow/',
+			'/plots/' + self.city + '/tomorrow/'])
 
 		self.hour_encoder.classes_, self.weekday_encoder.classes_, self.station_encoder.classes_ = self.load_encoders()
 		
@@ -127,7 +125,7 @@ class Neural_Model:
 			if layer['type'] == 'dense':
 				model.add(Dense(neurons, activation=activation))
 			if layer['type'] == 'lstm':
-				model.add(LSTM(neurons, input_shape=(input_timesteps, input_dim), return_sequences=return_seq))
+				model.add(LSTM(neurons, input_shape=(input_timesteps, input_dim), return_sequences=return_seq, activation=activation))
 			if layer['type'] == 'dropout':
 				model.add(Dropout(dropout_rate))
 			if layer['type'] == 'flatten':
@@ -158,6 +156,7 @@ class Neural_Model:
 		# adsfasdf()
 
 		# model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mean_squared_error', 'acc'])
+
 
 		plot_model(model, to_file=self.dir_path + "/model/" + self.city + "/model.png", show_shapes=True, show_layer_names=True)
 
@@ -316,8 +315,6 @@ class Neural_Model:
 				predicted_station = self.station_encoder.inverse_transform([int(y_rescaled[:,weekday_index][0])])[0]
 				title += predicted_station + " "
 
-				# weekday = 
-
 			title += "%s: %.2f%%" % (self.model.metrics_names[1], scores[1]*100) #"RMSE " + str(rmse(real_vals, predo_vals))
 
 			if np.isnan(predo_vals).any():
@@ -333,23 +330,23 @@ class Neural_Model:
 		self.timer.stop("Tested model score")
 		
 
-	def tomorrow(self, append_to_db = True):
+	def tomorrow(self, data, append_to_db = False):
 	
-		self.train_x = np.load(self.dir_path + '/data/' + self.city + '/train_x.npy')
-		self.train_y = np.load(self.dir_path +'/data/' + self.city + '/train_y.npy')
+		# self.train_x = np.load(self.dir_path + '/data/' + self.city + '/train_x.npy')
+		# self.train_y = np.load(self.dir_path +'/data/' + self.city + '/train_y.npy')
 
-		self.test_x = np.load(self.dir_path + '/data/' + self.city + '/test_x.npy')
-		self.test_y = np.load(self.dir_path + '/data/' + self.city + '/test_y.npy')
+		# self.test_x = np.load(self.dir_path + '/data/' + self.city + '/test_x.npy')
+		# self.test_y = np.load(self.dir_path + '/data/' + self.city + '/test_y.npy')
 
-		self.validation_x = np.load(self.dir_path + '/data/' + self.city + '/validation_x.npy')
-		self.validation_y = np.load(self.dir_path + '/data/' + self.city + '/validation_y.npy')
+		# self.validation_x = np.load(self.dir_path + '/data/' + self.city + '/validation_x.npy')
+		# self.validation_y = np.load(self.dir_path + '/data/' + self.city + '/validation_y.npy')
 
-		print("Train X " + str(self.train_x.shape))
-		print("Train Y " + str(self.train_y.shape))
-		print("Test X " + str(self.test_x.shape))
-		print("Test Y " + str(self.test_y.shape))
-		print("Validation X " + str(self.validation_x.shape))
-		print("Validation Y " + str(self.validation_y.shape))
+		# print("Train X " + str(self.train_x.shape))
+		# print("Train Y " + str(self.train_y.shape))
+		# print("Test X " + str(self.test_x.shape))
+		# print("Test Y " + str(self.test_y.shape))
+		# print("Validation X " + str(self.validation_x.shape))
+		# print("Validation Y " + str(self.validation_y.shape))
 		
 		self.model = self.create_model()
 		self.model.load_weights(self.dir_path + "/model/" + self.city + "/model.h5")
@@ -371,75 +368,55 @@ class Neural_Model:
 
 		current_time = datetime.datetime.today() 
 
-		for station in self.list_of_stations:
+		print("This should be done in line not saving external files")
+
+
+		for (stationName, dataToPredict) in data.items():
 
 			json_body = []
 
-			print("Predicting for " + station, end="")
+			print("Predicting " + stationName + " - " + str(dataToPredict.shape[1]) +  "\r", end="")
 
-			try:
+			if dataToPredict.shape[1] < self.n_in: continue
 
-				dataset = np.load(self.dir_path + '/data/' + self.city + '/yesterday/' + str(self.station_dict[station]) + ".npy")
+			p = self.model.predict(dataToPredict)
 
-			except (FileNotFoundError, IOError):
-				print("Wrong file or file path for " + self.dir_path + '/data/' + self.city + '/yesterday/' + str(self.station_dict[station]) + ".npy")
-				continue
+			p = p.reshape((self.n_out, 1))
+			dataToPredict = dataToPredict.reshape((dataToPredict.shape[1], dataToPredict.shape[2]))
+			dataToPredict = self.scaler.inverse_transform(dataToPredict)
+							
+			# Get the last day
+			dataToPredict = dataToPredict[self.len_day * (self.n_days_in - 1):]
 
-			if len(dataset.shape) > 2:
+			inv_yhat = concatenate((dataToPredict[:,: dataToPredict.shape[1] - 1], p), axis=1)
 
-				print("Predicting " + station + " - " + str(dataset.shape[1]) +  "\r", end="")
+			predo_vals = [int(i) for i in dataToPredict[:,-1]]
+
+			data = dict(zip(list_hours, predo_vals))
+
+			for i in range(0,self.len_day):
+
+				current_time_aux = current_time.replace(hour=int(list_hours[i].split(':')[0]), minute=int(list_hours[i].split(':')[1]))
+
+				current_time_aux = current_time_aux.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+				meas = {}
+				meas["measurement"] = "bikes"
+				meas["tags"] = { "station_name" : stationName, "station_id": self.station_dict[stationName]}
+				meas["time"] =  current_time_aux
+				meas["fields"] = { "value" : predo_vals[i] }
 				
-				if dataset.shape[1] < self.n_in: continue
-				
+				json_body.append(meas)
 
-				p = self.model.predict(dataset)
-		
-				p = p.reshape((self.n_out, 1))
-				dataset = dataset.reshape((dataset.shape[1], dataset.shape[2]))
-				dataset = self.scaler.inverse_transform(dataset)
-				
+			if append_to_db: 
+				client.write_points(json_body)
+			else: 
 				weekday_index = self.generated_columns.index("weekday")
-
-				weekday = int(dataset[0][weekday_index])
+				weekday = int(dataToPredict[0][weekday_index])
 
 				# Get the correct weekday as a String
 				if weekday == 6: weekday = 0
 				else: weekday += 1
 								
 				weekday = self.weekday_encoder.inverse_transform([weekday])[0]
-								
-				# Get the last day
-				dataset = dataset[self.len_day * (self.n_days_in - 1):]
-
-				inv_yhat = concatenate((dataset[:,: dataset.shape[1] - 1], p), axis=1)
-
-				predo_vals = [int(i) for i in dataset[:,-1]]
-
-				data = dict(zip(list_hours, predo_vals))
-
-				with open(self.dir_path + '/data/' + self.city + '/today/' + self.station_dict[station] + '.json', 'r') as file:
-					jsonToday = json.load(file)
-			
-				jsonToday = list(jsonToday.values())
-
-
-				jsonFile = open(self.dir_path + '/data/' + self.city + '/tomorrow/' + self.station_dict[station] + '.json', 'w')
-				jsonFile.write(json.dumps(data))
-
-				for i in range(0,self.len_day):
-
-					current_time_aux = current_time.replace(hour=int(list_hours[i].split(':')[0]), minute=int(list_hours[i].split(':')[1]))
-
-					current_time_aux = current_time_aux.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-					meas = {}
-					meas["measurement"] = "bikes"
-					meas["tags"] = { "station_name" : station, "station_id": self.station_dict[station]}
-					meas["time"] =  current_time_aux
-					meas["fields"] = { "value" : predo_vals[i] }
-					
-					json_body.append(meas)
-
-				
-				if append_to_db: client.write_points(json_body)
-				else: self.p.two_plot(dataset[:,-1], jsonToday, "Tiempo", "Bicicletas", str("Prediction for " + station + " for today (" + weekday + ")"), self.dir_path + "/plots/" + self.city + "/tomorrow/" + self.station_dict[station], text = "", line_1 = "Prediction", line_2 = "Real Value")
+				self.p.two_plot(dataToPredict[:,-1], dataToPredict[:,-1], "Tiempo", "Bicicletas", str("Prediction for " + stationName + " for today (" + weekday + ")"), self.dir_path + "/plots/" + self.city + "/tomorrow/" + self.station_dict[stationName], text = "", line_1 = "Prediction", line_2 = "Real Value")

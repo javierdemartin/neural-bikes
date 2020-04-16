@@ -16,7 +16,7 @@
 		},
 		"New_York": {
 			"epochs": 5,
-			"batch_size": 300
+			"batch_size": 100
 		},
 		"London": {
 			"epochs": 50,
@@ -27,7 +27,7 @@
 			"batch_size": 50
 		},
 		"Madrid": {
-			"epochs": 10,
+			"epochs": 20,
 			"batch_size": 300
 		},
 		"Berlin": {
@@ -45,7 +45,7 @@
 					"type": "early_stopping",
 					"mode":"min",
 					"monitor":"val_mean_squared_error",
-					"patience": 3
+					"patience": 5
 				},
 				{
 					"type": "model_checkpoint",
@@ -90,29 +90,39 @@
 		},
 		"Madrid": {
 			"loss": "mean_squared_error",
-			"optimizer": "rmsprop",
+			"optimizer": "adam",
 			"metrics": ["mean_squared_error", "acc"],
 			"callbacks": [
 				{
 					"type": "early_stopping",
-					"mode":"min",
-					"monitor":"val_mean_squared_error",
+					"mode":"max",
+					"monitor":"val_acc",
 					"patience": 3
 				},
 				{
 					"type": "model_checkpoint",
-					"mode": "min",
-					"monitor": "loss"
+					"mode": "max",
+					"monitor": "val_acc"
 				}
 			],
 			"layers": [
 				{
 					"type": "lstm",
-					"neurons": 194,
+					"neurons": 144,
 					"input_timesteps": 432,
 					"input_dim": 5,
-					"return_seq": true,
-					"activation": "relu"
+					"return_seq": true
+				},
+				{
+					"type": "dropout",
+					"rate": 0.2
+				},
+				{
+					"type": "lstm",
+					"neurons": 144,
+					"input_timesteps": 432,
+					"input_dim": 5,
+					"return_seq": true
 				},
 				{
 					"type": "dropout",
@@ -124,7 +134,7 @@
 				{
 					"type": "dense",
 					"neurons": 144,
-					"activation": "linear"
+					"activation": "softmax"
 				}
 			]
 		},
@@ -148,15 +158,15 @@
 			"layers": [
 				{
 					"type": "lstm",
-					"neurons": 144,
+					"neurons": 300,
 					"input_timesteps": 432,
 					"input_dim": 5,
 					"return_seq": true,
-					"activation": "relu"
+					"activation":"relu"
 				},
 				{
 					"type": "dropout",
-					"rate": 0.2
+					"rate": 0.4
 				},
 				{
 					"type": "flatten"
@@ -164,7 +174,7 @@
 				{
 					"type": "dense",
 					"neurons": 144,
-					"activation": "linear"
+					"activation": "softmax"
 				}
 			]
 		}

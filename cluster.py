@@ -38,7 +38,7 @@ class Cluster:
 	
 		print("> Performing cluster analysis for " + self.city)
 
-		self.d = Data_mgmt()
+		self.d = Data_mgmt(city=self.city)
 
 		print("> Reading dataset from DB")
 		raw = self.d.read_dataset(no_date_split=True)

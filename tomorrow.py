@@ -2,13 +2,20 @@
 # -*- coding: utf-8 -*-
 
 from Data_mgmt import Data_mgmt
+from cluster import Cluster
+
 from neural_model import Neural_Model
+import sys
 import os
 
-data  = Data_mgmt()
+data  = Data_mgmt(city=sys.argv[1])
 model = Neural_Model()
+cluster = Cluster(city=sys.argv[1])
+labels = cluster.do_cluster()
 
-data.prepare_tomorrow()
-data.prepare_today()
+dataToPredict = data.prepare_tomorrow(labels)
 
-model.tomorrow(append_to_db = True)
+
+print(dataToPredict)
+
+model.tomorrow(data = dataToPredict, append_to_db = False)
