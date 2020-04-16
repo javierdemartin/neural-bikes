@@ -90,6 +90,7 @@ class Data_mgmt:
 		
 		bah = self.utils.stations_from_web(self.city)
 		bah.drop(bah.columns[[2,3]], axis=1, inplace=True)
+
 		self.station_dict = dict(zip(bah.values[:,1], bah.values[:,0]))
 		
 		self.listOfStations = list(bah.values[:,1])
@@ -254,7 +255,7 @@ class Data_mgmt:
 	def supervised_learning(self, scale=True):
 		print("[SUPERVISED LEARNING]")
 		self.timer.start()
-		self.scaler = self.get_maximums_pre_scaling()
+		self.scaler = self.getMaximums()
 
 		# Encontrar los índices de las columnas a borrar
 		#################################################
@@ -292,7 +293,7 @@ class Data_mgmt:
 				dataset = dataset.reshape(-1, dataset.shape[-1])
 
 				if scale:
-					dataset = self.scaler_helper(dataset)
+					dataset = self.scaler_helper(self.maximumBikesInStation[station], dataset)
 
 				dataframe = pd.DataFrame(data=dataset, columns=self.generated_columns)
 
@@ -495,51 +496,22 @@ class Data_mgmt:
 
 		self.timer.stop(" " + str(inspect.stack()[0][3]) + " for " + station + " (" + self.station_dict[station] + ") " + str(firstSample) + " to " + str(lastSample) + ")")
 
-	def new_fill_holes(self, data):
 
-		initial_rows = data.shape[0]
-
-		station = data['station_name'].iloc[0]
-
-		data['time']       = pd.to_datetime(data['time'])
-		data['station_id'] = data['station_id']
-		data['value']      = pd.to_numeric(data['value'])       
-
-		date_str = data['time'].iloc[0].strftime('%Y-%m-%d')
-
-		hour = data['time'].iloc[-1].strftime("%H:%M")
-
-		time_range = pd.date_range(date_str + ' 00:00:00+00:00', date_str + ' ' + str(hour) + ':00+00:00', freq='10T')
-
-		data = data.set_index(keys=['time']).resample('10min').bfill()
-		data = data.reindex(time_range, fill_value=np.NaN)
-
-		data['value'] = data['value'].interpolate(limit_direction='both')
-		data['station_name'] = station
-		data['station_id'] = data['station_id'].interpolate(limit_direction='both')
-
-		data = data.reset_index()
-
-		final_rows = data.shape[0]
-
-		return data
+	maximumBikesInStation = {}
 
 	# Read all the files and set the maximum values for each column,
 	# RETURNS:
 	#       · The scaler object
-	def get_maximums_pre_scaling(self):
+	def getMaximums(self):
 
 		# Get the maximum values for
 		scaler_aux = MinMaxScaler(feature_range=(0,1))
 
 		print("> Finding data range")
 
-		#print(self.dir_path +  '/data/' + self.city + '/filled/' + self.station_dict[self.listOfStations[0]] + '.npy\b', end="")
-		a = np.load(self.dir_path +  '/data/' + self.city + '/filled/' + self.station_dict[self.listOfStations[0]] + '.npy')
+		a = np.empty((0,len(self.generated_columns)))
 
-		a = a.reshape(-1, a.shape[-1])
-
-		for i in range(1, len(self.listOfStations)):
+		for i in range(0, len(self.listOfStations)):
 				
 			try:
 				dataset = np.load(self.dir_path + "/data/" + self.city + "/filled/" + self.station_dict[self.listOfStations[i]] + ".npy")
@@ -549,11 +521,27 @@ class Data_mgmt:
 				dataset = dataset.reshape(-1, dataset.shape[-1])
 		
 				a = np.concatenate((a,dataset), axis = 0)
+
+				print(self.listOfStations[i])
+
+				self.maximumBikesInStation[self.listOfStations[i]] = max(a[:,-1])
 			
 			except (FileNotFoundError, IOError):
 				print("Wrong file or file path (" + self.dir_path + '/data/' + self.city + '/scaled/' + str(self.station_dict[self.listOfStations[i]]) + ".npy)" )
 												
 		self.scaler.fit_transform(a)
+
+		print(self.maximumBikesInStation)
+
+		f = open(self.dir_path +"/data/" + self.city +  "/Maximums.pkl", 'wb')
+		pickle.dump(self.maximumBikesInStation, f)
+		f.close()
+
+		values_index = self.generated_columns.index("value")
+
+		self.scaler.data_max_[values_index] = 100.0
+		self.scaler.data_range_[values_index] = 100.0
+
 
 		print("data min " + str(self.scaler.data_min_))
 		print("data max " + str(self.scaler.data_max_))
@@ -565,27 +553,27 @@ class Data_mgmt:
 
 		return self.scaler
 
-	def scale_dataset(self):
+	# def scale_dataset(self):
 			
-		if enable_scale is True:
+	# 	if enable_scale is True:
 
-			# Coger primero todos los máximos valores para luego escalar todos los datos poco a poco
-			self.scaler = self.get_maximums_pre_scaling()
+	# 		# Coger primero todos los máximos valores para luego escalar todos los datos poco a poco
+	# 		self.scaler = self.getMaximums()
 
-			for station in self.listOfStations:
+	# 		for station in self.listOfStations:
 
-				dataset = np.load(self.dir_path + '/data/filled/' + str(self.station_dict[station]) + '_filled.npy')
+	# 			dataset = np.load(self.dir_path + '/data/filled/' + str(self.station_dict[station]) + '_filled.npy')
 				
-				if dataset.shape[0] > (len_day*2):
+	# 			if dataset.shape[0] > (len_day*2):
 
-					dataset = self.scaler.transform(dataset)
+	# 				dataset = self.scaler.transform(dataset)
 
-					np.save(self.dir_path + '/data/scaled/' + str(self.station_dict[station]) + ".npy", dataset)
-					self.utils.save_array_txt(self.dir_path + '/data/scaled/' + str(self.station_dict[station]), dataset)
+	# 				np.save(self.dir_path + '/data/scaled/' + str(self.station_dict[station]) + ".npy", dataset)
+	# 				self.utils.save_array_txt(self.dir_path + '/data/scaled/' + str(self.station_dict[station]), dataset)
 
-			pickle.dump(self.scaler, open(self.dir_path + "/data/" + self.city + "/MinMaxScaler.sav", 'wb'))
+	# 		pickle.dump(self.scaler, open(self.dir_path + "/data/" + self.city + "/MinMaxScaler.sav", 'wb'))
 
-	def scaler_helper(self, dataset):
+	def scaler_helper(self, maximumBikes, dataset):
 
 		"""
 		Loads previously saved MinMaxScaler and scales an array.
@@ -609,6 +597,9 @@ class Data_mgmt:
 		scaler = pickle.load(f)
 		f.close()
 
+		values_index = self.generated_columns.index("value")
+
+		dataset[:,values_index] = dataset[:,values_index] / maximumBikes * 100
 
 		if dataset.shape[0] > 0:                
 			dataset = scaler.transform(dataset)
@@ -733,8 +724,8 @@ class Data_mgmt:
 			stationElement = {}
 		
 			if station not in self.station_dict:
-					self.listOfStations.remove(station)
-					continue
+				self.listOfStations.remove(station)
+				continue
 
 			# Occurs in cases where the station has stopped being available, therefore
 			# no predictions can be made
@@ -783,7 +774,7 @@ class Data_mgmt:
 			
 			# Encode columns that are strings to be numbers
 			data = self.encoder_helper(data)
-			data = self.scaler_helper(data)         
+			data = self.scaler_helper(maximumBikesInStation[station], data)         
 			
 			# Reshape the data to be 3-Dimensional
 			data = data.reshape(1,self.n_in,len(self.generated_columns))
