@@ -11,7 +11,7 @@ from cluster import Cluster
 
 cluster = Cluster(city=sys.argv[1])
 labels = cluster.do_cluster()
-# # 
+# 
 data  = Data_mgmt(city=sys.argv[1])
 dataset = data.read_dataset()
 data.iterate(dataset = dataset, cluster_data = labels)

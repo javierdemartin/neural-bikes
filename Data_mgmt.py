@@ -553,26 +553,6 @@ class Data_mgmt:
 
 		return self.scaler
 
-	# def scale_dataset(self):
-			
-	# 	if enable_scale is True:
-
-	# 		# Coger primero todos los máximos valores para luego escalar todos los datos poco a poco
-	# 		self.scaler = self.getMaximums()
-
-	# 		for station in self.listOfStations:
-
-	# 			dataset = np.load(self.dir_path + '/data/filled/' + str(self.station_dict[station]) + '_filled.npy')
-				
-	# 			if dataset.shape[0] > (len_day*2):
-
-	# 				dataset = self.scaler.transform(dataset)
-
-	# 				np.save(self.dir_path + '/data/scaled/' + str(self.station_dict[station]) + ".npy", dataset)
-	# 				self.utils.save_array_txt(self.dir_path + '/data/scaled/' + str(self.station_dict[station]), dataset)
-
-	# 		pickle.dump(self.scaler, open(self.dir_path + "/data/" + self.city + "/MinMaxScaler.sav", 'wb'))
-
 	def scaler_helper(self, maximumBikes, dataset):
 
 		"""
@@ -689,7 +669,7 @@ class Data_mgmt:
 		print("Validation Y " + str(validation_y.shape))
 
 
-	def prepare_tomorrow(self, cluster_data):
+	def prepare_tomorrow(self, cluster_data = None):
 
 		"""
 		Queries InfluxDB database for yesterday's data, fills possible holes in the dataset and saves it into a NumPy array to later be fed to the trained model.
@@ -699,8 +679,17 @@ class Data_mgmt:
 		use predicting tomorrow's values with the neural_model script.
 
 		"""
+
+		print("> Getting " + str(self.n_days_in) + " days of availability from the database")
+
+		if cluster_data is None:
+			self.cluster_data = pd.read_csv(self.dir_path + "/data/" + self.city + "/cluster/cluster_stations.csv")
+
+		# Load the dictionary that holds the maximum values per station name
+		f = open(self.dir_path +"/data/" + self.city +  "/Maximums.pkl", 'rb')
+		self.maximumBikesInStation = pickle.load(f)
+		f.close()
 		
-		self.cluster_data = cluster_data #pd.read_csv(self.dir_path + "/data/" + self.city + "/cluster/cluster_stations.csv")
 		self.cluster_data = dict(zip(self.cluster_data.values[:,0], self.cluster_data.values[:,1]))     
 		
 		self.hour_encoder.classes_ = np.load(self.dir_path + '/data/' +  self.city +  '/encoders/hour_encoder.npy')
@@ -765,16 +754,17 @@ class Data_mgmt:
 			data["time"]     = self.list_hours * self.n_days_in
 			
 			data.drop(['station_id', 'index'], axis=1, inplace=True)
-			
-			print(station, end='\r')
 
 			data['label'] = self.cluster_data[station]
 
 			data = data[self.generated_columns] # Sort the DataFrame's columns
+
+			if station not in self.maximumBikesInStation:
+				continue
 			
 			# Encode columns that are strings to be numbers
 			data = self.encoder_helper(data)
-			data = self.scaler_helper(maximumBikesInStation[station], data)         
+			data = self.scaler_helper(self.maximumBikesInStation[station], data)         
 			
 			# Reshape the data to be 3-Dimensional
 			data = data.reshape(1,self.n_in,len(self.generated_columns))

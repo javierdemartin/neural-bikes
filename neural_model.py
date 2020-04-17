@@ -325,7 +325,10 @@ class Neural_Model:
 				predicted_station = self.station_encoder.inverse_transform([int(y_rescaled[:,weekday_index][0])])[0]
 				title += predicted_station + " "
 
-				maxVal = self.maximumBikesInStation[predicted_station]
+				if predicted_station in self.maximumBikesInStation:
+					maxVal = self.maximumBikesInStation[predicted_station]
+				else:
+					continue	
 
 				# Undo the percentage scaling and restore using the maximum value each station holds
 				predo_vals = [i * (maxVal / 100) for i in predo_vals]
@@ -337,10 +340,6 @@ class Neural_Model:
 			if np.isnan(predo_vals).any():
 				print("Error, predicted NaN values")
 				continue
-			
-			
-
-
 			
 			self.p.two_plot(real_vals, predo_vals, "Tiempo", "Bicicletas", title, self.dir_path + "/plots/" + self.city + "/test/" + str(i), text = "", line_1 = "Real", line_2 = "Prediction")
 			
@@ -389,7 +388,7 @@ class Neural_Model:
 
 			json_body = []
 
-			print("Predicting " + stationName + " - " + str(dataToPredict.shape[1]) +  "\r", end="")
+			print("Predicting " + stationName + "\r", end="")
 
 			if dataToPredict.shape[1] < self.n_in: continue
 
@@ -405,6 +404,11 @@ class Neural_Model:
 			inv_yhat = concatenate((dataToPredict[:,: dataToPredict.shape[1] - 1], p), axis=1)
 
 			predo_vals = [int(i) for i in dataToPredict[:,-1]]
+
+			if stationName in self.maximumStations:
+				maxVal = self.maximumStations[stationName]
+
+				predo_vals = [int(i * (maxVal / 100)) for i in predo_vals]
 
 			data = dict(zip(list_hours, predo_vals))
 
@@ -425,8 +429,10 @@ class Neural_Model:
 			if append_to_db: 
 				client.write_points(json_body)
 			else: 
+				
 				weekday_index = self.generated_columns.index("weekday")
-				weekday = int(dataToPredict[0][weekday_index])
+
+				weekday = int(dataToPredict[-1][weekday_index]) + self.n_days_in - 1
 
 				# Get the correct weekday as a String
 				if weekday == 6: weekday = 0
