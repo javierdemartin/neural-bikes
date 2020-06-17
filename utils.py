@@ -65,11 +65,12 @@ class Utils:
 		
 		urls = {"Barcelona": "http://api.citybik.es/v2/networks/bicing", 
 		"Santander": "https://api.jcdecaux.com/vls/v1/stations?contract=Santander&apiKey=9fcde589b2071fa7895969c4f0a186f2beb6ac84", 
-		"New_York": "https://feeds.citibikenyc.com/stations/stations.json",
-                "Berlin": "https://api.nextbike.net/maps/nextbike-live.json?city=362",
+		"New_York": "https://gbfs.citibikenyc.com/gbfs/en/station_information.json",
+        "Berlin": "https://api.nextbike.net/maps/nextbike-live.json?city=362",
 		"Bilbao": "https://nextbike.net/maps/nextbike-official.json?city=532", 
 		"Chicago": "https://layer.bicyclesharing.net/map/v1/chi/map-inventory", 
 		"Bilbao": "https://nextbike.net/maps/nextbike-official.json?city=532", 
+		"London": "https://api.tfl.gov.uk/BikePoint",
 		"Madrid": "https://openapi.emtmadrid.es/v1/transport/bicimad/stations/",
 		"Vienna": "http://api.citybik.es/v2/networks/citybike-wien"}
 
@@ -106,11 +107,20 @@ class Utils:
 			data = json.loads(content)['data']
 
 		elif city== "New_York":
+		
+			print("GETTING " + str(urls[city]))
+			
 			data = requests.get(urls[city]).json()
-			data = data["stationBeanList"]
+			data = data["data"]['stations']
+			
+			print(data)
+			print("$$$$$$$$$$$$$$$$$")
+
 		elif city== "Barcelona":
 			data = requests.get(urls[city]).json()
 			data = data["network"]["stations"]
+		elif city == "London":
+			data = requests.get(urls[city]).json()
 		elif city== "Vienna":
 			data = requests.get(urls[city]).json()
 			data = data["network"]["stations"]
@@ -121,9 +131,11 @@ class Utils:
 		"Bilbao": ["uid", "name", "lat", "lng"], 
 		"Berlin": ["uid", "name", "lat", "lng"], 
 		"Madrid": ["id", "name", "geometry"],
-		"New_York": ["id", "stationName", "latitude", "longitude"],
+		"New_York": ["station_id", "name", "lat", "lon"],
 		"Barcelona": ["id", "name", "latitude", "longitude"],
-		"Vienna": ["id", "name", "latitude", "longitude"]}
+		"Vienna": ["id", "name", "latitude", "longitude"],
+		"London": ["id", "commonName", "lat", "lon"]
+		}
 		
 		if city == "Madrid":
 		
@@ -170,7 +182,7 @@ class Utils:
 				name = i["properties"]['station']['name']
 				latitude = i['geometry']['coordinates'][1]
 				longitude = i['geometry']['coordinates'][0]
-			else:
+			elif city == "New_York":
 				identifier = str(i[idVAR])
 				name = str(i[nameVAR])
 				latitude = str(i[latVAR])
@@ -181,6 +193,9 @@ class Utils:
 		df = DataFrame(pre_df, columns = ['idstation', 'nom', 'lat', 'lon'])
 		
 		print("> There are " + str(df.shape[0]) + " stations in " + str(city))
+		
+		print(df)
+		print("----------------------")
 
 		return df
 
