@@ -1,4 +1,15 @@
-data/
+data/*/scaled/
+data/*/encoded_data/
+data/*/*.pkl
+data/*/*.npy
+data/*/supervised/
+data/*/cluster/cluster_data/
+data/*/cluster/*_clusters_*.csv
+data/*/cluster/*-stations-*.csv
+!/data/*/cluster/cluster_stations.csv
+!data/*/listOfStations
+!data/*/Maximums.pkl
+!data/*/MinMaxScaler.sav
 logs/
 model/*/*.png
 __pycache__/
