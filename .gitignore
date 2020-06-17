@@ -1,4 +1,6 @@
 data/
+logs/
+model/*/*.png
 __pycache__/
 plots/
-model/
+env/
