@@ -87,7 +87,6 @@ class Utils:
 			url_login = "https://openapi.emtmadrid.es/v1/mobilitylabs/user/login/"
 
 			req = Request(url_login)
-
 			req.add_header('email','javierdemartin@me.com')
 			req.add_header('password','zXF2AbQt7L6#')
 			req.add_header('X-ApiKey','76eb9ed5-25b6-4e57-a905-71d4ac2ecdf2')
@@ -106,15 +105,9 @@ class Utils:
 			content = urlopen(req2).read()
 			data = json.loads(content)['data']
 
-		elif city== "New_York":
-		
-			print("GETTING " + str(urls[city]))
-			
+		elif city== "New_York":	
 			data = requests.get(urls[city]).json()
 			data = data["data"]['stations']
-			
-			print(data)
-			print("$$$$$$$$$$$$$$$$$")
 
 		elif city== "Barcelona":
 			data = requests.get(urls[city]).json()
@@ -193,9 +186,6 @@ class Utils:
 		df = DataFrame(pre_df, columns = ['idstation', 'nom', 'lat', 'lon'])
 		
 		print("> There are " + str(df.shape[0]) + " stations in " + str(city))
-		
-		print(df)
-		print("----------------------")
 
 		return df
 
