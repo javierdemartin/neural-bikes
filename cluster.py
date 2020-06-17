@@ -13,6 +13,7 @@ import os
 from kneed import DataGenerator, KneeLocator
 from Plotter import Plotter
 from Timer import Timer
+from datetime import datetime
 
 class Cluster:
 
@@ -32,28 +33,56 @@ class Cluster:
 		self.city = city
 		self.dir_path = os.path.dirname(os.path.realpath(__file__))
 		self.timer = Timer(city = self.city)
-
+		
+		self.utils = Utils(city=self.city)
+		
+		if weekday_analysis is True:
+			self.type_of_analysis = "weekday"
+		else:
+			self.type_of_analysis = "weekend"
+		
+		self.utils.check_and_create(["/data/" + self.city +  "/cluster/cluster_data","/data/" + self.city +  "/cluster/cluster_data/" + self.type_of_analysis,"/plots/" + self.city +  "/cluster/"])
 
 	def do_cluster(self):
-	
-		print("> Performing cluster analysis for " + self.city)
+		if os.path.isfile(self.dir_path + "/data/" + self.city +  "/cluster/cluster_stations.csv"):
 
-		self.d = Data_mgmt(city=self.city)
+			mtime = os.path.getmtime(self.dir_path + "/data/" + self.city +  "/cluster/cluster_stations.csv")
 
-		print("> Reading dataset from DB")
-		raw = self.d.read_dataset(no_date_split=True)
+			last_modified_date = datetime.fromtimestamp(mtime)
+
+			timeDiff = datetime.now() - last_modified_date
 		
-		self.timer.start()
-		labels = self.cluster_analysis("weekday", raw)
-		self.timer.stop("Cluster analysis done, found " + str(len(labels)) + " clusters/")
+			if timeDiff.days < 15:
+				return pd.read_csv(self.dir_path + "/data/" + self.city + "/cluster/cluster_stations.csv")
+			else:
+				self.d = Data_mgmt(city=self.city)
 
-		return labels
-
+				print("> Reading dataset from DB")
+				raw = self.d.read_dataset(no_date_split=True)
 		
+				self.timer.start()
+				labels = self.cluster_analysis("weekday", raw)
+				self.timer.stop("Cluster analysis done, found " + str(len(labels)) + " clusters/")
+
+				return labels
+				
+		else: 
+			self.d = Data_mgmt(city=self.city)
+
+			print("> Reading dataset from DB")
+			raw = self.d.read_dataset(no_date_split=True)
+
+			self.timer.start()
+			labels = self.cluster_analysis("weekday", raw)
+			self.timer.stop("Cluster analysis done, found " + str(len(labels)) + " clusters/")
+
+			return labels
+
+
 	# Type is weekday or weekend
 	def cluster_analysis(self, type, raw_data):
 	
-		self.locations = Utils(city=self.city).stations_from_web(city = self.city)
+		self.locations = self.utils.stations_from_web(city = self.city)
 		self.position = [self.locations['lat'].iloc[0], self.locations['lon'].iloc[0]]
 	
 		max_bikes = raw_data.groupby('station_name')['value'].max()
@@ -89,15 +118,8 @@ class Cluster:
 			title += " on weekends"
 			type_of_analysis = "weekend"
 			
-		if not os.path.exists(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data"):
-			os.makedirs(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data")
-		if not os.path.exists(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + type):
-			os.makedirs(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + type)
-		if not os.path.exists(self.dir_path + "/plots/" + self.city +  "/cluster/"):
-			os.makedirs(self.dir_path + "/plots/" + self.city +  "/cluster/")
 
 		df['hour'] = df.index.hour
-
 
 		df = df.groupby('hour').mean()
 
@@ -248,16 +270,6 @@ class Cluster:
 
 			ax.set_xlim(left = 0, right = 24)
 			ax.xaxis.label.set_visible(False)
-			
-# 			for station in result:
-			
-# 				selected_df = df_norm[station].apply(lambda x: x*100)		
-
-# 				plt.plot(selected_df.values,color = '#458DE1')
-# 				plt.ylabel("Available bikes (%)")
-				
-# # 				(selected_df).to_csv(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + str(label) + "/" + station + ".csv", index_label='id', header=['values'])	
-# 				(selected_df).to_csv(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/" + station + ".csv", index_label='id', header=['values'])	
 
 			plt.title(title + " for cluster name " + str(label))
 			plt.savefig(self.dir_path + "/plots/" + self.city +  "/cluster/" + str(sys.argv[1]) + "_pattern_" + type_of_analysis + "_cluster_" + str(label)  + ".png")

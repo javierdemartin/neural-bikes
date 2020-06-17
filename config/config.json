@@ -15,8 +15,8 @@
 			"batch_size": 50
 		},
 		"New_York": {
-			"epochs": 5,
-			"batch_size": 1500
+			"epochs": 20,
+			"batch_size": 1000
 		},
 		"London": {
 			"epochs": 50,
@@ -27,7 +27,7 @@
 			"batch_size": 500
 		},
 		"Madrid": {
-			"epochs": 10,
+			"epochs": 50,
 			"batch_size": 600
 		},
 		"Berlin": {
@@ -37,6 +37,58 @@
 	},
 	"model": {
 		"Bilbao": {
+			"loss": "mean_squared_error",
+			"optimizer": "adam",
+			"metrics": ["mean_squared_error", "acc"],
+			"callbacks": [
+				{
+					"type": "early_stopping",
+					"mode":"min",
+					"monitor":"val_mean_squared_error",
+					"patience": 3
+				},
+				{
+					"type": "model_checkpoint",
+					"mode": "min",
+					"monitor": "val_mean_squared_error"
+				}
+			],
+			"layers": [
+				{
+					"type": "lstm",
+					"neurons": 50,
+					"input_timesteps": 432,
+					"input_dim": 5,
+					"return_seq": true,
+					"activation": "relu"
+				},
+				{
+					"type": "dropout",
+					"rate": 0.2
+				},
+				{
+					"type": "lstm",
+					"neurons": 50,
+					"input_timesteps": 432,
+					"input_dim": 5,
+					"return_seq": true,
+					"activation": "relu"
+				},
+				{
+					"type": "dropout",
+					"rate": 0.2
+				},
+				{
+					"type": "flatten"
+				},
+				{
+					"type": "dense",
+					"neurons": 144,
+					"activation": "linear"
+				}
+			]
+		},
+		"Madrid": {
 			"loss": "mean_squared_error",
 			"optimizer": "adam",
 			"metrics": ["mean_squared_error", "acc"],
@@ -67,6 +119,42 @@
 					"rate": 0.2
 				},
 				{
+					"type": "lstm",
+					"neurons": 100,
+					"input_timesteps": 432,
+					"input_dim": 5,
+					"return_seq": true,
+					"activation": "relu"
+				},
+				{
+					"type": "dropout",
+					"rate": 0.2
+				},
+				{
+					"type": "lstm",
+					"neurons": 100,
+					"input_timesteps": 432,
+					"input_dim": 5,
+					"return_seq": true,
+					"activation": "relu"
+				},
+				{
+					"type": "dropout",
+					"rate": 0.2
+				},
+				{
+					"type": "lstm",
+					"neurons": 100,
+					"input_timesteps": 432,
+					"input_dim": 5,
+					"return_seq": true,
+					"activation": "relu"
+				},
+				{
+					"type": "dropout",
+					"rate": 0.2
+				},
+				{
 					"type": "flatten"
 				},
 				{
@@ -76,7 +164,7 @@
 				}
 			]
 		},
-		"Madrid": {
+		"London": {
 			"loss": "mean_squared_error",
 			"optimizer": "adam",
 			"metrics": ["mean_squared_error", "acc"],
@@ -148,7 +236,7 @@
 			"layers": [
 				{
 					"type": "lstm",
-					"neurons": 144,
+					"neurons": 100,
 					"input_timesteps": 432,
 					"input_dim": 5,
 					"return_seq": true,
@@ -160,7 +248,7 @@
 				},
 				{
 					"type": "lstm",
-					"neurons": 144,
+					"neurons": 100,
 					"input_timesteps": 432,
 					"input_dim": 5,
 					"return_seq": true,
