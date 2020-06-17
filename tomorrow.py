@@ -10,11 +10,8 @@ import os
 
 data  = Data_mgmt(city=sys.argv[1])
 model = Neural_Model()
-# cluster = Cluster(city=sys.argv[1])
-# labels = cluster.do_cluster()
-
+cluster = Cluster(city=sys.argv[1])
+labels = cluster.do_cluster()
+print(labels)
 dataToPredict = data.prepare_tomorrow()
-
-print(dataToPredict)
-
-model.tomorrow(data = dataToPredict, append_to_db = False)
+model.tomorrow(data = dataToPredict, append_to_db = True)

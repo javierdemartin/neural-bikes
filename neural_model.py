@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Dense, LSTM, Dropout, Activation, Flatten, GRU
+from keras.layers import Dense, LSTM, Dropout, Flatten
 import datetime
-from keras.optimizers import SGD
 import pickle # Saving MinMaxScaler
 from utils import Utils
 from Plotter import Plotter
@@ -14,22 +13,17 @@ from numpy import concatenate
 import warnings
 import json
 warnings.filterwarnings(action='ignore', category=DeprecationWarning)
-from keras.utils.vis_utils import plot_model
+# from keras.utils.vis_utils import plot_model
 import pandas as pd
-from pandas import concat,DataFrame
-import time
-import pandas.core.frame # read_csv
-from datetime import timedelta
-from keras.wrappers.scikit_learn import KerasClassifier, KerasRegressor
+import pandas.core.frame
 import os
-from subprocess import check_output as qx
 import sys
 from keras.callbacks import EarlyStopping
-from Timer import Timer
 from keras.callbacks import ModelCheckpoint
 
 from keras import backend
-
+from influxdb import InfluxDBClient
+		
 def rmse(y_true, y_pred):
 	return backend.sqrt(backend.mean(backend.square(y_pred - y_true), axis=-1))
 
@@ -37,14 +31,8 @@ def rmse(y_true, y_pred):
 class Neural_Model:
 
 	db_ip = "192.168.86.99"
-
-
-
-
-	len_day = 144
-	
+	len_day = 144	
 	n_out = len_day
-
 	train_model  = True
 	len_day      = 144
 	lstm_neurons = 40
@@ -63,10 +51,6 @@ class Neural_Model:
 		self.utils = Utils(self.city)
 		self.p     = Plotter()
 		self.d = Data_mgmt(city=self.city)
-
-		self.timer = Timer(city = self.city)
-
-
 		f = open(self.dir_path + "/data/" + self.city +  '/Maximums.pkl','rb')
 		self.maximumStations = pickle.load(f)
 		f.close()
@@ -105,13 +89,8 @@ class Neural_Model:
 
 	def load_encoders(self):
 		return np.load(self.dir_path + '/data/' + self.city + '/encoders/hour_encoder.npy'), np.load(self.dir_path + '/data/' + self.city +'/encoders/weekday_encoder.npy'), np.load(self.dir_path + '/data/' + self.city + '/encoders/station_encoder.npy')
-
-	def root_mean_squared_error(y_true, y_pred):
-		return K.sqrt(K.mean(K.square(y_pred - y_true)))
 		
 	def create_model(self):		
-
-		print(self.dir_path + '/config/config.json')
 
 		with open(self.dir_path + '/config/config.json', 'r') as j:
 			configs = json.loads(j.read())
@@ -140,37 +119,12 @@ class Neural_Model:
 
 		print(model.summary())
 
-		# model = Sequential()
-
-		# hidden_nodes = int(1/5 * (self.train_x.shape[1] + self.n_in))
-		# input_neurons = int(self.train_x.shape[1])
-				
-		# print(f"The number of hidden nodes is {hidden_nodes}.")
-		# print(f"The number of INPUT nodes is {input_neurons}.")
-
-		# # i guess you want to keep the sigmoid in the hidden layer(to obtain a nonlinear model), but probably you want to use a linear activation function in the output layer. In this way the values won't be bounded between 0 and 1.
-
-		# model.add(LSTM(self.n_out + 50, input_shape=(self.train_x.shape[1], self.train_x.shape[2]), return_sequences = True, activation="relu"))
-		# model.add(Dropout(0.2))
-		# model.add(Flatten())
-		# model.add(Dense(self.n_out, activation="linear"))
-
-		# print("Model summary")
-		# print(model.summary())
-
-		# adsfasdf()
-
-		# model.compile(loss='mean_squared_error', optimizer='adam', metrics = ['mean_squared_error', 'acc'])
-
-
-		plot_model(model, to_file=self.dir_path + "/model/" + self.city + "/model.png", show_shapes=True, show_layer_names=True)
+# 		plot_model(model, to_file=self.dir_path + "/model/" + self.city + "/model.png", show_shapes=True, show_layer_names=True)
 
 		return model
 
 
 	def fit_model(self):
-
-		self.timer.start()
 
 		self.train_x = np.load(self.dir_path + '/data/' + self.city + '/train_x.npy')
 		self.train_y = np.load(self.dir_path +'/data/' + self.city + '/train_y.npy')
@@ -245,14 +199,11 @@ class Neural_Model:
 		# title_plot = "Training & Validation MSE"
 		# self.p.two_plot(history.history['mean_squared_error'], history.history['val_mean_squared_error'], "Epoch", "accuracy", title_plot, self.dir_path + self.plot_path + title_path, note, "MSE", "Validation MSE")		
 
-		self.timer.stop("Trained model")
 		
 	def rmse(predictions, targets):
 		return np.sqrt(np.mean((predictions-targets)**2))
 		
 	def test_models_score(self):
-
-		self.timer.start()
 	
 		self.train_x = np.load(self.dir_path + '/data/' + self.city + '/train_x.npy')
 		self.train_y = np.load(self.dir_path +'/data/' + self.city + '/train_y.npy')
@@ -273,18 +224,14 @@ class Neural_Model:
 		print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1]*100))
 		
 		p = "..:.5"
-		list_hours = ["00:00","00:10","00:20","00:30","00:40","00:50","01:00","01:10","01:20","01:30","01:40","01:50","02:00","02:10","02:20","02:30","02:40","02:50","03:00","03:10","03:20","03:30","03:40","03:50","04:00","04:10","04:20","04:30","04:40","04:50","05:00","05:10","05:20","05:30","05:40","05:50","06:00","06:10","06:20","06:30","06:40","06:50","07:00","07:10","07:20","07:30","07:40","07:50","08:00","08:10","08:20","08:30","08:40","08:50","09:00","09:10","09:20","09:30","09:40","09:50","10:00","10:10","10:20","10:30","10:40","10:50","11:00","11:10","11:20","11:30","11:40","11:50","12:00","12:10","12:20","12:30","12:40","12:50","13:00","13:10","13:20","13:30","13:40","13:50","14:00","14:10","14:20","14:30","14:40","14:50","15:00","15:10","15:20","15:30","15:40","15:50","16:00","16:10","16:20","16:30","16:40","16:50","17:00","17:10","17:20","17:30","17:40","17:50","18:00","18:10","18:20","18:30","18:40","18:50","19:00","19:10","19:20","19:30","19:40","19:50","20:00","20:10","20:20","20:30","20:40","20:50","21:00","21:10","21:20","21:30","21:40","21:50","22:00","22:10","22:20","22:30","22:40","22:50","23:00","23:10","23:20","23:30","23:40","23:50"]
+		list_hours = ["00:00", "00:10", "00:20", "00:30", "00:40", "00:50", "01:00", "01:10", "01:20", "01:30", "01:40", "01:50", "02:00", "02:10", "02:20", "02:30", "02:40", "02:50", "03:00", "03:10", "03:20", "03:30", "03:40", "03:50", "04:00", "04:10", "04:20", "04:30", "04:40", "04:50", "05:00", "05:10", "05:20", "05:30", "05:40", "05:50", "06:00", "06:10", "06:20", "06:30", "06:40", "06:50", "07:00", "07:10", "07:20", "07:30", "07:40", "07:50", "08:00", "08:10", "08:20", "08:30", "08:40", "08:50", "09:00", "09:10", "09:20", "09:30", "09:40", "09:50", "10:00", "10:10", "10:20", "10:30", "10:40", "10:50", "11:00", "11:10", "11:20", "11:30", "11:40", "11:50", "12:00", "12:10", "12:20", "12:30", "12:40", "12:50", "13:00", "13:10", "13:20", "13:30", "13:40", "13:50", "14:00", "14:10", "14:20", "14:30", "14:40", "14:50", "15:00", "15:10", "15:20", "15:30", "15:40", "15:50", "16:00", "16:10", "16:20", "16:30", "16:40", "16:50", "17:00", "17:10", "17:20", "17:30", "17:40", "17:50", "18:00", "18:10", "18:20", "18:30", "18:40", "18:50", "19:00", "19:10", "19:20", "19:30", "19:40", "19:50", "20:00", "20:10", "20:20", "20:30", "20:40", "20:50", "21:00", "21:10", "21:20", "21:30", "21:40", "21:50", "22:00", "22:10", "22:20", "22:30", "22:40", "22:50", "23:00", "23:10", "23:20", "23:30", "23:40", "23:50"]
 
 		a = pd.DataFrame(list_hours)
 		a = a[~a[0].str.contains(p)]
 		list_hours = [i[0] for i in a.values.tolist()]
 	
-		date = datetime.datetime.today().strftime('%Y/%m/%d')
-
 		yesterday = datetime.datetime.today() - datetime.timedelta(1)
 		yesterday = yesterday.strftime('%Y/%m/%d')
-
-		current_time = datetime.datetime.today() 
 
 		# Load the dictionary that holds the maximum values per station name
 		f = open(self.dir_path +"/data/" + self.city +  "/Maximums.pkl", 'rb')
@@ -296,11 +243,8 @@ class Neural_Model:
 		for i,(X,y) in enumerate(zip(self.test_x, self.test_y)):
 
 			X_r = X.reshape(1,X.shape[0], X.shape[1])
-			
 			y_hat = self.model.predict(X_r)
-
 			X_rescaled = self.scaler.inverse_transform(X)
-
 			X_rescaled_latest = X_rescaled[self.len_day * (self.n_days_in - 1):]
 			
 			# Get the latest day, input is from multiple days and the generated output
@@ -334,51 +278,28 @@ class Neural_Model:
 				predo_vals = [i * (maxVal / 100) for i in predo_vals]
 				real_vals = [i * (maxVal / 100) for i in real_vals]
 
-
 			title += "%s: %.2f%%" % (self.model.metrics_names[1], scores[1]*100) #"RMSE " + str(rmse(real_vals, predo_vals))
 
 			if np.isnan(predo_vals).any():
 				print("Error, predicted NaN values")
 				continue
 			
-			self.p.two_plot(real_vals, predo_vals, "Tiempo", "Bicicletas", title, self.dir_path + "/plots/" + self.city + "/test/" + str(i), text = "", line_1 = "Real", line_2 = "Prediction")
-			
-		self.timer.stop("Tested model score")
-		
+			self.p.two_plot(real_vals, predo_vals, "Tiempo", "Bicicletas", title, self.dir_path + "/plots/" + self.city + "/test/" + str(i), text = "", line_1 = "Real", line_2 = "Prediction")		
 
 	def tomorrow(self, data, append_to_db = False):
-	
-		# self.train_x = np.load(self.dir_path + '/data/' + self.city + '/train_x.npy')
-		# self.train_y = np.load(self.dir_path +'/data/' + self.city + '/train_y.npy')
-
-		# self.test_x = np.load(self.dir_path + '/data/' + self.city + '/test_x.npy')
-		# self.test_y = np.load(self.dir_path + '/data/' + self.city + '/test_y.npy')
-
-		# self.validation_x = np.load(self.dir_path + '/data/' + self.city + '/validation_x.npy')
-		# self.validation_y = np.load(self.dir_path + '/data/' + self.city + '/validation_y.npy')
-
-		# print("Train X " + str(self.train_x.shape))
-		# print("Train Y " + str(self.train_y.shape))
-		# print("Test X " + str(self.test_x.shape))
-		# print("Test Y " + str(self.test_y.shape))
-		# print("Validation X " + str(self.validation_x.shape))
-		# print("Validation Y " + str(self.validation_y.shape))
 		
 		self.model = self.create_model()
 		self.model.load_weights(self.dir_path + "/model/" + self.city + "/model.h5")
-
-		from influxdb import InfluxDBClient
+		
 		client = InfluxDBClient(self.db_ip, '8086', 'root', self.db_password, 'Bicis_' + self.city +'_Prediction')
 
 		p = "..:.5"
-		list_hours = ["00:00","00:10","00:20","00:30","00:40","00:50","01:00","01:10","01:20","01:30","01:40","01:50","02:00","02:10","02:20","02:30","02:40","02:50","03:00","03:10","03:20","03:30","03:40","03:50","04:00","04:10","04:20","04:30","04:40","04:50","05:00","05:10","05:20","05:30","05:40","05:50","06:00","06:10","06:20","06:30","06:40","06:50","07:00","07:10","07:20","07:30","07:40","07:50","08:00","08:10","08:20","08:30","08:40","08:50","09:00","09:10","09:20","09:30","09:40","09:50","10:00","10:10","10:20","10:30","10:40","10:50","11:00","11:10","11:20","11:30","11:40","11:50","12:00","12:10","12:20","12:30","12:40","12:50","13:00","13:10","13:20","13:30","13:40","13:50","14:00","14:10","14:20","14:30","14:40","14:50","15:00","15:10","15:20","15:30","15:40","15:50","16:00","16:10","16:20","16:30","16:40","16:50","17:00","17:10","17:20","17:30","17:40","17:50","18:00","18:10","18:20","18:30","18:40","18:50","19:00","19:10","19:20","19:30","19:40","19:50","20:00","20:10","20:20","20:30","20:40","20:50","21:00","21:10","21:20","21:30","21:40","21:50","22:00","22:10","22:20","22:30","22:40","22:50","23:00","23:10","23:20","23:30","23:40","23:50"]
+		list_hours = ["00:00", "00:10", "00:20", "00:30", "00:40", "00:50", "01:00", "01:10", "01:20", "01:30", "01:40", "01:50", "02:00", "02:10", "02:20", "02:30", "02:40", "02:50", "03:00", "03:10", "03:20", "03:30", "03:40", "03:50", "04:00", "04:10", "04:20", "04:30", "04:40", "04:50", "05:00", "05:10", "05:20", "05:30", "05:40", "05:50", "06:00", "06:10", "06:20", "06:30", "06:40", "06:50", "07:00", "07:10", "07:20", "07:30", "07:40", "07:50", "08:00", "08:10", "08:20", "08:30", "08:40", "08:50", "09:00", "09:10", "09:20", "09:30", "09:40", "09:50", "10:00", "10:10", "10:20", "10:30", "10:40", "10:50", "11:00", "11:10", "11:20", "11:30", "11:40", "11:50", "12:00", "12:10", "12:20", "12:30", "12:40", "12:50", "13:00", "13:10", "13:20", "13:30", "13:40", "13:50", "14:00", "14:10", "14:20", "14:30", "14:40", "14:50", "15:00", "15:10", "15:20", "15:30", "15:40", "15:50", "16:00", "16:10", "16:20", "16:30", "16:40", "16:50", "17:00", "17:10", "17:20", "17:30", "17:40", "17:50", "18:00", "18:10", "18:20", "18:30", "18:40", "18:50", "19:00", "19:10", "19:20", "19:30", "19:40", "19:50", "20:00", "20:10", "20:20", "20:30", "20:40", "20:50", "21:00", "21:10", "21:20", "21:30", "21:40", "21:50", "22:00", "22:10", "22:20", "22:30", "22:40", "22:50", "23:00", "23:10", "23:20", "23:30", "23:40", "23:50"]
 
 		a = pd.DataFrame(list_hours)
 		a = a[~a[0].str.contains(p)]
 		list_hours = [i[0] for i in a.values.tolist()]
 	
-		date = datetime.datetime.today().strftime('%Y/%m/%d')
-
 		yesterday = datetime.datetime.today() - datetime.timedelta(1)
 		yesterday = yesterday.strftime('%Y/%m/%d')
 
@@ -387,8 +308,6 @@ class Neural_Model:
 		for (stationName, dataToPredict) in data.items():
 
 			json_body = []
-
-			print("Predicting " + stationName + "\r", end="")
 
 			if dataToPredict.shape[1] < self.n_in: continue
 
@@ -431,12 +350,14 @@ class Neural_Model:
 			else: 
 				
 				weekday_index = self.generated_columns.index("weekday")
-
 				weekday = int(dataToPredict[-1][weekday_index]) + self.n_days_in - 1
-
+				
 				# Get the correct weekday as a String
-				if weekday == 6: weekday = 0
-				else: weekday += 1
+				if weekday >= 6: 
+				    weekday = 0
+				else: 
+				    weekday += 1
 								
 				weekday = self.weekday_encoder.inverse_transform([weekday])[0]
 				self.p.two_plot(dataToPredict[:,-1], dataToPredict[:,-1], "Tiempo", "Bicicletas", str("Prediction for " + stationName + " for today (" + weekday + ")"), self.dir_path + "/plots/" + self.city + "/tomorrow/" + self.station_dict[stationName], text = "", line_1 = "Prediction", line_2 = "Real Value")
+				

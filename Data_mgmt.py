@@ -34,8 +34,7 @@ class Data_mgmt:
 	
 	hour_encoder    = LabelEncoder()
 	weekday_encoder = LabelEncoder()
-	stationEncoder = LabelEncoder()
-	
+	station_encoder = LabelEncoder()
 		
 	len_day = 144
 
@@ -57,6 +56,8 @@ class Data_mgmt:
 
 		with open(self.dir_path + '/config/config.json', 'r') as j:
 			configs = json.loads(j.read())
+
+		print("READ CONFIG")
 
 		self.og_columns = configs['data']['og_columns']
 		self.generated_columns = configs['data']['generated_columns']
@@ -84,7 +85,7 @@ class Data_mgmt:
 		self.client = InfluxDBClient(self.db_ip, '8086', 'root', "root", self.availability_db_name) 
 
 		self.utils.check_and_create(["/data/" + self.city])
-		self.utils.check_and_create(["/data/" + self.city + "/tomorrow", "/data/" + self.city + "/yesterday", '/data/' + self.city + '/cluster/', '/data/' + self.city + '/today/', "/data/" + self.city + "/today", "/data/" + self.city + "/yesterday/", "/data/" + self.city + "/filled", "/model/" + self.city , "/data/utils/", "/plots/" + self.city, "/data/" + self.city + "/supervised", "/data/" + self.city + "/scaled", "/data/" + self.city + "/filled", "/data/" + self.city + "/encoders", "/data/" + self.city + "/encoded_data"])
+		self.utils.check_and_create(['/data/' + self.city + '/cluster/', "/data/" + self.city + "/filled", "/model/" + self.city , "/data/utils/", "/plots/" + self.city, "/data/" + self.city + "/supervised", "/data/" + self.city + "/scaled", "/data/" + self.city + "/filled", "/data/" + self.city + "/encoders", "/data/" + self.city + "/encoded_data"])
 		
 		self.list_hours = ["00:00","00:10","00:20","00:30","00:40","00:50","01:00","01:10","01:20","01:30","01:40","01:50","02:00","02:10","02:20","02:30","02:40","02:50","03:00","03:10","03:20","03:30","03:40","03:50","04:00","04:10","04:20","04:30","04:40","04:50","05:00","05:10","05:20","05:30","05:40","05:50","06:00","06:10","06:20","06:30","06:40","06:50","07:00","07:10","07:20","07:30","07:40","07:50","08:00","08:10","08:20","08:30","08:40","08:50","09:00","09:10","09:20","09:30","09:40","09:50","10:00","10:10","10:20","10:30","10:40","10:50","11:00","11:10","11:20","11:30","11:40","11:50","12:00","12:10","12:20","12:30","12:40","12:50","13:00","13:10","13:20","13:30","13:40","13:50","14:00","14:10","14:20","14:30","14:40","14:50","15:00","15:10","15:20","15:30","15:40","15:50","16:00","16:10","16:20","16:30","16:40","16:50","17:00","17:10","17:20","17:30","17:40","17:50","18:00","18:10","18:20","18:30","18:40","18:50","19:00","19:10","19:20","19:30","19:40","19:50","20:00","20:10","20:20","20:30","20:40","20:50","21:00","21:10","21:20","21:30","21:40","21:50","22:00","22:10","22:20","22:30","22:40","22:50","23:00","23:10","23:20","23:30","23:40","23:50"]
 		
@@ -239,7 +240,7 @@ class Data_mgmt:
 
 		if "station_name" in self.generated_columns:
 			station_index = self.generated_columns.index("station_name")	
-			values[:,station_index] = self.stationEncoder.transform(values[:,station_index])  # Encode STATION as an integer value
+			values[:,station_index] = self.station_encoder.transform(values[:,station_index])  # Encode STATION as an integer value
 		
 		self.save_encoders()
 		
@@ -248,7 +249,7 @@ class Data_mgmt:
 	def save_encoders(self):
 		np.save(self.dir_path + '/data/' +  self.city +  '/encoders/hour_encoder.npy', self.hour_encoder.classes_)
 		np.save(self.dir_path + '/data/' +  self.city +  '/encoders/weekday_encoder.npy', self.weekday_encoder.classes_)
-		np.save(self.dir_path + '/data/' +  self.city +  '/encoders/stationEncoder.npy', self.stationEncoder.classes_)
+		np.save(self.dir_path + '/data/' +  self.city +  '/encoders/station_encoder.npy', self.station_encoder.classes_)
 
 
 	# Calls `series_to_supervised` and then returns a list of arrays, in each one are the values for each station
@@ -320,7 +321,7 @@ class Data_mgmt:
 				self.utils.save_array_txt(self.dir_path + "/data/" + self.city + "/supervised/" + self.station_dict[station], supervised.values)
 				np.save(self.dir_path + "/data/" + self.city + "/supervised/" + self.station_dict[station] + '.npy', supervised.values)
 
-				supervised.to_excel(self.dir_path + "/data/" + self.city + "/supervised/" + self.station_dict[station] + '.xlsx')
+# 				supervised.to_excel(self.dir_path + "/data/" + self.city + "/supervised/" + self.station_dict[station] + '.xlsx')
 					
 			except (FileNotFoundError, IOError):
 				print("Wrong file or file path in supervised learning (" + '/data/' + self.city + '/scaled/' + str(self.station_dict[station]) + ".npy)" )
@@ -347,7 +348,8 @@ class Data_mgmt:
 
 		if array_has_nan: 
 			print(final_data)
-			asdfasdF()
+			final_data = final_data[~np.isnan(final_data).any(axis=1)]
+			print(final_data)
 
 		np.save(self.dir_path + "/data/" + self.city + "/supervised/" + self.city + ".npy", final_data)
 
@@ -398,7 +400,7 @@ class Data_mgmt:
 		self.cluster_data = dict(zip(self.cluster_data.values[:,0], self.cluster_data.values[:,1]))     
 		
 		self.listOfStations = list(self.cluster_data.keys())
-		self.stationEncoder.classes_ = self.listOfStations
+		self.station_encoder.classes_ = self.listOfStations
 
 		path_to_save = os.path.join(self.dir_path, 'data', self.city, 'filled')
 		
@@ -486,7 +488,7 @@ class Data_mgmt:
 
 				if array_has_nan: 
 					print(daily)
-					asdfasdF()
+					daily = daily[~np.isnan(daily).any(axis=1)]
 				
 				currentStationArray = np.concatenate((currentStationArray,daily), axis = 0)
 
@@ -521,8 +523,6 @@ class Data_mgmt:
 				dataset = dataset.reshape(-1, dataset.shape[-1])
 		
 				a = np.concatenate((a,dataset), axis = 0)
-
-				print(self.listOfStations[i])
 
 				self.maximumBikesInStation[self.listOfStations[i]] = max(a[:,-1])
 			
@@ -682,19 +682,22 @@ class Data_mgmt:
 
 		print("> Getting " + str(self.n_days_in) + " days of availability from the database")
 
-		if cluster_data is None:
-			self.cluster_data = pd.read_csv(self.dir_path + "/data/" + self.city + "/cluster/cluster_stations.csv")
+		self.cluster_data = pd.read_csv(self.dir_path + "/data/" + self.city + "/cluster/cluster_stations.csv")
+			
 
 		# Load the dictionary that holds the maximum values per station name
 		f = open(self.dir_path +"/data/" + self.city +  "/Maximums.pkl", 'rb')
 		self.maximumBikesInStation = pickle.load(f)
 		f.close()
 		
+		print(cluster_data)
+
+		
 		self.cluster_data = dict(zip(self.cluster_data.values[:,0], self.cluster_data.values[:,1]))     
 		
 		self.hour_encoder.classes_ = np.load(self.dir_path + '/data/' +  self.city +  '/encoders/hour_encoder.npy')
 		self.weekday_encoder.classes_ = np.load(self.dir_path + '/data/' +  self.city +  '/encoders/weekday_encoder.npy')
-		self.stationEncoder.classes_ = np.load(self.dir_path + '/data/' +  self.city +  '/encoders/station_encoder.npy')
+		self.station_encoder.classes_ = np.load(self.dir_path + '/data/' +  self.city +  '/encoders/station_encoder.npy')
 
 		current_time = time.strftime('%Y-%m-%dT00:00:00Z',time.localtime(time.time()))
 		
@@ -729,7 +732,6 @@ class Data_mgmt:
 			if data.size == 0: continue
 			
 			data['time']       = pd.to_datetime(data['time'])
-			#data['station_id'] = pd.to_numeric(data['station_id'])
 			data['value']      = pd.to_numeric(data['value'])
 
 			date_str = data['time'].iloc[0].strftime('%Y-%m-%d')
@@ -764,6 +766,7 @@ class Data_mgmt:
 			
 			# Encode columns that are strings to be numbers
 			data = self.encoder_helper(data)
+			
 			data = self.scaler_helper(self.maximumBikesInStation[station], data)         
 			
 			# Reshape the data to be 3-Dimensional
@@ -772,4 +775,3 @@ class Data_mgmt:
 			informationList[station] = data
 
 		return informationList
-
