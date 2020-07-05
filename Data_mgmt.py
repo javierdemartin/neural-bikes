@@ -57,8 +57,6 @@ class Data_mgmt:
 		with open(self.dir_path + '/config/config.json', 'r') as j:
 			configs = json.loads(j.read())
 
-		print("READ CONFIG")
-
 		self.og_columns = configs['data']['og_columns']
 		self.generated_columns = configs['data']['generated_columns']
 		# When generating the output samples (Y) of the supervised problem

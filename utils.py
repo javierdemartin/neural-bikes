@@ -169,6 +169,12 @@ class Utils:
 				longitude = str(i[lonVAR])
 				if re.search(r'\d\d-\w+', name):   
 					name = name[3::]
+			elif city == "London":
+				print(i)
+				identifier = str(i[idVAR])
+				name = str(i[nameVAR])
+				latitude = str(i[latVAR])
+				longitude = str(i[lonVAR])
 			  
 			elif city == "Chicago":
 				identifier = i['properties']['station']['id']

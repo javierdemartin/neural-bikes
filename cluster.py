@@ -51,20 +51,22 @@ class Cluster:
 			last_modified_date = datetime.fromtimestamp(mtime)
 
 			timeDiff = datetime.now() - last_modified_date
+			
+			return pd.read_csv(self.dir_path + "/data/" + self.city + "/cluster/cluster_stations.csv")
 		
-			if timeDiff.days < 15:
-				return pd.read_csv(self.dir_path + "/data/" + self.city + "/cluster/cluster_stations.csv")
-			else:
-				self.d = Data_mgmt(city=self.city)
-
-				print("> Reading dataset from DB")
-				raw = self.d.read_dataset(no_date_split=True)
-		
-				self.timer.start()
-				labels = self.cluster_analysis("weekday", raw)
-				self.timer.stop("Cluster analysis done, found " + str(len(labels)) + " clusters/")
-
-				return labels
+			# if timeDiff.days < 15:
+# 				return pd.read_csv(self.dir_path + "/data/" + self.city + "/cluster/cluster_stations.csv")
+# 			else:
+# 				self.d = Data_mgmt(city=self.city)
+# 
+# 				print("> Reading dataset from DB")
+# 				raw = self.d.read_dataset(no_date_split=True)
+# 		
+# 				self.timer.start()
+# 				labels = self.cluster_analysis("weekday", raw)
+# 				self.timer.stop("Cluster analysis done, found " + str(len(labels)) + " clusters/")
+# 
+# 				return labels
 				
 		else: 
 			self.d = Data_mgmt(city=self.city)

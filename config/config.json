@@ -20,7 +20,7 @@
 		},
 		"London": {
 			"epochs": 50,
-			"batch_size": 600
+			"batch_size": 60
 		},
 		"Chicago": {
 			"epochs": 5,
@@ -184,7 +184,7 @@
 			"layers": [
 				{
 					"type": "lstm",
-					"neurons": 100,
+					"neurons": 50,
 					"input_timesteps": 432,
 					"input_dim": 5,
 					"return_seq": true,
@@ -196,7 +196,7 @@
 				},
 				{
 					"type": "lstm",
-					"neurons": 100,
+					"neurons": 50,
 					"input_timesteps": 432,
 					"input_dim": 5,
 					"return_seq": true,
