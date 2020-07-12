@@ -67,6 +67,7 @@ class Utils:
 		"Santander": "https://api.jcdecaux.com/vls/v1/stations?contract=Santander&apiKey=9fcde589b2071fa7895969c4f0a186f2beb6ac84", 
 		"New_York": "https://gbfs.citibikenyc.com/gbfs/en/station_information.json",
         "Berlin": "https://api.nextbike.net/maps/nextbike-live.json?city=362",
+                "Paris": "https://velib-metropole-opendata.smoove.pro/opendata/Velib_Metropole/station_information.json",
 		"Bilbao": "https://nextbike.net/maps/nextbike-official.json?city=532", 
 		"Chicago": "https://layer.bicyclesharing.net/map/v1/chi/map-inventory", 
 		"Bilbao": "https://nextbike.net/maps/nextbike-official.json?city=532", 
@@ -105,7 +106,7 @@ class Utils:
 			content = urlopen(req2).read()
 			data = json.loads(content)['data']
 
-		elif city== "New_York":	
+		elif city== "New_York" or city == "Paris":	
 			data = requests.get(urls[city]).json()
 			data = data["data"]['stations']
 
@@ -125,6 +126,7 @@ class Utils:
 		"Berlin": ["uid", "name", "lat", "lng"], 
 		"Madrid": ["id", "name", "geometry"],
 		"New_York": ["station_id", "name", "lat", "lon"],
+		"Paris": ["station_id", "name", "lat", "lon"],
 		"Barcelona": ["id", "name", "latitude", "longitude"],
 		"Vienna": ["id", "name", "latitude", "longitude"],
 		"London": ["id", "commonName", "lat", "lon"]
@@ -181,7 +183,7 @@ class Utils:
 				name = i["properties"]['station']['name']
 				latitude = i['geometry']['coordinates'][1]
 				longitude = i['geometry']['coordinates'][0]
-			elif city == "New_York":
+			elif city == "New_York" or city == "Paris":
 				identifier = str(i[idVAR])
 				name = str(i[nameVAR])
 				latitude = str(i[latVAR])

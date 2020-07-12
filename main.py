@@ -27,4 +27,4 @@ m.test_models_score()
 
 dataToPredict = data.prepare_tomorrow()
 
-model.tomorrow(data = dataToPredict, append_to_db = False)
+m.tomorrow(data = dataToPredict, append_to_db = False)
