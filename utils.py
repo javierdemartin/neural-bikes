@@ -172,7 +172,6 @@ class Utils:
 				if re.search(r'\d\d-\w+', name):   
 					name = name[3::]
 			elif city == "London":
-				print(i)
 				identifier = str(i[idVAR])
 				name = str(i[nameVAR])
 				latitude = str(i[latVAR])
