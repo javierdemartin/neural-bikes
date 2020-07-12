@@ -193,8 +193,6 @@ class Cluster:
 		
 		(cluster_df.T).to_csv(self.dir_path + "/data/" + self.city +  "/cluster/cluster_data/data.csv", index_label='id')	
 
-		cluster_df.to_csv(self.dir_path + "/data/" + self.city +  "/cluster/" + str(self.city) + "_clusters_" + type_of_analysis +".csv", index=False)
-
 		with sns.axes_style("darkgrid", {'xtick.major.size': 8.0}):
 			fig, ax = plt.subplots(figsize=(10,6))
 
@@ -278,7 +276,5 @@ class Cluster:
 			plt.close()			
 	
 		dflabel.to_csv(self.dir_path + "/data/" + self.city +  "/cluster/" + "cluster_stations.csv", index=False)	
-		
-		dflabel.to_csv(self.dir_path + "/data/" + self.city +  "/cluster/" + str(sys.argv[1]) + "-stations-" + type_of_analysis + ".csv", index=False)
 
 		return dflabel
