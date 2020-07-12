@@ -18,9 +18,13 @@
 			"epochs": 20,
 			"batch_size": 1000
 		},
+    "Paris": {
+      "epochs": 50,
+      "batch_size": 60
+    },
 		"London": {
 			"epochs": 50,
-			"batch_size": 60
+			"batch_size": 100
 		},
 		"Chicago": {
 			"epochs": 5,
@@ -37,6 +41,58 @@
 	},
 	"model": {
 		"Bilbao": {
+			"loss": "mean_squared_error",
+			"optimizer": "adam",
+			"metrics": ["mean_squared_error", "acc"],
+			"callbacks": [
+				{
+					"type": "early_stopping",
+					"mode":"min",
+					"monitor":"val_mean_squared_error",
+					"patience": 3
+				},
+				{
+					"type": "model_checkpoint",
+					"mode": "min",
+					"monitor": "val_mean_squared_error"
+				}
+			],
+			"layers": [
+				{
+					"type": "lstm",
+					"neurons": 50,
+					"input_timesteps": 432,
+					"input_dim": 5,
+					"return_seq": true,
+					"activation": "relu"
+				},
+				{
+					"type": "dropout",
+					"rate": 0.2
+				},
+				{
+					"type": "lstm",
+					"neurons": 50,
+					"input_timesteps": 432,
+					"input_dim": 5,
+					"return_seq": true,
+					"activation": "relu"
+				},
+				{
+					"type": "dropout",
+					"rate": 0.2
+				},
+				{
+					"type": "flatten"
+				},
+				{
+					"type": "dense",
+					"neurons": 144,
+					"activation": "linear"
+				}
+			]
+		},
+		"Paris": {
 			"loss": "mean_squared_error",
 			"optimizer": "adam",
 			"metrics": ["mean_squared_error", "acc"],
