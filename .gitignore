@@ -5,6 +5,7 @@ data/*/*.npy
 data/*/supervised/
 data/*/cluster/cluster_data/
 data/*/cluster/*_clusters_*.csv
+model/*
 data/*/cluster/*-stations-*.csv
 !/data/*/cluster/cluster_stations.csv
 !data/*/listOfStations
