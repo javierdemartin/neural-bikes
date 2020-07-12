@@ -1,0 +1,787 @@
+station_name,label
+"Abbey Orchard Street, Westminster",0
+"Abbotsbury Road, Holland Park",1
+"Aberdeen Place, St. John's Wood",2
+"Aberfeldy Street, Poplar",1
+"Abingdon Green, Westminster",0
+"Abingdon Villas, Kensington",1
+"Abyssinia Close, Clapham Junction",1
+"Ackroyd Drive, Bow",1
+"Ada Street, Hackney Central",1
+"Addison Road, Holland Park",1
+"Aintree Street, Fulham",1
+"Albany Street, The Regent's Park",0
+"Albert Bridge Road, Battersea Park",1
+"Albert Embankment, Vauxhall",1
+"Albert Gardens, Stepney",1
+"Albert Gate, Hyde Park",2
+"Albert Square, Stockwell",1
+"Alderney Street, Pimlico",1
+"Aldersgate Street, Barbican",1
+"Alfred Place, Bloomsbury",1
+"Alfreda Street, Battersea Park",1
+"All Saints Church, Portobello",1
+"All Saints' Road, Portobello",1
+"Allington Street, Victoria",1
+"Alma Road, Wandsworth",1
+"Alpha Grove, Millwall",1
+"Ampton Street , Clerkenwell",1
+"Ansell House, Stepney",1
+"Antill Road, Mile End",1
+"Aquatic Centre, Queen Elizabeth Olympic Park",1
+"Archbishop's Park, Waterloo",0
+"Argyll Road, Kensington",1
+"Arlington Road, Camden Town",1
+"Arundel Street, Temple",0
+"Ashley Crescent, Battersea",1
+"Ashley Place, Victoria",1
+"Ashmole Estate, Oval",1
+"Aston Street, Stepney",1
+"Austin Road, Battersea Park",1
+"Aylward Street, Stepney",1
+"BBC White City, White City",1
+"Baker Street, Marylebone",2
+"Baldwin Street, St. Luke's",2
+"Bancroft Road, Bethnal Green",1
+"Bank of England Museum, Bank",2
+"Bankside Mix, Bankside",0
+"Barbican Centre, Barbican",1
+"Barons Court Station, West Kensington",1
+"Bath Street, St. Luke's",1
+"Battersea Church Road, Battersea",1
+"Battersea Park Road, Nine Elms",1
+"Battersea Power Station, Battersea Park",0
+"Bayley Street , Bloomsbury",0
+"Baylis Road, Waterloo",1
+"Bayswater Road, Hyde Park",1
+"Beaumont Street, Marylebone",0
+"Bedford Way, Bloomsbury",1
+"Belford House, Haggerston",1
+"Belgrave Road, Victoria",2
+"Belgrave Square, Belgravia",0
+"Belgrove Street , King's Cross",0
+"Bell Lane, Liverpool Street",1
+"Bell Street , Marylebone",0
+"Belvedere Road 1, South Bank",1
+"Belvedere Road 2, South Bank",1
+"Bermondsey Street, Bermondsey",1
+"Berry Street, Clerkenwell",0
+"Beryl Road, Hammersmith",1
+"Bethnal Green Garden, Bethnal Green",2
+"Bethnal Green Road, Shoreditch",1
+"Bevington Road West, North Kensington",1
+"Binfield Road, Stockwell",1
+"Birkenhead Street, King's Cross",1
+"Bishop's Avenue, Fulham",1
+"Bishop's Bridge Road East, Bayswater",1
+"Bishop's Bridge Road West, Bayswater",1
+"Black Lion Gate, Kensington Gardens",1
+"Black Prince Road, Vauxhall",1
+"Blackfriars Road, Southwark",1
+"Blackfriars Station, St. Paul's",1
+"Blenheim Crescent, Ladbroke Grove",1
+"Blythe Road West, Shepherd's Bush",1
+"Bolsover Street, Fitzrovia",0
+"Bonner Gate, Victoria Park",1
+"Bonny Street, Camden Town",1
+"Borough High Street, The Borough",1
+"Borough Road, Elephant & Castle",1
+"Boston Place, Marylebone",1
+"Bourne Street, Belgravia",1
+"Bouverie Street, Temple",0
+"Bow Church Station, Bow",1
+"Bow Road Station, Bow",1
+"Bradmead, Battersea Park",1
+"Braham Street, Aldgate",1
+"Bramham Gardens, Earl's Court",1
+"Breams Buildings, Holborn",0
+"Brick Lane Market, Shoreditch",0
+"Bricklayers Arms, Borough",1
+"Bridge Avenue, Hammersmith",1
+"British Museum, Bloomsbury",2
+"Broadcasting House, Marylebone",0
+"Broadley Terrace, Marylebone",1
+"Broadwick Street, Soho",0
+"Bromley High Street, Bow",1
+"Brook Green South, Brook Green",1
+"Broomhouse Lane, Parsons Green",1
+"Brunswick Square, Bloomsbury",0
+"Brushfield Street, Liverpool Street",0
+"Bruton Street, Mayfair",0
+"Buckingham Gate, Westminster",0
+"Bunhill Row, Moorgate",0
+"Burdett Road, Mile End",1
+"Bury Place, Holborn",0
+"Butler Place, Westminster",0
+"Buxton Street 1, Shoreditch",1
+"Cadogan Close, Victoria Park",1
+"Cadogan Gardens, Chelsea",2
+"Cadogan Place, Knightsbridge",0
+"Caldwell Street, Stockwell",1
+"Calshot Street , King's Cross",1
+"Campden Hill Road, Notting Hill",1
+"Canton Street, Poplar",1
+"Cantrell Road, Bow",1
+"Carey Street, Holborn",2
+"Carnegie Street, King's Cross",1
+"Cartwright Gardens , Bloomsbury",1
+"Castlehaven Road, Camden Town",1
+"Central House, Aldgate",1
+"Cephas Street, Bethnal Green",1
+"Chadwell Street, Angel",1
+"Chancery Lane, Holborn",0
+"Chapel Place, Marylebone",0
+"Charing Cross Hospital, Hammersmith",0
+"Charlbert Street, St. John's Wood",1
+"Charles II Street, West End",0
+"Charlotte Street, Fitzrovia",2
+"Charlotte Terrace, Angel",1
+"Cheapside, Bank",0
+"Chelsea Bridge, Pimlico",1
+"Chelsea Green, Chelsea",1
+"Chepstow Villas, Notting Hill",2
+"Cheshire Street, Bethnal Green",1
+"Chesilton Road, Fulham",1
+"Chrisp Street Market, Poplar",2
+"Christian Street, Whitechapel",1
+"Christopher Street, Liverpool Street",0
+"City Road, Angel",1
+"Clapham Common North Side, Clapham Common",1
+"Clapham Road, Lingham Street, Stockwell",1
+"Claremont Square, Angel",1
+"Clarence Walk, Stockwell",1
+"Clarendon Road, Avondale",1
+"Clarges Street, Mayfair",0
+"Clarkson Street, Bethnal Green",1
+"Claverton Street, Pimlico",1
+"Cleaver Street, Kennington",1
+"Clerkenwell Green, Clerkenwell",1
+"Cleveland Gardens, Bayswater",1
+"Cleveland Way, Stepney",1
+"Clifford Street, Mayfair",0
+"Clifton Road, Maida Vale",2
+"Clifton Street, Shoreditch",0
+"Clinton Road, Mile End",1
+"Cloudesley Road, Angel",1
+"Colet Gardens, Hammersmith",1
+"Collingham Gardens, Earl's Court",2
+"Colombo Street, Southwark",2
+"Columbia Road, Shoreditch",1
+"Commercial Street, Shoreditch",1
+"Concert Hall Approach 1, South Bank",0
+"Concert Hall Approach 2, South Bank",1
+"Coomer Place, West Kensington",1
+"Coram Street, Bloomsbury",1
+"Cotton Garden Estate, Kennington",0
+"Courland Grove, Wandsworth Road",1
+"Crabtree Lane, Fulham",2
+"Cranmer Road, Stockwell",1
+"Craven Street, Strand",2
+"Crawford Street, Marylebone",1
+"Crinan Street, King's Cross",1
+"Crisp Road, Hammersmith",1
+"Cromer Street, Bloomsbury",1
+"Crosswall, Tower",1
+"Culvert Road, Battersea",1
+"Curlew Street, Shad Thames",1
+"Curzon Street, Mayfair",2
+"Danvers Street, West Chelsea",1
+"De Vere Gardens, Kensington",0
+"Denyer Street, Knightsbridge",2
+"Derry Street, Kensington",2
+"Devons Road, Bow",1
+"Devonshire Square, Liverpool Street",1
+"Devonshire Terrace, Bayswater",1
+"Dickens Square, Borough",1
+"Disraeli Road, Putney",1
+"Dock Street, Wapping",1
+"Doddington Grove, Kennington",2
+"Doric Way , Somers Town",0
+"Dorothy Road, Clapham Junction",1
+"Dorset Square, Marylebone",1
+"Drayton Gardens, West Chelsea",1
+"Driffield Road, Old Ford",1
+"Drummond Street , Euston",1
+"Drury Lane, Covent Garden",0
+"Duke Street Hill, London Bridge",1
+"Dunston Road , Haggerston",1
+"Durant Street, Bethnal Green",1
+"Eagle Wharf Road, Hoxton",2
+"Earnshaw Street , Covent Garden",0
+"East Ferry Road, Cubitt Town",1
+"East India DLR, Blackwall",1
+"East Road, Hoxton",1
+"East Village, Queen Elizabeth Olympic Park",1
+"Eastbourne Mews, Paddington",1
+"Eaton Square (South), Belgravia",1
+"Eaton Square, Belgravia",1
+"Ebury Bridge, Pimlico",1
+"Eccleston Place, Victoria",1
+"Edgware Road Station, Marylebone",1
+"Eel Brook Common, Walham Green",1
+"Elizabeth Bridge, Victoria",1
+"Elysium Place, Fulham",1
+"Embankment (Savoy), Strand",0
+"Emperor's Gate, South Kensington",1
+"Empire Square, The Borough",2
+"Endsleigh Gardens, Euston",1
+"Erin Close, Walham Green",2
+"Esmond Street, Putney",2
+"Ethelburga Estate, Battersea Park",1
+"Euston Road, Euston",1
+"Euston Square Gardens, Euston",1
+"Everington Street, Fulham",1
+"Eversholt Street , Camden Town",1
+"Evesham Street, Avondale",1
+"Exhibition Road Museums, South Kensington",0
+"Exhibition Road, Knightsbridge",2
+"Falcon Road, Clapham Junction",2
+"Falkirk Street, Hoxton",1
+"Fanshaw Street, Hoxton",1
+"Farm Street, Mayfair",0
+"Farringdon Lane, Clerkenwell",1
+"Farringdon Street, Holborn",0
+"Fashion Street, Whitechapel",1
+"Fawcett Close, Battersea",2
+"Felsham Road, Putney",1
+"Ferndale Road, Brixton",1
+"Finlay Street, Fulham",1
+"Finnis Street, Bethnal Green",1
+"Finsbury Circus, Liverpool Street",0
+"Finsbury Leisure Centre, St. Luke's",1
+"Finsbury Library , Finsbury",1
+"Finsbury Square , Moorgate",0
+"Fire Brigade Pier, Vauxhall",2
+"Fisherman's Walk West, Canary Wharf",1
+"Flamborough Street, Limehouse",1
+"Flood Street, Chelsea",0
+"Foley Street, Fitzrovia",2
+"Ford Road, Old Ford",2
+"Fore Street Avenue, Guildhall",0
+"Fore Street, Guildhall",0
+"Fournier Street, Whitechapel",1
+"Frampton Street, Paddington",1
+"Freston Road, Avondale",1
+"Frith Street, Soho",0
+"Fulham Broadway, Walham Green",2
+"Fulham Park Road, Fulham",1
+"Furze Green, Bow",1
+"Garnet Street, Shadwell",1
+"Gas Holders, Battersea Park",1
+"Gaywood  Street, Elephant & Castle",1
+"George Place Mews, Marylebone",0
+"George Street, Marylebone",0
+"Geraldine Street, Elephant & Castle",1
+"Globe Town Market, Bethnal Green",1
+"Gloucester Avenue, Camden Town",1
+"Gloucester Road (Central), South Kensington",1
+"Gloucester Road (North), Kensington",2
+"Gloucester Road Station, South Kensington",1
+"Gloucester Street, Pimlico",1
+"Gloucester Terrace, Bayswater",1
+"Godliman Street, St. Paul's",2
+"Golden Lane, Barbican",1
+"Golden Square, Soho",0
+"Goldsmith's Row, Haggerston",1
+"Good's Way, King's Cross",1
+"Goswell Road (City Uni), Finsbury",1
+"Grafton Street, Mayfair",0
+"Graham Street, Angel",1
+"Granby Street, Shoreditch",1
+"Grant Road East, Clapham Junction",1
+"Great Dover Street, The Borough",1
+"Great Marlborough Street, Soho",2
+"Great Percy Street, Clerkenwell",1
+"Great Russell Street, Bloomsbury",0
+"Great Suffolk Street, The Borough",1
+"Great Titchfield Street, Fitzrovia",0
+"Great Tower Street, Monument",0
+"Green Park Station, Mayfair",0
+"Green Street, Mayfair",0
+"Greenberry Street, St.John's Wood",1
+"Greenland Road, Camden Town",1
+"Grenfell Road, Avondale",1
+"Greycoat Street , Westminster",1
+"Greyhound Road, Hammersmith",1
+"Grosvenor Crescent, Belgravia",0
+"Grosvenor Road, Pimlico",1
+"Grosvenor Square, Mayfair",2
+"Grove End Road, St. John's Wood",1
+"Guildhouse Street, Victoria",1
+"Guilford Street , Bloomsbury",0
+"Gunmakers Lane, Old Ford",1
+"Gwendwr Road, West Kensington",1
+"Haggerston Road, Haggerston",2
+"Halford Road, West Kensington",1
+"Hammersmith Road, Hammersmith",1
+"Hampstead Road (Cartmel), Euston",1
+"Hampstead Road, Euston",0
+"Hampton Street, Walworth",1
+"Handyside Street, King's Cross",1
+"Hansard Mews, Holland Park",1
+"Harcourt Terrace, West Brompton",1
+"Hardwick Street, Clerkenwell",0
+"Harford Street, Mile End",1
+"Harper Road, The Borough",1
+"Harriet Street, Knightsbridge",0
+"Harrington Square 1, Camden Town",1
+"Harrington Square 2, Camden Town",1
+"Harrowby Street, Marylebone",1
+"Hartington Road, Stockwell",1
+"Hatton Garden, Holborn",0
+"Hatton Wall, Holborn",1
+"Hawley Crescent, Camden Town",1
+"Heath Road, Battersea",1
+"Here East North, Queen Elizabeth Olympic Park",0
+"Here East South, Queen Elizabeth Olympic Park",1
+"Hereford Road, Bayswater",1
+"Hermitage Court, Wapping",1
+"Heron Quays DLR, Canary Wharf",1
+"Hertford Road, De Beauvoir Town",1
+"Hewison Street, Old Ford",1
+"Hibbert Street, Battersea",1
+"High Holborn , Covent Garden",0
+"Hinde Street, Marylebone",0
+"Holborn Circus, Holborn",0
+"Holden Street, Battersea",1
+"Holland Park, Kensington",0
+"Hollybush Gardens, Bethnal Green",1
+"Holy Trinity Brompton, Knightsbridge",0
+"Hop Exchange, The Borough",2
+"Horseferry Road, Westminster",1
+"Hortensia Road, West Brompton",1
+"Houghton Street, Strand",0
+"Houndsditch, Aldgate",0
+"Howick Place, Westminster",0
+"Howland Street, Fitzrovia",0
+"Hoxton Station, Hoxton",1
+"Hoxton Street, Hoxton",1
+"Humbolt Road, Fulham",1
+"Hurlingham Park, Parsons Green",1
+"Hyde Park Corner, Hyde Park",0
+"Ilchester Gardens, Bayswater",1
+"Ilchester Place, Kensington",1
+"Imperial College, Knightsbridge",0
+"Imperial Road, Sands End",1
+"Imperial Wharf Station, Sands End",1
+"Import Dock, Canary Wharf",1
+"Ingrave Street, Clapham Junction",1
+"Irene Road, Parsons Green",1
+"Islington Green, Angel",1
+"Jewry Street, Aldgate",0
+"Jubilee Crescent, Cubitt Town",1
+"Jubilee Gardens, South Bank",1
+"Jubilee Plaza, Canary Wharf",2
+"Jubilee Street, Stepney",1
+"Kennington Cross, Kennington",1
+"Kennington Lane Rail Bridge, Vauxhall",2
+"Kennington Oval, Oval",1
+"Kennington Road  , Vauxhall",1
+"Kennington Road Post Office, Oval",1
+"Kennington Station, Kennington",1
+"Kensington Church Street, Kensington",1
+"Kensington Gore, Knightsbridge",0
+"Kensington Olympia Station, Olympia",1
+"Kensington Town Hall, Kensington",1
+"Killick Street, King's Cross",1
+"King Edward Street, St Pauls",0
+"King Edward Walk, Waterloo",1
+"Kings Gate House, Westminster",0
+"Kingsway Southbound, Strand",0
+"Kingsway, Covent Garden",1
+"Knaresborough Place, Earl's Court",1
+"Knightsbridge, Hyde Park",0
+"LMU Commercial Road, Whitechapel",1
+"LSBU (Borough Road), Elephant & Castle",1
+"Ladbroke Grove Central, Ladbroke Grove",1
+"Lambeth North Station, Waterloo",1
+"Lambeth Palace Road, Waterloo",0
+"Lambeth Road, Vauxhall",0
+"Lancaster Drive, Blackwall",1
+"Lancaster Gate , Bayswater",1
+"Langdon Park, Poplar",1
+"Lansdowne Road, Ladbroke Grove",1
+"Lansdowne Walk, Ladbroke Grove",1
+"Lavington Street, Bankside",0
+"Lee Valley VeloPark, Queen Elizabeth Olympic Park",1
+"Leman Street, Aldgate",1
+"Leonard Circus , Shoreditch",1
+"Lexham Gardens, Kensington",1
+"Lightermans Road, Millwall",1
+"Limburg Road, Clapham Junction",1
+"Limerston Street, West Chelsea",1
+"Lincoln's Inn Fields, Holborn",0
+"Lindfield Street, Poplar",1
+"Lisson Grove, St. John's Wood",1
+"Little Argyll Street, West End",0
+"Little Brook Green, Brook Green",1
+"Liverpool Road (N1 Centre), Angel",1
+"Lollard Street, Vauxhall",2
+"London Zoo Car Park, The Regent's Park",2
+"London Zoo,  The Regent's Park",1
+"Long Lane , Bermondsey",1
+"Longford Street, The Regent's Park",0
+"Lord's, St. John's Wood",1
+"Lots Road, West Chelsea",1
+"Lower Marsh, Waterloo",0
+"Lower Thames Street, Monument",0
+"Macclesfield Rd, St Lukes",1
+"Maclise Road, Olympia",1
+"Maida Vale, Maida Vale",2
+"Malet Street, Bloomsbury",2
+"Mallory Street, Marylebone",0
+"Malmesbury Road, Bow",1
+"Manbre Road, Hammersmith",1
+"Manresa Road, Chelsea",0
+"Maplin Street, Mile End",1
+"Margery Street, Clerkenwell",1
+"Marloes Road, Kensington",1
+"Marylebone Lane, Marylebone",0
+"Merchant Street, Bow",1
+"Mexfield Road, East Putney",1
+"Michael Road, Walham Green",1
+"Mile End Park Leisure Centre, Mile End",1
+"Mile End Stadium, Mile End",1
+"Millbank Tower, Pimlico",0
+"Millennium Hotel, Mayfair",0
+"Millharbour, Millwall",1
+"Milroy Walk, South Bank",2
+"Monier Road, Hackney Wick",1
+"Montpelier Street, Knightsbridge",0
+"Montserrat Road , Putney",1
+"Monument Street, Monument",0
+"Moor Street, Soho",0
+"Moorfields, Moorgate",0
+"Morie Street, Wandsworth",1
+"Mostyn Grove, Bow",1
+"Mudchute DLR, Cubitt Town",1
+"Murray Grove , Hoxton",1
+"Museum of London, Barbican",0
+"Nantes Close, Wandsworth",1
+"Napier Avenue, Millwall",1
+"Natural History Museum, South Kensington",1
+"Naval Row, Blackwall",1
+"Nesham Street, Wapping",1
+"Nevern Place, Earl's Court",1
+"Neville Gill Close, Wandsworth",1
+"New Cavendish Street, Marylebone",2
+"New Fetter Lane, Holborn",0
+"New Globe Walk, Bankside",1
+"New Inn Yard, Shoreditch",1
+"New Kent Road, The Borough",1
+"New North Road 1, Hoxton",1
+"New North Road 2, Hoxton",1
+"New Road 1 , Whitechapel",1
+"New Spring Gardens Walk, Vauxhall",1
+"Newby Place, Poplar",1
+"Newgate Street , St. Paul's",0
+"Newton Street, Covent Garden",0
+"Normand Park, West Kensington",1
+"Normandy Road, Stockwell",1
+"North Audley Street, Mayfair",0
+"North Wharf Road, Paddington",1
+"Northdown Street, King's Cross",1
+"Northfields, Wandsworth",1
+"Northington Street , Holborn",1
+"Northumberland Avenue, Strand",0
+"Norton Folgate, Liverpool Street",2
+"Notting Hill Gate Station, Notting Hill",2
+"Nutford Place, Marylebone",1
+"Old Brompton Road, South Kensington",1
+"Old Ford Road, Bethnal Green",1
+"Old Montague Street, Whitechapel",1
+"Old Quebec Street, Marylebone",0
+"Old Street Station, St. Luke's",1
+"Olympia Way, Olympia",1
+"Ontario Street, Elephant & Castle",1
+"Orbel Street, Battersea",1
+"Ormonde Gate, Chelsea",1
+"Orsett Terrace, Bayswater",1
+"Osiers Road, Wandsworth",1
+"Ossulston Street, Somers Town",1
+"Oxford Road, Putney",1
+"Paddington Green, Paddington",1
+"Paddington Street, Marylebone",0
+"Page Street, Westminster",0
+"Palace Gardens Terrace, Notting Hill",1
+"Palace Gate, Kensington Gardens",0
+"Palissy Street, Shoreditch",1
+"Pall Mall East, West End",2
+"Pancras Road, King's Cross",1
+"Panton Street, West End",0
+"Park Lane , Hyde Park",1
+"Park Lane, Mayfair",0
+"Park Road (Baker Street), The Regent's Park",1
+"Park Street, Bankside",1
+"Parkway, Camden Town",1
+"Parson's Green , Parson's Green",1
+"Parsons Green Station, Parsons Green",1
+"Pembridge Villas, Notting Hill",1
+"Penfold Street, Marylebone",1
+"Pennington Street, Wapping",1
+"Penywern Road, Earl's Court",1
+"Percival Street, Finsbury",1
+"Peterborough Road, Sands End",1
+"Phene Street, Chelsea",1
+"Phillimore Gardens, Kensington",1
+"Philpot Street, Whitechapel",2
+"Pindar Street, Liverpool Street",0
+"Pitfield Street Central, Hoxton",1
+"Pitfield Street North,Hoxton",1
+"Plough Terrace, Clapham Junction",1
+"Podium, Queen Elizabeth Olympic Park",1
+"Pont Street, Knightsbridge",0
+"Porchester Place, Paddington",1
+"Portland Place, Marylebone",0
+"Portman Square, Marylebone",0
+"Pott Street, Bethnal Green",2
+"Poured Lines, Bankside",1
+"Preston's Road, Cubitt Town",1
+"Prince Albert Road, The Regent's Park",1
+"Prince Consort Road, Knightsbridge",0
+"Prince of Wales Drive, Battersea Park",1
+"Princedale Road , Holland Park",1
+"Princes Square, Bayswater",1
+"Pritchard's Road, Bethnal Green",1
+"Putney Bridge Road, East Putney",1
+"Putney Bridge Station, Fulham",1
+"Putney Pier, Wandsworth",1
+"Putney Rail Station, Putney",1
+"Queen Mary's, Mile End",1
+"Queen Mother Sports Centre, Victoria",1
+"Queen Street 1, Bank",0
+"Queen Street 2, Bank",0
+"Queen Victoria Street, St. Paul's",0
+"Queen's Circus, Battersea Park",1
+"Queen's Gate (Central), South Kensington",2
+"Queen's Gate (North), Kensington",0
+"Queen's Gate (South), South Kensington",1
+"Queen's Gate, Kensington Gardens",0
+"Queensbridge Road, Haggerston",1
+"Queensdale Road, Shepherd's Bush",1
+"Queensway, Kensington Gardens",1
+"Rainville Road, Hammersmith",1
+"Ram Street, Wandsworth",1
+"Rampayne Street, Pimlico",1
+"Ranelagh Gardens, Fulham",1
+"Rathbone Street, Fitzrovia",2
+"Ravenscourt Park Station, Hammersmith",1
+"Reardon Street, Wapping",1
+"Rectory Square, Stepney",1
+"Red Lion Square, Holborn",0
+"Red Lion Street, Holborn",0
+"Regency Street, Westminster",1
+"Regent's Row , Haggerston",0
+"Richmond Way, Shepherd's Bush",1
+"Rifle Place, Avondale",1
+"Risinghill Street, Angel",1
+"River Street , Clerkenwell",1
+"Riverlight North, Nine Elms",1
+"Riverlight South, Nine Elms",1
+"Rochester Row, Westminster",1
+"Rodney Road , Walworth",1
+"Roscoe Street, St. Luke's",1
+"Rossmore Road, Marylebone",0
+"Royal Avenue 1, Chelsea",0
+"Royal Avenue 2, Chelsea",2
+"Royal College Street, Camden Town",0
+"Royal London Hospital, Whitechapel",0
+"Russell Gardens, Olympia",1
+"Russell Square Station, Bloomsbury",0
+"Sackville Street, Mayfair",0
+"Sadlers Sports Centre, Finsbury",1
+"Sail Street, Vauxhall",1
+"Salmon Lane, Limehouse",1
+"Saltoun Road, Brixton",1
+"Sancroft Street, Vauxhall",2
+"Sandilands Road, Walham Green",1
+"Santos Road, Wandsworth",2
+"Sardinia Street, Holborn",0
+"Saunders Ness Road, Cubitt Town",1
+"Scala Street, Fitzrovia",0
+"Sea Containers, South Bank",2
+"Sedding Street, Sloane Square",2
+"Selby Street, Whitechapel",1
+"Serpentine Car Park, Hyde Park",0
+"Seville Street, Knightsbridge",0
+"Seymour Place, Marylebone",1
+"Shadwell Station, Shadwell",1
+"Sheepcote Lane, Battersea",1
+"Shepherd's Bush Road North, Shepherd's Bush",2
+"Shoreditch Court, Haggerston",1
+"Shoreditch High Street, Shoreditch",1
+"Shoreditch Park, Hoxton",1
+"Shouldham Street, Marylebone",2
+"Sidney Road, Stockwell",2
+"Silverthorne Road, Battersea",1
+"Simpson Street, Clapham Junction",2
+"Sirdar Road, Avondale",1
+"Sloane Avenue, Knightsbridge",0
+"Smith Square, Westminster",2
+"Smugglers Way, Wandsworth",1
+"Snow Hill, Farringdon",0
+"Snowsfields, London Bridge",1
+"Soho Square , Soho",0
+"Somerset House, Strand",0
+"Sopwith Way, Battersea Park",1
+"South Audley Street, Mayfair",0
+"South Kensington Station, South Kensington",2
+"South Lambeth Road, Vauxhall",1
+"South Parade, Chelsea",0
+"South Park, Sands End",1
+"South Quay East, Canary Wharf",1
+"South Wharf Road, Paddington",1
+"Southampton Place, Holborn",0
+"Southampton Street, Strand",0
+"Southern Grove, Bow",1
+"Southerton Road, Hammersmith",1
+"Southwark Station 1, Southwark",1
+"Southwark Station 2, Southwark",1
+"Southwark Street, Bankside",1
+"Southwick Street, Paddington",1
+"Spanish Road, Clapham Junction",1
+"Spencer Park, Wandsworth Common",1
+"Spindrift Avenue, Millwall",1
+"St John's Crescent, Brixton",1
+"St Martins Close, Camden Town",2
+"St Mary's Hospital, Paddington",1
+"St. Bride Street, Holborn",0
+"St. Chad's Street, King's Cross",1
+"St. George Street, Mayfair",0
+"St. George's Square, Pimlico",1
+"St. James's Square, St. James's",0
+"St. John Street, Finsbury",1
+"St. John's Park, Cubitt Town",2
+"St. John's Road, Clapham Junction",1
+"St. John's Wood Church, The Regent's Park",1
+"St. John's Wood Road, St. John's Wood",1
+"St. Katharine's Way, Tower",1
+"St. Luke's Church, Chelsea",0
+"St. Mark's Road, North Kensington",2
+"St. Martin's Street, West End",0
+"St. Mary & St. Michael Church, Stepney",1
+"St. Mary Axe, Aldgate",0
+"St. Peter's Terrace, Fulham",1
+"Stainsby Road , Poplar",1
+"Stamford Street, South Bank",1
+"Stanhope Gate, Mayfair",0
+"Stanley Grove, Battersea",1
+"Star Road, West Kensington",1
+"Stebondale Street, Cubitt Town",1
+"Stephendale Road, Sands End",1
+"Stepney Green Station, Stepney",1
+"Stewart's Road, Wandsworth Road",1
+"Stonecutter Street, Holborn",0
+"Storey's Gate, Westminster",0
+"Strand, Strand",0
+"Strata, Elephant & Castle",1
+"Stratford Station, Stratford",1
+"Sugden Road, Clapham",1
+"Sumner Place, South Kensington",0
+"Surrey Lane, Battersea",2
+"Sutton Street, Shadwell",1
+"Swan Street, The Borough",1
+"Tachbrook Street, Victoria",1
+"Tallis Street, Temple",0
+"Tanner Street, Bermondsey",2
+"Tate Modern, Bankside",1
+"Tavistock Place, Bloomsbury",1
+"Tavistock Street, Covent Garden",0
+"Taviton Street, Bloomsbury",1
+"Teversham Lane, Stockwell",1
+"Teviot Street, Poplar",1
+"The Guildhall, Guildhall",0
+"The Metropolitan, Portobello",1
+"The Tennis Courts, The Regent's Park",0
+"The Vale, Chelsea",1
+"Theobald's Road , Holborn",0
+"Thorndike Close, West Chelsea",1
+"Thurtle Road, Haggerston",1
+"Timber Lodge, Queen Elizabeth Olympic Park",1
+"Tooley Street, Bermondsey",1
+"Torrens Street, Angel",1
+"Tower Gardens , Tower",1
+"Trebovir Road, Earl's Court",2
+"Triangle Car Park, Hyde Park",0
+"Turquoise Island, Notting Hill",2
+"Twig Folly Bridge, Mile End",1
+"Tyers Gate, Bermondsey",1
+"Tysoe Street, Clerkenwell",1
+"Union Grove, Wandsworth Road",1
+"Union Street, The Borough",0
+"Upcerne Road, West Chelsea",1
+"Upper Bank Street, Canary Wharf",0
+"Upper Grosvenor Street, Mayfair",0
+"Upper Richmond Road, Putney",1
+"Usk Road, Clapham Junction",1
+"Vauxhall Bridge , Pimlico",1
+"Vauxhall Cross, Vauxhall",1
+"Vauxhall Street, Vauxhall",1
+"Vauxhall Walk, Vauxhall",1
+"Vereker Road, West Kensington",1
+"Vicarage Crescent, Battersea",1
+"Vicarage Gate, Kensington",1
+"Victoria & Albert Museum, South Kensington",0
+"Victoria Park Road, Hackney Central",1
+"Victory Place, Walworth",1
+"Vincent Square, Westminster",1
+"Vincent Street, Pimlico",1
+"Walmer Road, Avondale",1
+"Walnut Tree Walk, Vauxhall",1
+"Walworth Road, Elephant & Castle",1
+"Walworth Square, Walworth",1
+"Wandsworth Rd, Isley Court, Wandsworth Road",1
+"Wandsworth Town Station, Wandsworth",1
+"Wapping High Street, Wapping",1
+"Wapping Lane, Wapping",1
+"Wardour Street, Soho",0
+"Warren Street Station, Euston",0
+"Warwick Avenue Station, Maida Vale",1
+"Warwick Road, Olympia",1
+"Warwick Row, Westminster",1
+"Warwick Square, Pimlico",1
+"Waterloo Bridge, South Bank",1
+"Waterloo Place, St. James's",0
+"Waterloo Road, South Bank",1
+"Waterloo Station 1, Waterloo",1
+"Waterloo Station 2, Waterloo",1
+"Waterloo Station 3, Waterloo",0
+"Watney Market, Stepney",1
+"Watney Street, Shadwell",1
+"Webber Street , Southwark",1
+"Wellington Arch, Hyde Park",0
+"Wellington Road, St. John's Wood",1
+"Wellington Row, Bethnal Green",1
+"Wellington Street , Strand",0
+"Wells Street, Fitzrovia",0
+"Wendon Street, Old Ford",1
+"Wenlock Road , Hoxton",1
+"West Cromwell Road, Earl's Court",1
+"West Kensington Station, West Kensington",1
+"West Smithfield Rotunda, Farringdon",0
+"Westbourne Grove, Bayswater",1
+"Westbourne Park Road, Portobello",1
+"Westbridge Road, Battersea",1
+"Westferry Circus, Canary Wharf",1
+"Westferry DLR, Limehouse",1
+"Westfield Ariel Way, White City",2
+"Westfield Southern Terrace ,Shepherd's Bush",1
+"Westminster Bridge Road, Elephant & Castle",1
+"Westminster Pier, Westminster",0
+"Westminster University, Marylebone",2
+"Whiston Road, Haggerston",2
+"Whitehall Place, Strand",0
+"William IV Street, Strand",0
+"William Morris Way, Sands End",1
+"Windsor Terrace, Hoxton",1
+"Wood Street, Guildhall",0
+"Woodstock Grove, Shepherd's Bush",1
+"Woodstock Street, Mayfair",0
+"World's End Place, West Chelsea",1
+"Wormwood Street, Liverpool Street",1
+"Worship Street, Shoreditch",0
+"Wren Street, Holborn",1
+"Wright's Lane, Kensington",1
+"Wynne Road, Stockwell",1
+"York Hall, Bethnal Green",1
+"York Way, Kings Cross",1
