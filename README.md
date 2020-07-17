@@ -2,17 +2,24 @@
 
 [![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H2H814TXG)
 
-> This project runs on personal equipment and resources. No trackers are used on the website and it's ad free. If you enjoy it please consider supporting it by donating or unlocking the extra capabilities in the iOS app.
+> This project runs on personal equipment and resources. No trackers are used on the website and it's ad free. If you enjoy it please consider supporting it by donating or unlocking the extra capabilities on the iOS app.
 
 ![Neural Bikes in action](resources/promo.png)
 
-Solving bike sharing services main issue, riding patterns are not regular and stations can get either empty or full. Rendering them unusable for users.
+## Why does this exist?
 
-This project is intended to help users that ride bikes from a bike sharing service. It makes daily availability predictions for each station using previous availability data. 
+Bike sharing services around the world have the same problem. Unequal riding patterns lead to unequal bike distribution along the city. This forces workers to rebalance services using big vehicles or by incentivizing users to unlock bikes from full stations.
 
-Restocking bikes in a system is a difficult problem to solve. Unequal riding patterns lead to completely full or empty stations. Either one is a problem for users, they won't be able to use the service in normal conditions.
+This is a problem that's present on all of docked systems worldwide. Bike sharing apps don't provide users with insightful information. They only provide information reflecting the actual status of the system. But previous patterns affect the actual state and possibly the future.
+
+By constantly gathering data I've tried to solve this issue by predicting availability using recent days of availability.
+
+This repository contains the actual code that is being used by the [iOS app](http://neural.bike) to generate predictions.All of the data analysis, procesing and neural network training is being done by this project. This project is being updated as much as I am able to make it as scalable as possible to suit the needs for different cities. As of now predictions are generated daily for cities like Bilbao, Madrid, New York and London.
+
 
 ## Requirements
+
+Data is stored in an InfluxDB database. For each city there are two databases, one to store availability gathered every ten minutes (`Bicis_CITY_NAME_Availability`) and a prediction (`Bicis_CITY_NAME_Prediction`) one. Code can also be tweaked to use CSV files as inputs.
 
 Dependencies are specified in the `requirements.txt` file. If you would like to use virtual environments to test this on your own please use the following to install and activate a virtual environment and later install all of the dependencies that are neede.
 
@@ -32,11 +39,9 @@ Neural Bikes is a Machine Learning backend for my project, Bicis. A service to p
 * API, available endpoints:
 
 ```
-https://javierdemart.in/api/v1/prediction/madrid
-https://javierdemart.in/api/v1/today/madrid
-
-https://javierdemart.in/api/v1/prediction/bilbao
-https://javierdemart.in/api/v1/today/bilbao
+https://javierdemart.in/api/v1/prediction/CITY_NAME/STATION_ID
+https://javierdemart.in/api/v1/today/CITY_NAME/STATION_ID
+https://javierdemart.in/api/v1/all/CITY_NAME/STATION_ID
 ```
 
 ## Where does the data come from?
