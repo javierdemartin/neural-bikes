@@ -16,7 +16,7 @@ h5py==2.10.0
 idna==2.9
 importlib-metadata==1.6.0
 influxdb==5.2.3
-Jinja2==2.11.2
+Jinja2==2.11.3
 joblib==0.15.1
 Keras==2.3.1
 Keras-Applications==1.0.8
